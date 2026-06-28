@@ -109,3 +109,22 @@ and the only stated effect — Bootstrap's `--bs-*` CSS custom properties not be
 auto-derived from the SCSS — does not matter here, because `theme.scss` compiles its
 `$variables` to literal color values rather than relying on runtime CSS variables. The
 render completes and `_site/` is correct, so the message can be ignored.
+
+## Toolchain and maintenance
+
+Pinned, reproducible build (verified versions):
+
+| Tool | Version | Role |
+|------|---------|------|
+| Quarto | 1.9.38 | site generator |
+| `quarto-live` (vendored in `_extensions/`) | 0.1.3-dev | the `{pyodide}`/`{webr}` live cells |
+| Pyodide / WebR | loaded from CDN at runtime by `quarto-live` | the in-browser Python / R |
+
+The `quarto-live` extension is **committed**, so the build is reproducible and won't drift
+on its own. To take upstream fixes, re-vendor it (`quarto add r-wasm/quarto-live`), then
+re-render and re-run the cross-language check before publishing. Pyodide/WebR are fetched
+from a CDN by the extension, so a major upstream change there can surface only at runtime —
+after any `quarto-live` bump, click through a Python and an R cell on a real page to confirm
+they still execute. Cross-language cell verification (the porting spec's `Rscript`/Pyodide
+check) is the standing maintenance task: every classical page is two code paths that must
+agree, kept tractable by restricting R to base R + `stats`.
