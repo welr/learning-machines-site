@@ -26,6 +26,13 @@ line has to keep rising to separate the failures from the passes, so it predicts
 studied a lot. Both are nonsense as probabilities, and no rescaling fixes it, because a line
 is unbounded by construction.
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch04_01_logistic_regression.png" alt="Forty students plotted by hours studied: failures at probability zero in red, passes at probability one in blue, with an S-shaped fitted probability curve in dark blue rising through them and a gray dashed vertical line marking the 0.5 decision threshold near 4.9 hours.">
+<figcaption><strong>The logistic curve.</strong> The fitted sigmoid maps hours studied to the probability of passing, bending between the failures (red, at zero) and the passes (blue, at one); the gray dashed line marks the 0.5 threshold, the boundary that turns a probability into a label. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 ::: {.panel-tabset group="lang"}
 
 ## Python

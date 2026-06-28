@@ -35,6 +35,13 @@ one-standard-deviation rise in that feature. Above one raises the odds; below on
 [ log( p ∕ (1 − p) ) = θ₀ + θ₁x₁ + ⋯ + θₚxₚ &nbsp;&nbsp;⟹&nbsp;&nbsp; odds ratioⱼ = exp(θⱼ) ]{.math}
 :::
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch04_03_applied.png" alt="Horizontal bar chart of each marker's odds ratio, sorted by magnitude; glucose, BMI, age, and blood pressure exceed one while HDL falls below the reference line at one.">
+<figcaption><strong>Reading a logistic fit as odds.</strong> Each bar is a marker's odds ratio, exp of its coefficient: glucose and BMI multiply the odds of a positive test the most, while the protective marker HDL sits below the reference line at one and lowers them. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 The bar chart sorts the five markers by their odds ratio. Glucose and BMI multiply the odds the
 most; HDL, a protective marker, sits below one and lowers them. Because the data are simulated,
 Python and R draw from different random number generators, so the exact odds ratios and the test

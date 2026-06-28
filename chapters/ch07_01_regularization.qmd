@@ -41,6 +41,13 @@ cross-product, leaving the intercept unpenalized. That one term tames the fit.
 [ &theta;&#770;<sub>ridge</sub> = (X&#8868;X + &lambda;I)&#8722;&sup1; X&#8868;y ]{.math}
 :::
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch07_01_regularization.png" alt="Eight ridge coefficient paths plotted against penalty strength lambda on a logarithmic x-axis, each curve drifting smoothly toward the gray zero line as lambda grows.">
+<figcaption><strong>Ridge shrinkage paths.</strong> As the penalty strength &lambda; grows, every coefficient glides smoothly toward zero without ever quite reaching it. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 ::: {.panel-tabset group="lang"}
 
 ## Python

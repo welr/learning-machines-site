@@ -33,6 +33,13 @@ $\boldsymbol{\Sigma}_0^{-1}$ term nearly vanishes and $\boldsymbol{\mu}_n$ colla
 the OLS estimate. A tight prior pulls it toward $\boldsymbol{\mu}_0$. The next cell makes
 that comparison concrete.
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch02_03_bayesian_regression.png" alt="Scatter of data with a posterior-mean regression line and a shaded 95% credible band that is narrow over the observed range of x and widens toward both plot edges.">
+<figcaption><strong>Uncertainty that grows with extrapolation.</strong> The posterior mean line with its 95% credible band, tight where the data cluster and flaring outward as the input leaves the observed range. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 ## The posterior mean against OLS
 
 We generate thirty points from $y = 1 + 2x + \varepsilon$ with noise standard deviation

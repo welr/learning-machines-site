@@ -29,6 +29,13 @@ The book states this in a single equation. Below we unpack it: build the
 off the coefficients. Then we look at the same fit two other ways, extend it to several
 features, and see where the formula breaks down numerically.
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch02_02_linear_regression_ols.png" alt="Scatter of five housing data points with the fitted OLS line and dashed red vertical residual segments from each point to the line.">
+<figcaption><strong>Least squares, pictured.</strong> The fitted line sits where the total squared length of the dashed red residuals, the vertical gaps from each point to the line, is as small as possible. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 ## Solving the normal equations by hand
 
 Five houses, one feature: floor area (hundreds of square feet) against price (thousands of

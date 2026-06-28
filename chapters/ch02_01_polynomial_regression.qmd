@@ -44,6 +44,13 @@ individual points. Note the training MSE: it keeps *falling* as the degree rises
 446), so the worst-looking curve has the best training score. Training error alone cannot
 tell you which model to trust; that is the job of held-out data, next.
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch02_01_polynomial_regression.png" alt="Fifteen house price-versus-area points with three polynomial fits: a degree-1 line and a degree-2 parabola nearly coincide through the data, while a degree-10 curve swings up and down to chase individual points.">
+<figcaption><strong>One knob, three fits.</strong> The same fifteen houses fit by a degree-1 line (underfit), a degree-2 parabola that tracks the gentle curvature (good fit), and a degree-10 polynomial that wiggles to chase the noise (overfit). This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 ::: {.panel-tabset group="lang"}
 
 ## Python

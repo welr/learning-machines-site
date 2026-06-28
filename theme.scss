@@ -101,6 +101,12 @@ figure.lm-chart{ margin:26px 0; max-width:42rem; }
 .lm-chart .csub{ font-family:"Source Serif 4"; fill:$gray; font-style:italic; }
 figcaption{ font-family:"Source Serif 4"; font-style:italic; color:$gray; font-size:13.5px; }
 
+/* pre-rendered hero figures (PNG from each page's own computation) */
+figure.lm-figure{ margin:28px 0; max-width:42rem; }
+figure.lm-figure img{ width:100%; display:block; border:1px solid $rule; border-radius:6px; }
+figure.lm-figure figcaption{ margin-top:8px; }
+figure.lm-figure figcaption strong{ font-style:normal; color:$ink; }
+
 /* code + live cells */
 pre,code{ font-family:"Inconsolata"; }
 div.sourceCode{ border:1px solid $rule; border-radius:6px; }

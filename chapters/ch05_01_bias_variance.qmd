@@ -21,6 +21,13 @@ each, and looking at how the predictions scatter, we turn [bias]{.term} and
 [ E[(y &minus; f&#770;(x))&sup2;] = Bias&sup2; + Variance + &sigma;&sup2; ]{.math}
 :::
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch05_bias_variance.png" alt="Bias-squared, variance, and total error versus polynomial degree; total error traces a U and bottoms out at a moderate degree.">
+<figcaption><strong>The bias–variance trade-off.</strong> As complexity grows, bias falls while variance rises; their sum, the total error, traces a U and bottoms out at a moderate degree. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 Read the three terms as answers to three questions. [Bias]{.term} asks how far the
 *average* fitted prediction sits from the truth, the error baked in by assumptions that are
 too rigid (a straight line for a curved signal). [Variance]{.term} asks how much the fit

@@ -20,6 +20,13 @@ Because the browser sandbox cannot fetch data over the network, we substitute R'
 [ &theta;&#770; = (X&#8868;X)&#8722;&sup1; X&#8868;y ]{.math}
 :::
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch02_04_applied.png" alt="Scatter of miles per gallon against car weight for 32 cars, with a straight-line fit and a degree-10 polynomial that wriggles and dives at the sparse heavy end.">
+<figcaption><strong>Fitting real data.</strong> A straight line through the <code>mtcars</code> fuel-economy data tells an honest downward story, while a degree-10 polynomial fits the noise and wriggles violently where the heavy cars thin out. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 ## Multiple regression by the normal equations
 
 Nothing in that formula cares how many columns $\mathbf{X}$ has. We regress fuel economy on three features at once, solving $\mathbf{X}^\top\mathbf{X}\,\hat{\boldsymbol{\theta}} = \mathbf{X}^\top\mathbf{y}$ directly, then confirm the result against the production fitter (`LinearRegression` in Python, `lm` in R). They solve the same system, so they return the same coefficients.

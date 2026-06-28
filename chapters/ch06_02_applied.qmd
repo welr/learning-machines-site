@@ -30,6 +30,13 @@ the same AUC. Toggling the language switches the syntax, not the problem.
 [ precision = TP / (TP + FP) &nbsp;&middot;&nbsp; recall = TP / (TP + FN) &nbsp;&middot;&nbsp; F&#8321; = 2 &middot; precision &middot; recall / (precision + recall) ]{.math}
 :::
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch06_02_applied.png" alt="ROC curve for the breast-cancer logistic classifier, rising steeply to the top-left corner well above the dashed chance diagonal.">
+<figcaption><strong>ROC curve for the breast-cancer classifier.</strong> Sweeping the threshold traces true-positive rate against false-positive rate; the curve hugs the top-left corner (AUC = 0.991), far above the chance diagonal. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 ## The confusion matrix, and the metrics built on it
 
 At a threshold of $0.5$ the [confusion matrix]{.term} tallies the four outcomes: true and

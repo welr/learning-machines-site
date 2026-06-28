@@ -37,6 +37,13 @@ measurements, a held-out quarter for the honest test) and reports the gaps. The 
 fits its stump and kernel classifier on the moons data introduced below and reports the same
 kind of accuracy contrast: a single axis-aligned cut against a smooth kernel boundary.
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch08_03_applied.png" alt="Two interleaving crescent-shaped clouds of points, one blue and one red, separated by a single smooth curved decision boundary drawn in dark blue, with the two predicted regions shaded soft blue and soft red.">
+<figcaption><strong>A decision boundary you can see.</strong> A radial-basis kernel SVM separates the two interleaving crescents of the make_moons data with one smooth curve, shading each predicted class soft blue and soft red. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 ::: {.panel-tabset group="lang"}
 
 ## Python

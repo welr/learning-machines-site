@@ -20,6 +20,13 @@ measure how mixed a node is, find the split that purifies it most, watch a singl
 overfit, and then build the two ensembles that fix it, [bagging]{.term} and
 [boosting]{.term}.
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch08_01_trees_ensembles.png" alt="Training and test error of a regression tree as its depth increases; training error falls toward zero while test error bottoms out at a moderate depth and then climbs.">
+<figcaption><strong>A single tree overfits.</strong> As the tree deepens, training error marches toward zero while test error bottoms out at a moderate depth and then climbs back up as the extra splits fit noise; the dotted line marks the depth of lowest test error. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 ## Measuring impurity
 
 A split is good when it makes the child nodes purer than the parent. To act on that we need

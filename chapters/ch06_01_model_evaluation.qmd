@@ -30,6 +30,13 @@ AUCs therefore differ in the second digit, but both land in the same place, whic
 honest lesson. The Python side fits logistic regression by gradient descent from scratch;
 the R side calls `glm`, base R's maximum-likelihood fitter for the same model.
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch06_01_model_evaluation.png" alt="ROC curve for the logistic classifier: true positive rate against false positive rate, bowing toward the upper-left corner well above the dashed chance diagonal.">
+<figcaption><strong>The ROC curve.</strong> Sweeping the decision threshold traces the true positive rate against the false positive rate; the curve bows toward the upper-left corner, for an AUC of 0.929, well above the 0.5 of the chance diagonal. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 ## A classifier and an honest estimate of its accuracy
 
 The data is deliberately awkward: the true boundary curves ($x_1 + 0.3\,x_2^2 > 0.5$) while

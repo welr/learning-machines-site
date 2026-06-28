@@ -25,6 +25,13 @@ $\alpha$. The gradient points uphill; we go the other way.
 [ &theta;<sup>(t+1)</sup> = &theta;<sup>(t)</sup> &minus; &alpha;&#8201;&nabla;J(&theta;<sup>(t)</sup>) ]{.math}
 :::
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch03_01_gradient_descent.png" alt="Contour plot of the MSE loss over the intercept and slope, with a red gradient-descent path stepping from a start point down into the valley to the marked optimum.">
+<figcaption><strong>Gradient descent on the loss surface.</strong> From a start far from the floor, each step follows the negative gradient down the blue MSE bowl in (&theta;<sub>0</sub>, &theta;<sub>1</sub>) until the walk settles on the optimum. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 Throughout we fit a simple line $\hat{y} = \theta_0 + \theta_1 x$ under mean squared error,
 $J(\theta_0, \theta_1) = \frac{1}{n}\sum_i (y_i - \theta_0 - \theta_1 x_i)^2$. The data is defined
 inline, identical in both languages, so every deterministic result below agrees digit for

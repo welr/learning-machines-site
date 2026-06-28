@@ -26,6 +26,13 @@ them all, while LASSO drives most of them to *exactly* zero and so performs
 [ min<sub>&theta;</sub>&ensp; &#8741;y &minus; X&theta;&#8741;&sup2; + &lambda;&#8201;R(&theta;),&emsp; R<sub>ridge</sub> = &#8741;&theta;&#8741;&#8322;&sup2;,&emsp; R<sub>LASSO</sub> = &#8741;&theta;&#8741;&#8321; ]{.math}
 :::
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch07_02_applied.png" alt="LASSO regularization path: thirty coefficients plotted against the penalty on a logarithmic axis; the eight blue informative-feature paths fall to exactly zero one at a time as the penalty grows, while the twenty-two gray spurious-feature paths sit on the zero line throughout.">
+<figcaption><strong>The LASSO path.</strong> As the penalty &lambda; grows, each coefficient is driven to <em>exactly</em> zero one at a time; the eight informative features (blue) survive deepest into the penalty while the spurious ones (gray) never leave the zero line, which is how the LASSO selects variables. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 We work on a synthetic problem where the truth is sparse, so we can judge each method against
 a known answer. Python uses scikit-learn's `make_regression`, `lasso_path`, and `LassoCV`. R
 builds the same kind of data by hand and computes the LASSO from first principles, by
