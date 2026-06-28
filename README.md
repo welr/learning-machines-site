@@ -15,10 +15,10 @@ on the reader's own machine, in their browser.
 The visual identity is aligned to the printed book:
 
 - **Palette** — Frankfurt School blue `#31417A` (primary), accent blues
-  `#076FA1` / `#2FC1D3`, with the Economist red `#E3120B` used sparingly (the
-  top-left tab, the Run button, the active tab underline).
+  `#076FA1` / `#2FC1D3` (the brand circle), with a sharp red `#E3120B` used
+  sparingly (the Run button and the active tab underline).
 - **Type** — Fraunces (display), Source Serif 4 (body), Inconsolata (code).
-- **Charts** — Economist editorial style: right-hand axis labels, minimal
+- **Charts** — a clean editorial style: right-hand axis labels, minimal
   gridlines, a red title tab.
 
 All of this lives in `theme.scss` (a Quarto SCSS theme: `scss:defaults` for the
@@ -66,7 +66,7 @@ engine: markdown          # <-- required: keeps Quarto from invoking a build-tim
 
 Custom components available in `theme.scss`: `.lm-hero` (chapter opener),
 `.defbox` (definition box, echoes the book's `myDefinition`), `.explore`
-(exploration callout), `.lm-chart` (Economist-style inline-SVG figure),
+(exploration callout), `.lm-chart` (editorial inline-SVG figure),
 `.colab`/`.colab-btn` (Colab affordances).
 
 Then register the page in `_quarto.yml` under `website.sidebar.contents`.
