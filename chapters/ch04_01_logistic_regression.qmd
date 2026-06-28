@@ -29,7 +29,7 @@ is unbounded by construction.
 ```{=html}
 <figure class="lm-figure">
 <img src="../figures/ch04_01_logistic_regression.png" alt="Forty students plotted by hours studied: failures at probability zero in red, passes at probability one in blue, with an S-shaped fitted probability curve in dark blue rising through them and a gray dashed vertical line marking the 0.5 decision threshold near 4.9 hours.">
-<figcaption><strong>The logistic curve.</strong> The fitted sigmoid maps hours studied to the probability of passing, bending between the failures (red, at zero) and the passes (blue, at one); the gray dashed line marks the 0.5 threshold, the boundary that turns a probability into a label. This is the result the code below reproduces.</figcaption>
+<figcaption><strong>The logistic curve.</strong> The fitted sigmoid maps hours studied to P(pass); the dots are students' <em>actual</em> outcomes (blue passed, red failed), and the gray dashed line is where the curve crosses 0.5 &mdash; the model's decision boundary. The points that straddle the line &mdash; one student passed on just under 4.9 hours, two failed just beyond it &mdash; are genuine misclassifications: the classes overlap, which is exactly why we fit a probability rather than draw a hard cutoff. This is the result the code below reproduces.</figcaption>
 </figure>
 ```
 
