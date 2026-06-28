@@ -129,8 +129,8 @@ def fit_many(degree, n_datasets=60, n=20):
     return grid, np.array(preds)
 
 fig, axes = plt.subplots(1, 3, figsize=(13, 4.2))
-for ax, degree, title in zip(axes, [1, 4, 12],
-                             ["Degree 1 (underfit)", "Degree 4 (good fit)",
+for ax, degree, title in zip(axes, [1, 3, 12],
+                             ["Degree 1 (underfit)", "Degree 3 (good fit)",
                               "Degree 12 (overfit)"]):
     grid, preds = fit_many(degree)
     for p in preds:
@@ -173,8 +173,8 @@ fit_many <- function(degree, n_datasets = 60, n = 20) {
 
 par(mfrow = c(1, 3))
 for (k in 1:3) {
-  degree <- c(1, 4, 12)[k]
-  title  <- c("Degree 1 (underfit)", "Degree 4 (good fit)", "Degree 12 (overfit)")[k]
+  degree <- c(1, 3, 12)[k]
+  title  <- c("Degree 1 (underfit)", "Degree 3 (good fit)", "Degree 12 (overfit)")[k]
   fm <- fit_many(degree); grid <- fm$grid; preds <- fm$preds
   mean_fit <- colMeans(preds)
   bias2 <- mean((mean_fit - true_f(grid))^2)
@@ -368,8 +368,8 @@ def learning_curve(degree, sizes, n_trials=50, noise=0.3):
 
 sizes = [20, 30, 50, 80, 120, 160]
 fig, axes = plt.subplots(1, 3, figsize=(13, 4.2))
-for ax, degree, title in zip(axes, [1, 4, 12],
-                             ["Degree 1 (high bias)", "Degree 4 (good fit)",
+for ax, degree, title in zip(axes, [1, 3, 12],
+                             ["Degree 1 (high bias)", "Degree 3 (good fit)",
                               "Degree 12 (high variance)"]):
     tr, te = learning_curve(degree, sizes)
     ax.plot(sizes, tr, "o-", color="#076FA1", linewidth=2, label="training MSE")
@@ -417,8 +417,8 @@ learning_curve <- function(degree, sizes, n_trials = 50, noise = 0.3) {
 sizes <- c(20, 30, 50, 80, 120, 160)
 par(mfrow = c(1, 3))
 for (k in 1:3) {
-  degree <- c(1, 4, 12)[k]
-  title  <- c("Degree 1 (high bias)", "Degree 4 (good fit)",
+  degree <- c(1, 3, 12)[k]
+  title  <- c("Degree 1 (high bias)", "Degree 3 (good fit)",
               "Degree 12 (high variance)")[k]
   lc <- learning_curve(degree, sizes)
   yhi <- max(lc$train, lc$test)

@@ -1,12 +1,12 @@
 ---
-title: "Applied — Regression on Real Data"
+title: "Applied — Regression in Practice"
 engine: markdown
 ---
 
 ::: {.lm-hero}
 [Chapter 2 · Regression Models]{.eyebrow}
 
-# Applied — Regression on Real Data
+# Applied — Regression in Practice
 
 [Carry the normal equations to a real data set and the chapter's warnings turn concrete: collinear features split the credit, scale decides what a coefficient means, and a flexible curve quietly starts chasing noise.]{.dek}
 :::
@@ -219,5 +219,5 @@ The line and the quadratic tell the same honest story: more weight, less mileage
 
 ::: {.explore}
 [Try it]{.lbl}
-Refit `mpg` on horsepower instead of weight, or on weight *and* model year (`mtcars$wt` and `mtcars$qsec` are stand-ins you can swap in), and ask whether the extra feature earns its place. Then push the polynomial degree past 10 and watch the heavy-end wriggle turn violent.
+Refit `mpg` on horsepower instead of weight, or on weight *and* quarter-mile time (`mtcars$wt` and `mtcars$qsec`), and ask whether the extra feature earns its place. Then push the polynomial degree past 10 and watch the heavy-end wriggle turn violent.
 :::

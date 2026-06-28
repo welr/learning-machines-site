@@ -243,31 +243,21 @@ gain $0.222$, training accuracy $83.3\%$.
 
 ## Depth, and why a single tree overfits
 
-Recursion turns the stump into a tree. Apply `best_split` to each child, then to its
-children, and keep going until the leaves are pure or a depth limit stops you. Depth is the
-tree's complexity dial. A depth-one stump underfits; a moderate depth captures the real
-structure; an unlimited tree keeps splitting until every training point sits in its own pure
-leaf. That last tree has zero training error and jagged, noise-chasing boundaries, the
-signature of [overfitting]{.term}. Push the depth up and the training error falls to zero
-while the test error turns back upward. A single tree is a low-bias, high-variance model: it
-will memorize whatever data it is given. The companion notebook grows the full recursive tree
-and plots that train-versus-test crossover; here we go straight to the two cures, both of
-which keep the trees but stop trusting any one of them.
+Recursion turns the stump into a tree. Apply the same best-split scan to each child, then to
+its children, and keep going until a leaf is small enough or a depth limit stops you. For the
+regression target below we score each candidate split by the squared error it leaves inside
+the two children rather than by Gini, but the search is identical. Depth is the tree's
+complexity dial: a depth-one stump underfits, a moderate depth captures the real structure,
+and an unlimited tree keeps splitting until every training point sits in its own leaf. That
+last tree has near-zero training error and jagged, noise-chasing boundaries, the signature of
+[overfitting]{.term}. A single tree is a low-bias, high-variance learner: it memorizes
+whatever data it is given.
 
-## Bagging: averaging cuts variance
-
-The first cure is [bootstrap aggregating]{.term}, or bagging: train many trees on
-[bootstrap]{.term} resamples of the data and average their predictions. Because each tree
-sees a slightly different sample, each lands its splits in a slightly different place, and
-averaging cancels that scatter. A [random forest]{.term} adds a second shuffle, restricting
-each split to a random subset of features so the trees decorrelate further.
-
-To see the mechanism with base R alone we bag stumps on a noisy sine. One stump is a single
-crude step; a hundred stumps fit to a hundred resamples average into a smoother staircase that
-tracks the curve better. The exact improvement depends on the resampling, so the two languages
-report different percentages from their different generators, but bagging lowers the error
-either way. Note also that stumps are high-bias learners, so averaging can only do so much
-here: the residual wobble it leaves behind is exactly what boosting attacks next.
+The cell below builds the recursive tree at depths one through ten on a noisy sine, holding
+out half the points as a test set. Training error falls the whole way down; test error
+bottoms out at a moderate depth and then climbs as the extra splits fit noise. That crossover
+is the disease the two ensembles cure, each keeping the trees but refusing to trust any one of
+them.
 
 ::: {.panel-tabset group="lang"}
 
@@ -277,49 +267,260 @@ import numpy as np
 import matplotlib.pyplot as plt
 np.random.seed(0)
 
-# Noisy samples from a sine; the truth f(x) = sin(x) is unknown to the learner.
-n = 80
+# Noisy sine; the learner never sees the truth f(x) = sin(x).
+n = 160
 x = np.sort(np.random.uniform(0, 6, n))
 y = np.sin(x) + np.random.normal(0, 0.3, n)
+# Interleave into train and test so both span the whole range.
+test = np.zeros(n, bool); test[1::2] = True
+x_tr, y_tr = x[~test], y[~test]
+x_te, y_te = x[test],  y[test]
 
-def fit_stump(x, y):
-    """Best single split that minimizes within-leaf squared error."""
+def fit_tree(x, y, depth, max_depth, min_leaf=1):
+    """Regression tree on 1-D x: recursively take the SSE-minimizing split."""
+    node = {"value": y.mean()}
+    if depth >= max_depth or len(y) < 2 * min_leaf:
+        return node
+    best_sse, best_t = np.inf, None
+    for t in np.unique(x)[:-1]:                  # every interior cut point
+        left = x <= t
+        if left.sum() < min_leaf or (~left).sum() < min_leaf:
+            continue
+        sse = ((y[left]  - y[left].mean())**2).sum() + \
+              ((y[~left] - y[~left].mean())**2).sum()
+        if sse < best_sse:
+            best_sse, best_t = sse, t
+    if best_t is None:
+        return node
+    left = x <= best_t
+    node["t"]     = best_t
+    node["left"]  = fit_tree(x[left],  y[left],  depth + 1, max_depth, min_leaf)
+    node["right"] = fit_tree(x[~left], y[~left], depth + 1, max_depth, min_leaf)
+    return node
+
+def predict_tree(node, xq):
+    out = np.empty(len(xq))
+    if "t" not in node:                          # leaf: predict its mean
+        out[:] = node["value"]
+        return out
+    left = xq <= node["t"]
+    out[left]  = predict_tree(node["left"],  xq[left])
+    out[~left] = predict_tree(node["right"], xq[~left])
+    return out
+
+depths = range(1, 11)
+train_mse, test_mse = [], []
+for md in depths:
+    tree = fit_tree(x_tr, y_tr, 0, md)
+    train_mse.append(np.mean((predict_tree(tree, x_tr) - y_tr)**2))
+    test_mse.append( np.mean((predict_tree(tree, x_te) - y_te)**2))
+
+print("depth   train MSE   test MSE")
+for md, tr, te in zip(depths, train_mse, test_mse):
+    print(f"  {md:2d}      {tr:.4f}     {te:.4f}")
+best = int(np.argmin(test_mse)) + 1
+print(f"\nTest error is lowest at depth {best}; deeper trees only fit the noise.")
+
+grid = np.linspace(0, 6, 300)
+moderate  = predict_tree(fit_tree(x_tr, y_tr, 0, best), grid)
+overgrown = predict_tree(fit_tree(x_tr, y_tr, 0, 10),   grid)
+
+fig, (axL, axR) = plt.subplots(1, 2, figsize=(11, 4.5))
+axL.plot(list(depths), train_mse, color="#076FA1", lw=2.5, marker="o", label="train")
+axL.plot(list(depths), test_mse,  color="#E3120B", lw=2.5, marker="o", label="test")
+axL.axvline(best, color="#666666", ls=":", alpha=0.6)
+axL.set_xlabel("tree depth"); axL.set_ylabel("MSE")
+axL.set_title("Train falls, test turns up"); axL.legend()
+
+axR.scatter(x_tr, y_tr, c="#666666", s=20, alpha=0.5, label="train data")
+axR.plot(grid, np.sin(grid), color="#31417A", lw=2, ls="--", label="truth  sin(x)")
+axR.plot(grid, moderate,  color="#076FA1", lw=2.5, label=f"depth {best} (moderate)")
+axR.plot(grid, overgrown, color="#E3120B", lw=1.5, label="depth 10 (overgrown)")
+axR.set_xlabel("$x$"); axR.set_ylabel("$y$")
+axR.set_title("A deep tree chases noise"); axR.legend()
+plt.tight_layout()
+plt.show()
+```
+
+## R
+```{webr}
+set.seed(0)
+
+# Noisy sine; the learner never sees the truth f(x) = sin(x).
+n <- 160
+x <- sort(runif(n, 0, 6))
+y <- sin(x) + rnorm(n, 0, 0.3)
+# Interleave into train and test so both span the whole range.
+test <- rep(c(FALSE, TRUE), length.out = n)
+x_tr <- x[!test]; y_tr <- y[!test]
+x_te <- x[test];  y_te <- y[test]
+
+fit_tree <- function(x, y, depth, max_depth, min_leaf = 1) {
+  # Regression tree on 1-D x: recursively take the SSE-minimizing split.
+  node <- list(value = mean(y))
+  if (depth >= max_depth || length(y) < 2 * min_leaf) return(node)
+  best_sse <- Inf; best_t <- NA
+  for (t in head(sort(unique(x)), -1)) {        # every interior cut point
+    left <- x <= t
+    if (sum(left) < min_leaf || sum(!left) < min_leaf) next
+    sse <- sum((y[left]  - mean(y[left]))^2) +
+           sum((y[!left] - mean(y[!left]))^2)
+    if (sse < best_sse) { best_sse <- sse; best_t <- t }
+  }
+  if (is.na(best_t)) return(node)
+  left <- x <= best_t
+  node$t     <- best_t
+  node$left  <- fit_tree(x[left],  y[left],  depth + 1, max_depth, min_leaf)
+  node$right <- fit_tree(x[!left], y[!left], depth + 1, max_depth, min_leaf)
+  node
+}
+
+predict_tree <- function(node, xq) {
+  if (is.null(node$t)) return(rep(node$value, length(xq)))   # leaf mean
+  out <- numeric(length(xq)); left <- xq <= node$t
+  if (any(left))  out[left]  <- predict_tree(node$left,  xq[left])
+  if (any(!left)) out[!left] <- predict_tree(node$right, xq[!left])
+  out
+}
+
+depths <- 1:10
+train_mse <- numeric(length(depths)); test_mse <- numeric(length(depths))
+for (i in seq_along(depths)) {
+  tree <- fit_tree(x_tr, y_tr, 0, depths[i])
+  train_mse[i] <- mean((predict_tree(tree, x_tr) - y_tr)^2)
+  test_mse[i]  <- mean((predict_tree(tree, x_te) - y_te)^2)
+}
+cat("depth   train MSE   test MSE\n")
+for (i in seq_along(depths))
+  cat(sprintf("  %2d      %.4f     %.4f\n", depths[i], train_mse[i], test_mse[i]))
+best <- which.min(test_mse)
+cat(sprintf("\nTest error is lowest at depth %d; deeper trees only fit the noise.\n", best))
+
+grid <- seq(0, 6, length.out = 300)
+moderate  <- predict_tree(fit_tree(x_tr, y_tr, 0, best), grid)
+overgrown <- predict_tree(fit_tree(x_tr, y_tr, 0, 10),   grid)
+
+par(mfrow = c(1, 2))
+plot(depths, train_mse, type = "b", col = "#076FA1", lwd = 2.5, pch = 19,
+     ylim = range(train_mse, test_mse), xlab = "tree depth", ylab = "MSE",
+     main = "Train falls, test turns up")
+lines(depths, test_mse, type = "b", col = "#E3120B", lwd = 2.5, pch = 19)
+abline(v = best, lty = 3, col = "#666666")
+legend("topright", legend = c("train", "test"),
+       col = c("#076FA1", "#E3120B"), lwd = 2.5, pch = 19, bty = "n")
+
+plot(x_tr, y_tr, col = "#666666", pch = 19, cex = 0.6, xlab = "x", ylab = "y",
+     main = "A deep tree chases noise")
+lines(grid, sin(grid), col = "#31417A", lwd = 2, lty = 2)
+lines(grid, moderate,  col = "#076FA1", lwd = 2.5)
+lines(grid, overgrown, col = "#E3120B", lwd = 1.5)
+legend("topright", legend = c("truth  sin(x)", paste("depth", best), "depth 10"),
+       col = c("#31417A", "#076FA1", "#E3120B"),
+       lwd = c(2, 2.5, 1.5), lty = c(2, 1, 1), bty = "n")
+```
+
+:::
+
+The two languages draw different samples, so their exact numbers differ, but the shape is the
+same: training error marches to zero while test error traces a U, lowest at a middling depth.
+The right panel shows why. The shallow tree (blue) tracks the underlying curve; the depth-ten
+tree (red) wraps itself around individual noisy points. Pruning or a depth cap can tame a
+single tree, but the more powerful fix is to keep the trees and combine them.
+
+## Bagging: averaging cuts variance
+
+The first cure is [bootstrap aggregating]{.term}, or bagging: train many trees on
+[bootstrap]{.term} resamples of the data and average their predictions. Because each tree
+sees a slightly different sample, each lands its splits in a slightly different place, and
+averaging cancels that scatter. A [random forest]{.term} adds a second shuffle, restricting
+each split to a random subset of features so the trees decorrelate further.
+
+Bagging earns its keep on exactly the high-variance trees the previous cell built. We grow one
+deep tree on the noisy sine, then grow a hundred more on bootstrap resamples and average them.
+The lone deep tree is jagged, chasing the noise in whatever points it was handed; the
+resampled trees each chase *different* noise, so averaging cancels most of it and the held-out
+error drops sharply. The exact figure depends on the resampling, so the two languages report
+different percentages from their different generators, but the variance collapse is large
+either way. Bagging does nothing for bias, which is the point: it pairs deep, low-bias trees
+with the averaging that kills their variance.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+np.random.seed(0)
+
+# The same noisy sine, split into train and test.
+n = 160
+x = np.sort(np.random.uniform(0, 6, n))
+y = np.sin(x) + np.random.normal(0, 0.3, n)
+test = np.zeros(n, bool); test[1::2] = True
+x_tr, y_tr = x[~test], y[~test]
+x_te, y_te = x[test],  y[test]
+
+def fit_tree(x, y, depth, max_depth, min_leaf=1):
+    """Regression tree: recursively take the SSE-minimizing split."""
+    node = {"value": y.mean()}
+    if depth >= max_depth or len(y) < 2 * min_leaf:
+        return node
     best_sse, best_t = np.inf, None
     for t in np.unique(x)[:-1]:
         left = x <= t
-        sse = ((y[left] - y[left].mean())**2).sum() + ((y[~left] - y[~left].mean())**2).sum()
+        if left.sum() < min_leaf or (~left).sum() < min_leaf:
+            continue
+        sse = ((y[left]  - y[left].mean())**2).sum() + \
+              ((y[~left] - y[~left].mean())**2).sum()
         if sse < best_sse:
             best_sse, best_t = sse, t
+    if best_t is None:
+        return node
     left = x <= best_t
-    return best_t, y[left].mean(), y[~left].mean()
+    node["t"]     = best_t
+    node["left"]  = fit_tree(x[left],  y[left],  depth + 1, max_depth, min_leaf)
+    node["right"] = fit_tree(x[~left], y[~left], depth + 1, max_depth, min_leaf)
+    return node
 
-def predict_stump(stump, xq):
-    t, left_val, right_val = stump
-    return np.where(xq <= t, left_val, right_val)
+def predict_tree(node, xq):
+    out = np.empty(len(xq))
+    if "t" not in node:
+        out[:] = node["value"]
+        return out
+    left = xq <= node["t"]
+    out[left]  = predict_tree(node["left"],  xq[left])
+    out[~left] = predict_tree(node["right"], xq[~left])
+    return out
 
-grid = np.linspace(0, 6, 300)
+MAX_DEPTH = 6                       # deep trees: low bias, HIGH variance
+grid  = np.linspace(0, 6, 300)
 truth = np.sin(grid)
+n_tr  = len(x_tr)
 
-single = predict_stump(fit_stump(x, y), grid)
+single      = fit_tree(x_tr, y_tr, 0, MAX_DEPTH)
+single_grid = predict_tree(single, grid)
+single_test = np.mean((predict_tree(single, x_te) - y_te)**2)
 
 B = 100
-bagged = np.zeros_like(grid)
+bag_grid = np.zeros(len(grid))
+bag_te   = np.zeros(len(x_te))
 for _ in range(B):
-    idx = np.random.choice(n, n, replace=True)   # bootstrap resample
-    bagged += predict_stump(fit_stump(x[idx], y[idx]), grid)
-bagged /= B
+    idx  = np.random.choice(n_tr, n_tr, replace=True)   # bootstrap resample
+    tree = fit_tree(x_tr[idx], y_tr[idx], 0, MAX_DEPTH)
+    bag_grid += predict_tree(tree, grid)
+    bag_te   += predict_tree(tree, x_te)
+bag_grid /= B
+bag_test  = np.mean((bag_te / B - y_te)**2)
 
-mse_single = np.mean((single - truth)**2)
-mse_bagged = np.mean((bagged - truth)**2)
-print(f"Single stump  MSE vs truth : {mse_single:.4f}")
-print(f"{B} bagged stumps MSE vs truth : {mse_bagged:.4f}")
-print(f"Variance averaged away     : {1 - mse_bagged/mse_single:.0%} lower error")
+print(f"single deep tree (depth {MAX_DEPTH})  test MSE : {single_test:.4f}")
+print(f"{B} bagged deep trees       test MSE : {bag_test:.4f}")
+print(f"variance averaged away              : {1 - bag_test / single_test:.0%} lower test error")
 
 fig, ax = plt.subplots(figsize=(7, 5))
-ax.scatter(x, y, c="#666666", s=25, alpha=0.5, label="noisy data")
-ax.plot(grid, truth, color="#31417A", lw=2, ls="--", label="truth  sin(x)")
-ax.plot(grid, single, color="#666666", lw=1.5, label="single stump")
-ax.plot(grid, bagged, color="#076FA1", lw=2.5, label=f"{B} bagged stumps")
+ax.scatter(x_tr, y_tr, c="#666666", s=25, alpha=0.5, label="train data")
+ax.plot(grid, truth,       color="#31417A", lw=2,   ls="--", label="truth  sin(x)")
+ax.plot(grid, single_grid, color="#E3120B", lw=1.3,          label="single deep tree")
+ax.plot(grid, bag_grid,    color="#076FA1", lw=2.5,          label=f"{B} bagged trees")
 ax.set_xlabel("$x$"); ax.set_ylabel("$y$")
 ax.legend()
 plt.tight_layout()
@@ -330,55 +531,75 @@ plt.show()
 ```{webr}
 set.seed(0)
 
-# Noisy samples from a sine; the truth f(x) = sin(x) is unknown to the learner.
-n <- 80
+# The same noisy sine, split into train and test.
+n <- 160
 x <- sort(runif(n, 0, 6))
 y <- sin(x) + rnorm(n, 0, 0.3)
+test <- rep(c(FALSE, TRUE), length.out = n)
+x_tr <- x[!test]; y_tr <- y[!test]
+x_te <- x[test];  y_te <- y[test]
 
-fit_stump <- function(x, y) {
-  # Best single split that minimizes within-leaf squared error.
+fit_tree <- function(x, y, depth, max_depth, min_leaf = 1) {
+  # Regression tree: recursively take the SSE-minimizing split.
+  node <- list(value = mean(y))
+  if (depth >= max_depth || length(y) < 2 * min_leaf) return(node)
   best_sse <- Inf; best_t <- NA
-  cand <- head(sort(unique(x)), -1)
-  for (t in cand) {
+  for (t in head(sort(unique(x)), -1)) {
     left <- x <= t
-    sse <- sum((y[left] - mean(y[left]))^2) + sum((y[!left] - mean(y[!left]))^2)
+    if (sum(left) < min_leaf || sum(!left) < min_leaf) next
+    sse <- sum((y[left]  - mean(y[left]))^2) +
+           sum((y[!left] - mean(y[!left]))^2)
     if (sse < best_sse) { best_sse <- sse; best_t <- t }
   }
+  if (is.na(best_t)) return(node)
   left <- x <= best_t
-  list(t = best_t, left_val = mean(y[left]), right_val = mean(y[!left]))
+  node$t     <- best_t
+  node$left  <- fit_tree(x[left],  y[left],  depth + 1, max_depth, min_leaf)
+  node$right <- fit_tree(x[!left], y[!left], depth + 1, max_depth, min_leaf)
+  node
 }
 
-predict_stump <- function(stump, xq) {
-  ifelse(xq <= stump$t, stump$left_val, stump$right_val)
+predict_tree <- function(node, xq) {
+  if (is.null(node$t)) return(rep(node$value, length(xq)))
+  out <- numeric(length(xq)); left <- xq <= node$t
+  if (any(left))  out[left]  <- predict_tree(node$left,  xq[left])
+  if (any(!left)) out[!left] <- predict_tree(node$right, xq[!left])
+  out
 }
 
-grid <- seq(0, 6, length.out = 300)
+MAX_DEPTH <- 6                      # deep trees: low bias, HIGH variance
+grid  <- seq(0, 6, length.out = 300)
 truth <- sin(grid)
+n_tr  <- length(x_tr)
 
-single <- predict_stump(fit_stump(x, y), grid)
+single      <- fit_tree(x_tr, y_tr, 0, MAX_DEPTH)
+single_grid <- predict_tree(single, grid)
+single_test <- mean((predict_tree(single, x_te) - y_te)^2)
 
 B <- 100
-bagged <- numeric(length(grid))
+bag_grid <- numeric(length(grid))
+bag_te   <- numeric(length(x_te))
 for (b in 1:B) {
-  idx <- sample(n, n, replace = TRUE)            # bootstrap resample
-  bagged <- bagged + predict_stump(fit_stump(x[idx], y[idx]), grid)
+  idx  <- sample(n_tr, n_tr, replace = TRUE)    # bootstrap resample
+  tree <- fit_tree(x_tr[idx], y_tr[idx], 0, MAX_DEPTH)
+  bag_grid <- bag_grid + predict_tree(tree, grid)
+  bag_te   <- bag_te   + predict_tree(tree, x_te)
 }
-bagged <- bagged / B
+bag_grid <- bag_grid / B
+bag_test <- mean((bag_te / B - y_te)^2)
 
-mse_single <- mean((single - truth)^2)
-mse_bagged <- mean((bagged - truth)^2)
-cat(sprintf("Single stump  MSE vs truth : %.4f\n", mse_single))
-cat(sprintf("%d bagged stumps MSE vs truth : %.4f\n", B, mse_bagged))
-cat(sprintf("Variance averaged away     : %.0f%% lower error\n",
-            100 * (1 - mse_bagged / mse_single)))
+cat(sprintf("single deep tree (depth %d)  test MSE : %.4f\n", MAX_DEPTH, single_test))
+cat(sprintf("%d bagged deep trees       test MSE : %.4f\n", B, bag_test))
+cat(sprintf("variance averaged away              : %.0f%% lower test error\n",
+            100 * (1 - bag_test / single_test)))
 
-plot(x, y, col = "#666666", pch = 19, cex = 0.6, xlab = "x", ylab = "y")
-lines(grid, truth, col = "#31417A", lwd = 2, lty = 2)
-lines(grid, single, col = "#666666", lwd = 1.5)
-lines(grid, bagged, col = "#076FA1", lwd = 2.5)
+plot(x_tr, y_tr, col = "#666666", pch = 19, cex = 0.6, xlab = "x", ylab = "y")
+lines(grid, truth,       col = "#31417A", lwd = 2, lty = 2)
+lines(grid, single_grid, col = "#E3120B", lwd = 1.3)
+lines(grid, bag_grid,    col = "#076FA1", lwd = 2.5)
 legend("topright", bty = "n",
-       legend = c("truth  sin(x)", "single stump", paste(B, "bagged stumps")),
-       col = c("#31417A", "#666666", "#076FA1"), lwd = c(2, 1.5, 2.5), lty = c(2, 1, 1))
+       legend = c("truth  sin(x)", "single deep tree", paste(B, "bagged trees")),
+       col = c("#31417A", "#E3120B", "#076FA1"), lwd = c(2, 1.3, 2.5), lty = c(2, 1, 1))
 ```
 
 :::
@@ -662,7 +883,8 @@ three, which is why one chapter holds them together.
 [Try it]{.lbl}
 In the boosting cell, change the learning rate `lr` from `0.3` to `0.05` and to `1.0`, and
 re-run. A small rate needs far more rounds to reach the same MSE but resists overfitting; a
-rate of `1.0` lurches toward the target and can overshoot. Then raise the stump count `B` in
-the bagging cell and watch the error flatten out, the diminishing return that makes "more
-trees" safe but not free.
+rate of `1.0` lurches toward the target and can overshoot. Then raise the tree count `B` in
+the bagging cell and watch the test error flatten out, the diminishing return that makes "more
+trees" safe but not free. You can also push `MAX_DEPTH` up: deeper single trees overfit harder,
+so bagging has more variance to average away.
 :::

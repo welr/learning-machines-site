@@ -155,7 +155,9 @@ A [support vector machine]{.term} fits the widest possible margin in feature spa
 [ f(x) = &sum;<sub>i &isin; SV</sub> &alpha;<sub>i</sub> y<sub>i</sub> k(x<sub>i</sub>, x) + b ]{.math}
 :::
 
-Only the [support vectors]{.term}, the points on or inside the margin, carry nonzero weight; the rest could be deleted without moving the boundary. Sklearn's `SVC` solves this directly. Base R ships no SVM (the production tools are `e1071` and `kernlab`), but the kernel idea needs no package. Form the [Gram matrix]{.term} $K_{ij} = k(x_i, x_j)$, then solve a kernel ridge regression $\alpha = (K + \lambda I)^{-1}\,y$ in that same Gram space. The weights $\alpha$ play the SVM's role, and a prediction is again a kernel-weighted sum over training points. Both routes turn a linear method nonlinear by swapping one dot product for a kernel.
+What makes it an SVM is the sparsity: only the [support vectors]{.term}, the points on or inside the margin, carry nonzero $\alpha_i$; the rest could be deleted without moving the boundary. Sklearn's `SVC` solves exactly this, and the Python tab below reports how few support vectors the RBF fit actually keeps.
+
+Base R ships no SVM (the production tools are `e1071` and `kernlab`), so the R tab solves a close cousin instead: [kernel ridge regression]{.term}, $\alpha = (K + \lambda I)^{-1}\,y$, on the same [Gram matrix]{.term} $K_{ij} = k(x_i, x_j)$. It shares the kernel trick, since a prediction is again a kernel-weighted sum over training points, but it drops the sparsity: the linear solve hands every training point a nonzero weight. So the two tabs are honest cousins rather than one estimator. The SVM keeps only its handful of support vectors; kernel ridge keeps all of them. Both turn a linear method nonlinear by swapping one dot product for a kernel, but only the SVM throws most of the points away.
 
 The numbers make the point of the whole chapter: a linear kernel cannot beat chance on the rings, while an RBF kernel classifies them almost perfectly.
 
@@ -181,7 +183,9 @@ for name, kw in [("linear",     dict(kernel="linear")),
                  ("rbf (g=2)",  dict(kernel="rbf", gamma=2.0))]:
     clf = SVC(**kw).fit(X, y)
     print(f"{name:11s} train accuracy = {clf.score(X, y):6.1%}   "
-          f"({len(clf.support_vectors_)} support vectors)")
+          f"({len(clf.support_vectors_)} of {len(X)} points are support vectors)")
+
+print("the SVM keeps only its support vectors; kernel ridge (the R tab) keeps all 240")
 ```
 
 ## R
@@ -207,14 +211,18 @@ d <- make_rings(); X <- d$X; ys <- 2 * d$y - 1   # labels in {-1, +1}
 lin <- lm(ys ~ X[, 1] + X[, 2])
 acc_lin <- mean(sign(fitted(lin)) == ys)
 
-# RBF kernel ridge regression: solve in Gram space (the kernel trick)
+# RBF kernel ridge regression: solve in Gram space (the kernel trick).
+# This is an SVM COUSIN, not an SVM: the solve gives DENSE weights (no support vectors).
 gamma <- 2.0; lambda <- 1e-2
 K <- rbf_gram(X, X, gamma)
 alpha <- solve(K + lambda * diag(nrow(K)), ys)
 acc_rbf <- mean(sign(as.vector(K %*% alpha)) == ys)
+nz <- sum(abs(alpha) > 1e-8)
 
 cat(sprintf("linear     train accuracy = %5.1f%%\n", 100 * acc_lin))
-cat(sprintf("rbf (g=2)  train accuracy = %5.1f%%\n", 100 * acc_rbf))
+cat(sprintf("rbf (g=2)  train accuracy = %5.1f%%   (%d of %d weights nonzero)\n",
+            100 * acc_rbf, nz, length(alpha)))
+cat("kernel ridge keeps every training point; an SVM would keep only its support vectors\n")
 ```
 
 :::
@@ -300,7 +308,82 @@ cat("Small gamma underfits (smooth); large gamma overfits (islands wrapping sing
 
 ## Forward to attention
 
-The RBF weights did something worth naming: they averaged labels by similarity. That is the Nadaraya-Watson kernel smoother of Chapter 8, and Chapter 11 shows it is also what one head of [attention]{.term} computes. A transformer scores a query against every key, passes the scores through a softmax to get weights, and returns the weighted average of the values. Trade "similarity to a key" for the Gaussian weight here, and "value" for the label, and attention is a kernel smoother whose similarity metric is learned rather than fixed. The kernel trick is no historical curiosity. It is the same idea the newest models run on.
+The kernel weights have been doing something we never named outright: turning similarities into a prediction by averaging. Make that explicit with the simplest kernel estimator there is. The [Nadaraya-Watson smoother]{.term} weights every training label by its similarity to the query, normalizes the weights so they sum to one, and returns that weighted average.
+
+::: {.defbox}
+[Nadaraya-Watson Smoother]{.lbl}
+[ y&#770;(x) = &sum;<sub>i</sub> k(x, x<sub>i</sub>) y<sub>i</sub> / &sum;<sub>i</sub> k(x, x<sub>i</sub>) ]{.math}
+:::
+
+This is not kernel ridge regression. There is no matrix to invert and no $\lambda$ to tune; the normalization by $\sum_i k(x, x_i)$ is the whole estimator. Run it on a deterministic 1-D signal and watch the smooth curve emerge from the local averages.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# A 1-D regression example: a wiggly but deterministic signal (no RNG, so R matches).
+xs = np.linspace(0, 6, 40)
+ys = np.sin(xs) + 0.3*np.cos(7*xs)
+
+def rbf(a, b, gamma=2.0):
+    return np.exp(-gamma * (a - b)**2)
+
+# Nadaraya-Watson: at each query, weight every point by similarity, NORMALIZE, average.
+grid = np.linspace(0, 6, 200)
+gamma = 2.0
+smooth = np.empty_like(grid)
+for j, xq in enumerate(grid):
+    w = rbf(xq, xs, gamma)     # similarities (the "scores")
+    w = w / w.sum()            # normalize so the weights sum to 1 (the softmax's job)
+    smooth[j] = w @ ys         # weighted average of the values
+
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.scatter(xs, ys, c="#076FA1", s=28, edgecolor="white", linewidths=0.5, label="data")
+ax.plot(grid, smooth, color="#31417A", lw=2.5, label="Nadaraya-Watson smooth")
+ax.legend(fontsize=9); ax.set_xlabel("x"); ax.set_ylabel("y")
+ax.set_title("Normalize the kernel weights, then average: one attention head")
+plt.tight_layout(); plt.show()
+
+# At any query the normalized weights sum to exactly 1 -- that is the softmax.
+w = rbf(2.5, xs, gamma); w = w / w.sum()
+print(f"weights at x=2.5 sum to {w.sum():.3f}; smoothed value = {w @ ys:.3f}")
+```
+
+## R
+```{webr}
+# A 1-D regression example: a wiggly but deterministic signal (no RNG, so Python matches).
+xs <- seq(0, 6, length.out = 40)
+ys <- sin(xs) + 0.3 * cos(7 * xs)
+
+rbf <- function(a, b, gamma = 2) exp(-gamma * (a - b)^2)
+
+# Nadaraya-Watson: at each query, weight every point by similarity, NORMALIZE, average.
+grid <- seq(0, 6, length.out = 200)
+gamma <- 2
+smooth <- numeric(length(grid))
+for (j in seq_along(grid)) {
+  w <- rbf(grid[j], xs, gamma)   # similarities (the "scores")
+  w <- w / sum(w)                # normalize so the weights sum to 1 (the softmax's job)
+  smooth[j] <- sum(w * ys)       # weighted average of the values
+}
+
+plot(xs, ys, col = "#076FA1", pch = 19, xlab = "x", ylab = "y",
+     main = "Normalize the kernel weights, then average: one attention head")
+lines(grid, smooth, col = "#31417A", lwd = 2.5)
+legend("topright", c("data", "Nadaraya-Watson smooth"),
+       col = c("#076FA1", "#31417A"), pch = c(19, NA), lwd = c(NA, 2.5), bty = "n")
+
+# At any query the normalized weights sum to exactly 1 -- that is the softmax.
+w <- rbf(2.5, xs, gamma); w <- w / sum(w)
+cat(sprintf("weights at x=2.5 sum to %.3f; smoothed value = %.3f\n", sum(w), sum(w * ys)))
+```
+
+:::
+
+That normalize-then-average is exactly what one head of [attention]{.term} computes. A transformer scores a query against every key, passes the scores through a softmax (the same normalization that makes the weights sum to one), and returns the weighted average of the values. Trade the Gaussian similarity for a learned score and the label for a value, and a single attention head is a Nadaraya-Watson smoother whose similarity metric is learned rather than fixed. Chapter 11 builds the transformer on exactly this footing. The kernel trick is no historical curiosity; it is the same idea the newest models run on.
 
 ::: {.explore}
 [Try it]{.lbl}
