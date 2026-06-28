@@ -49,7 +49,7 @@ class ResidualBlock(nn.Module):
 The models train in **Google Colab**, where a free GPU keeps the convolutions quick; the code here is for reading, the Colab button below is for running.
 
 ```{=html}
-<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch10_02_applied.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
 ```
 
 ## The model

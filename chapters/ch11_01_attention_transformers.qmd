@@ -30,7 +30,7 @@ Read this beside the Nadaraya–Watson estimator and the kinship is unmistakable
 From this chapter onward the models are built in PyTorch, which wants a numerical stack and ideally a GPU, more than a browser sandbox can carry; one click opens the full notebook on Google's free hardware with no local install.
 
 ```{=html}
-<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch11_01_attention_transformers.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
 ```
 
 ```python

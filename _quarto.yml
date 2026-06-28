@@ -13,7 +13,7 @@ website:
     pinned: true
     right:
       - icon: github
-        href: "https://github.com/"
+        href: "https://github.com/welr/learning_machines"
   sidebar:
     style: floating
     search: true

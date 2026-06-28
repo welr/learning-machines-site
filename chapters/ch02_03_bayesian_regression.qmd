@@ -300,7 +300,7 @@ PyMC version, sampling this same regression with the NUTS sampler so you can che
 against the exact posterior computed above.
 
 ```{=html}
-<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch02_03_bayesian_regression.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
 ```
 
 ::: {.explore}

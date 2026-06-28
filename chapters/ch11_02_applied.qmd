@@ -26,7 +26,7 @@ A single [head]{.term} of self-attention projects each position to a [query]{.te
 From Chapter 9 onward the models train with PyTorch, which wants a numerical stack and ideally a GPU; that is more than a browser sandbox can carry, so this notebook runs in **Google Colab**, one click to Google's free hardware with no local install. The code below is here for reference; open it in Colab to run, inspect, and modify it.
 
 ```{=html}
-<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch11_02_applied.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
 ```
 
 ```python

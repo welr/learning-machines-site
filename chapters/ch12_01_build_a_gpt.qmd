@@ -26,7 +26,7 @@ The heart of a block is [self-attention]{.term} (Chapter 11). Each position is p
 PyTorch wants a numerical stack and ideally a GPU, more than a browser sandbox can carry, and the notebook downloads a small text corpus to train on, so the capstone runs in Google Colab: one click, free hardware, no local install.
 
 ```{=html}
-<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open the capstone in Google Colab</a>
+<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch12_01_build_a_gpt.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open the capstone in Google Colab</a>
 ```
 
 The code below is here for reference; open it in Colab to run and modify it. A block is attention then feed-forward, each computed on a normalized copy of the input and added back through the residual.

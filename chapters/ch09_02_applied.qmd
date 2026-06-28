@@ -30,7 +30,7 @@ A plain feedforward network: two hidden layers with [ReLU]{.term} and a little [
 From Chapter 9 onward the models are trained with PyTorch, which needs a numerical stack and ideally a GPU. That is more than a browser sandbox can carry, so this chapter runs in **Google Colab**: one click opens the notebook on Google's free hardware, no local install.
 
 ```{=html}
-<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch09_02_applied.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
 ```
 
 The model is a stack of affine maps and nonlinearities, defined once and moved to the available device. The code below is here for reference; open it in Colab to run and modify it.

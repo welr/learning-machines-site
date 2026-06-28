@@ -30,7 +30,7 @@ A working architecture stacks these into blocks. Each block is convolution, then
 This page runs in **Google Colab** because the model is built and trained in PyTorch with `torchvision` for the MNIST data, and a GPU turns minutes of training into seconds. The code below is for reference; open it in Colab to run and change it.
 
 ```{=html}
-<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch10_01_convnets.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
 ```
 
 The convolution is worth seeing stripped down once, before handing it to an optimized layer. We design an edge filter, slide it manually, and read the feature map.
