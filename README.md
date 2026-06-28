@@ -15,8 +15,8 @@ on the reader's own machine, in their browser.
 The visual identity is aligned to the printed book:
 
 - **Palette** — Frankfurt School blue `#31417A` (primary), accent blues
-  `#076FA1` / `#2FC1D3` (the brand circle), with a sharp red `#E3120B` used
-  sparingly (the Run button and the active tab underline).
+  `#076FA1` / `#2FC1D3`, with a sharp red `#E3120B` used sparingly (the brand
+  circle, the Run button, and the active tab underline).
 - **Type** — Fraunces (display), Source Serif 4 (body), Inconsolata (code).
 - **Charts** — a clean editorial style: right-hand axis labels, minimal
   gridlines, a red title tab.

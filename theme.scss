@@ -38,7 +38,7 @@ h2{ margin-top:2em; }
 /* navbar: signature red tab + Fraunces wordmark */
 .navbar{ border-bottom:1px solid $rule; }
 .navbar-brand{ font-family:"Fraunces"; font-weight:600; color:$fs-blue !important; display:inline-flex; align-items:center; }
-.navbar-brand::before{ content:""; display:inline-block; width:20px; height:20px; background:$blue; border-radius:50%; margin-right:12px; vertical-align:-2px; }
+.navbar-brand::before{ content:""; display:inline-block; width:20px; height:20px; background:$red; border-radius:50%; margin-right:12px; vertical-align:-2px; }
 
 /* sidebar */
 .sidebar-item-text{ font-size:14.5px; }
