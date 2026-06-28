@@ -1,0 +1,21 @@
+# Quarto build artifacts
+/_site/
+/.quarto/
+
+# OS / editor cruft
+.DS_Store
+*~
+.Rhistory
+
+# Dev artifacts (not source)
+/preview/
+_quarto_internal_scss_error.scss
+
+# Do NOT ignore _extensions/ — the quarto-live extension must be committed
+# so the GitHub Actions render is reproducible.
+
+**/*.quarto_ipynb
+
+# R plotting artifact
+Rplots.pdf
+**/Rplots.pdf

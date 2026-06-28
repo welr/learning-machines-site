@@ -1,0 +1,82 @@
+---
+title: "Applied — A Neural Network in PyTorch"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 9 · Neural Networks]{.eyebrow}
+
+# Applied — A Neural Network in PyTorch
+
+[Build and train a small network on Fashion-MNIST, and meet the training loop you will reuse, unchanged in shape, all the way to the capstone.]{.dek}
+:::
+
+This is the first rung toward the book's capstone. Here you build and train a small feedforward network in PyTorch on a real image dataset, [Fashion-MNIST]{.term}, with a complete training loop. That loop is the whole point. Draw a minibatch, compute the loss, backpropagate, step the optimizer: the same loop, unchanged in shape, trains the convolutional network of Chapter 10 and the GPT of Chapter 12. Learn it once, here.
+
+## The data
+
+Fashion-MNIST is 70,000 grayscale images, 28&times;28 pixels, each a garment in one of ten classes. We flatten every image to a 784-vector, scale the pixels to [0,1], and work with a random subsample so training finishes in seconds on a CPU. An 80/20 split, stratified by class, gives held-out test images to judge generalization.
+
+## The model
+
+A plain feedforward network: two hidden layers with [ReLU]{.term} and a little [dropout]{.term}, then a linear layer to ten class scores. The `forward` method returns the raw scores, the [logits]{.term}; cross-entropy applies the softmax internally. It is the loss of logistic regression from Chapter 4, generalized from two classes to ten.
+
+::: {.defbox}
+[The Training Loop]{.lbl}
+
+[ for each minibatch: &nbsp; logits &rarr; loss &rarr; `zero_grad` &rarr; `backward` &rarr; `step` ]{.math}
+:::
+
+From Chapter 9 onward the models are trained with PyTorch, which needs a numerical stack and ideally a GPU. That is more than a browser sandbox can carry, so this chapter runs in **Google Colab**: one click opens the notebook on Google's free hardware, no local install.
+
+```{=html}
+<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+```
+
+The model is a stack of affine maps and nonlinearities, defined once and moved to the available device. The code below is here for reference; open it in Colab to run and modify it.
+
+```python
+import torch
+import torch.nn as nn
+
+class MLP(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(784, 256), nn.ReLU(), nn.Dropout(0.2),
+            nn.Linear(256, 128), nn.ReLU(), nn.Dropout(0.2),
+            nn.Linear(128, 10),                 # ten class scores
+        )
+
+    def forward(self, x):
+        return self.net(x)        # logits; CrossEntropyLoss applies the softmax
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model = MLP().to(device)
+```
+
+The training loop is the heart of the notebook. Each epoch reshuffles the training set and walks it in minibatches; each batch zeroes the gradients, computes the cross-entropy loss, backpropagates, and steps the optimizer. Track the held-out accuracy as you go.
+
+```python
+loss_fn = nn.CrossEntropyLoss()
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+batch_size, epochs = 128, 12
+
+for epoch in range(epochs):
+    order = torch.randperm(len(X_tr))            # reshuffle each epoch
+    for i in range(0, len(X_tr), batch_size):
+        batch = order[i : i + batch_size]
+        logits = model(X_tr[batch])              # forward pass
+        loss = loss_fn(logits, y_tr[batch])      # cross-entropy
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()                          # backpropagation
+        optimizer.step()                         # theta <- theta - lr * grad
+```
+
+A couple of seconds of training reaches the high-80s in test accuracy. The mistakes are revealing: shirts, coats, and pullovers are genuinely hard to tell apart at 28&times;28. The network treats the 784 pixels as an unordered list, with no notion that two pixels are neighbors. Chapter 10 fixes exactly that with a convolutional model, on this same data and with this same loop; only the model changes.
+
+::: {.explore}
+[Try it]{.lbl}
+
+In Colab, add a third hidden layer or change the widths and dropout. How far past the high-80s can a plain MLP push on this data? Then keep the loop in mind: in Chapter 12 it trains a GPT, where the data and model differ but `zero_grad → backward → step` is identical. The capstone is this notebook, scaled up.
+:::

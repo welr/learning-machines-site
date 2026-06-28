@@ -1,0 +1,474 @@
+---
+title: "The Bias–Variance Trade-off"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 5 · Learning Theory]{.eyebrow}
+
+# The Bias–Variance Trade-off
+
+[Simple models are biased but steady, complex ones flexible but jittery; the only way to truly feel the trade-off is to simulate it and watch bias and variance fall out of the statistics.]{.dek}
+:::
+
+The textbook *proves* that expected prediction error splits into three pieces. Here we
+*measure* them. By drawing many training sets from the same source, fitting a model to
+each, and looking at how the predictions scatter, we turn [bias]{.term} and
+[variance]{.term} from terms in an equation into quantities we can compute and plot.
+
+::: {.defbox}
+[Bias–Variance Decomposition]{.lbl}
+[ E[(y &minus; f&#770;(x))&sup2;] = Bias&sup2; + Variance + &sigma;&sup2; ]{.math}
+:::
+
+Read the three terms as answers to three questions. [Bias]{.term} asks how far the
+*average* fitted prediction sits from the truth, the error baked in by assumptions that are
+too rigid (a straight line for a curved signal). [Variance]{.term} asks how much the fit
+*moves* when the training set changes, the error from chasing the noise in any one sample.
+The [irreducible error]{.term} $\sigma^2$ is the noise floor: scatter no model can remove
+because it lives in the data, not the model.
+
+The dartboard picture names the four corners. Low bias and low variance is a tight cluster
+on the bullseye. High bias, low variance is a tight cluster sitting off-center
+(underfitting). Low bias, high variance is a wide spray centered on the target
+(overfitting). High bias and high variance is a wide spray, off-center as well. Everything
+below is the middle two cases competing as we turn one knob: model complexity.
+
+## The simulation
+
+Every demonstration on this page draws data the same way: inputs uniform on $[0, 1]$, and
+targets from the true function $f(x) = \sin(2\pi x)$ plus Gaussian noise with standard
+deviation $0.3$. That noise level fixes the irreducible error at $\sigma^2 = 0.09$, the
+floor every model is measured against. One noisy sample looks like this.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+
+def true_f(x):
+    return np.sin(2 * np.pi * x)
+
+np.random.seed(42)
+x = np.random.uniform(0, 1, 20)
+y = true_f(x) + np.random.normal(0, 0.3, 20)
+
+grid = np.linspace(0, 1, 200)
+fig, ax = plt.subplots(figsize=(7, 4.5))
+ax.plot(grid, true_f(grid), color="#31417A", linewidth=2.5,
+        label=r"true $f(x)=\sin(2\pi x)$")
+ax.scatter(x, y, s=70, color="#076FA1", edgecolor="white", zorder=3,
+           label="noisy sample (n = 20)")
+ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_xlim(0, 1)
+ax.legend(loc="upper right")
+plt.tight_layout(); plt.show()
+
+print(f"Noise std = 0.3  ->  irreducible error sigma^2 = {0.3**2:.2f}")
+print(f"Sample y range: [{y.min():.2f}, {y.max():.2f}]")
+```
+
+## R
+```{webr}
+true_f <- function(x) sin(2 * pi * x)
+
+set.seed(42)
+x <- runif(20, 0, 1)
+y <- true_f(x) + rnorm(20, 0, 0.3)
+
+grid <- seq(0, 1, length.out = 200)
+plot(x, y, pch = 19, col = "#076FA1", cex = 1.4, xlim = c(0, 1),
+     xlab = "x", ylab = "y")
+lines(grid, true_f(grid), col = "#31417A", lwd = 2.5)
+legend("topright", c("true f(x) = sin(2 pi x)", "noisy sample (n = 20)"),
+       col = c("#31417A", "#076FA1"), lwd = c(2.5, NA), pch = c(NA, 19), bty = "n")
+
+cat(sprintf("Noise std = 0.3  ->  irreducible error sigma^2 = %.2f\n", 0.3^2))
+cat(sprintf("Sample y range: [%.2f, %.2f]\n", min(y), max(y)))
+```
+
+:::
+
+We fit polynomials of varying degree to this signal. Degree is the complexity knob: degree
+one is a straight line, degree twelve a curve flexible enough to wind through almost any
+twenty points.
+
+## Many training sets make variance visible
+
+Variance is invisible in a single fit. It only appears when we imagine training on many
+different samples from the same source and watch the fitted curves disagree. Below we draw
+sixty samples, fit a polynomial to each, and overlay them. The pale blue cloud is the
+spread of individual fits; the dark line is their average; the red dashes are the truth.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")          # high-degree conditioning warnings
+
+def true_f(x):
+    return np.sin(2 * np.pi * x)
+
+def make_data(n, noise=0.3, seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+    x = np.random.uniform(0, 1, n)
+    return x, true_f(x) + np.random.normal(0, noise, n)
+
+def fit_many(degree, n_datasets=60, n=20):
+    grid = np.linspace(0, 1, 100)
+    preds = []
+    for s in range(n_datasets):
+        xt, yt = make_data(n, seed=s)
+        coef = np.polyfit(xt, yt, degree)
+        preds.append(np.clip(np.polyval(coef, grid), -10, 10))
+    return grid, np.array(preds)
+
+fig, axes = plt.subplots(1, 3, figsize=(13, 4.2))
+for ax, degree, title in zip(axes, [1, 4, 12],
+                             ["Degree 1 (underfit)", "Degree 4 (good fit)",
+                              "Degree 12 (overfit)"]):
+    grid, preds = fit_many(degree)
+    for p in preds:
+        ax.plot(grid, p, color="#076FA1", alpha=0.15, linewidth=1)
+    ax.plot(grid, preds.mean(0), color="#31417A", linewidth=2.5, label="mean fit")
+    ax.plot(grid, true_f(grid), color="#E3120B", linewidth=2,
+            linestyle="--", label="true f")
+    bias2 = ((preds.mean(0) - true_f(grid)) ** 2).mean()
+    var = preds.var(0).mean()
+    ax.set_title(f"{title}\nbias$^2$={bias2:.3f}  var={var:.3f}")
+    ax.set_xlim(0, 1); ax.set_ylim(-2, 2); ax.set_xlabel("x")
+    ax.legend(loc="upper right", fontsize=8)
+axes[0].set_ylabel("y")
+plt.tight_layout(); plt.show()
+```
+
+## R
+```{webr}
+true_f <- function(x) sin(2 * pi * x)
+
+make_data <- function(n, noise = 0.3, seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  x <- runif(n, 0, 1)
+  list(x = x, y = true_f(x) + rnorm(n, 0, noise))
+}
+# Least-squares polynomial fit on a Vandermonde design matrix, built on the
+# rescaled input u = 2x - 1 so qr.solve stays well conditioned at high degree.
+poly_fit  <- function(x, y, degree) qr.solve(outer(2 * x - 1, 0:degree, `^`), y)
+poly_pred <- function(x, b) as.vector(outer(2 * x - 1, 0:(length(b) - 1), `^`) %*% b)
+
+fit_many <- function(degree, n_datasets = 60, n = 20) {
+  grid <- seq(0, 1, length.out = 100)
+  preds <- matrix(0, n_datasets, 100)
+  for (s in 0:(n_datasets - 1)) {
+    d <- make_data(n, seed = s)
+    preds[s + 1, ] <- pmin(pmax(poly_pred(grid, poly_fit(d$x, d$y, degree)), -10), 10)
+  }
+  list(grid = grid, preds = preds)
+}
+
+par(mfrow = c(1, 3))
+for (k in 1:3) {
+  degree <- c(1, 4, 12)[k]
+  title  <- c("Degree 1 (underfit)", "Degree 4 (good fit)", "Degree 12 (overfit)")[k]
+  fm <- fit_many(degree); grid <- fm$grid; preds <- fm$preds
+  mean_fit <- colMeans(preds)
+  bias2 <- mean((mean_fit - true_f(grid))^2)
+  varc  <- mean(apply(preds, 2, function(col) mean((col - mean(col))^2)))
+  plot(grid, true_f(grid), type = "n", ylim = c(-2, 2), xlab = "x", ylab = "y",
+       main = sprintf("%s\nbias^2=%.3f  var=%.3f", title, bias2, varc))
+  for (i in 1:nrow(preds))
+    lines(grid, preds[i, ], col = adjustcolor("#076FA1", alpha.f = 0.15))
+  lines(grid, mean_fit, col = "#31417A", lwd = 2.5)
+  lines(grid, true_f(grid), col = "#E3120B", lwd = 2, lty = 2)
+}
+```
+
+:::
+
+Read the three panels left to right. The straight line (degree one) barely moves between
+samples, so its variance is tiny, but its average sits well away from the curve: that gap is
+bias. Degree four threads the signal with only modest spread. Degree twelve fits each sample
+almost perfectly yet flails between them; its average still tracks the truth (low bias) while
+the cloud is enormous (high variance). Complexity trades one error for the other.
+
+The R fit uses a Vandermonde design matrix on the rescaled input $u = 2x - 1$, which keeps
+`qr.solve` well conditioned where a raw monomial basis would collapse; NumPy's `polyfit`
+rescales internally for the same reason.
+
+## Measuring the trade-off
+
+Now we attach numbers. For each degree we fit one hundred samples, average the squared gap
+between the mean fit and the truth (bias²), average the pointwise spread of the fits
+(variance), add the noise floor, and read off the total. Sweeping the degree traces the
+classic U-shaped error curve.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
+
+def true_f(x):
+    return np.sin(2 * np.pi * x)
+
+def make_data(n, noise=0.3, seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+    x = np.random.uniform(0, 1, n)
+    return x, true_f(x) + np.random.normal(0, noise, n)
+
+def decompose(degree, n_datasets=100, n=20, noise=0.3):
+    grid = np.linspace(0, 1, 100)
+    truth = true_f(grid)
+    preds = []
+    for s in range(n_datasets):
+        xt, yt = make_data(n, noise, seed=s)
+        coef = np.polyfit(xt, yt, degree)
+        preds.append(np.clip(np.polyval(coef, grid), -10, 10))
+    preds = np.array(preds)
+    bias2 = ((preds.mean(0) - truth) ** 2).mean()
+    var = preds.var(0).mean()
+    irr = noise ** 2
+    return bias2, var, irr, bias2 + var + irr
+
+degrees = range(1, 13)
+rows = [decompose(d) for d in degrees]
+bias2 = [r[0] for r in rows]; var = [r[1] for r in rows]
+irr = rows[0][2];             total = [r[3] for r in rows]
+
+print(f"{'deg':>4}{'bias^2':>9}{'var':>9}{'irred':>9}{'total':>9}")
+for d, r in zip(degrees, rows):
+    print(f"{d:>4}{r[0]:>9.3f}{r[1]:>9.3f}{r[2]:>9.3f}{r[3]:>9.3f}")
+best = int(np.argmin(total)) + 1
+print(f"\nLowest total error at degree {best}")
+
+fig, ax = plt.subplots(figsize=(8, 5))
+ax.plot(degrees, bias2, "o-", color="#076FA1", linewidth=2, label="bias$^2$")
+ax.plot(degrees, var, "s-", color="#31417A", linewidth=2, label="variance")
+ax.plot(degrees, total, "^-", color="#E3120B", linewidth=2, label="total error")
+ax.axhline(irr, color="#666666", linestyle="--", label=f"irreducible ($\\sigma^2$={irr:.2f})")
+ax.axvline(best, color="#666666", linestyle=":", alpha=0.7)
+ax.set_xlabel("polynomial degree (model complexity)")
+ax.set_ylabel("error"); ax.set_ylim(0, min(max(total) * 1.1, 12))
+ax.legend(loc="upper center")
+plt.tight_layout(); plt.show()
+```
+
+## R
+```{webr}
+true_f <- function(x) sin(2 * pi * x)
+make_data <- function(n, noise = 0.3, seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  x <- runif(n, 0, 1); list(x = x, y = true_f(x) + rnorm(n, 0, noise))
+}
+poly_fit  <- function(x, y, degree) qr.solve(outer(2 * x - 1, 0:degree, `^`), y)
+poly_pred <- function(x, b) as.vector(outer(2 * x - 1, 0:(length(b) - 1), `^`) %*% b)
+
+decompose <- function(degree, n_datasets = 100, n = 20, noise = 0.3) {
+  grid <- seq(0, 1, length.out = 100); truth <- true_f(grid)
+  preds <- matrix(0, n_datasets, 100)
+  for (s in 0:(n_datasets - 1)) {
+    d <- make_data(n, noise, seed = s)
+    preds[s + 1, ] <- pmin(pmax(poly_pred(grid, poly_fit(d$x, d$y, degree)), -10), 10)
+  }
+  mean_fit <- colMeans(preds)
+  bias2 <- mean((mean_fit - truth)^2)
+  varc  <- mean(apply(preds, 2, function(col) mean((col - mean(col))^2)))
+  irr   <- noise^2
+  c(bias2 = bias2, var = varc, irred = irr, total = bias2 + varc + irr)
+}
+
+degrees <- 1:12
+rows <- t(sapply(degrees, decompose))
+cat(sprintf("%4s%9s%9s%9s%9s\n", "deg", "bias^2", "var", "irred", "total"))
+for (i in seq_along(degrees))
+  cat(sprintf("%4d%9.3f%9.3f%9.3f%9.3f\n", degrees[i],
+              rows[i, 1], rows[i, 2], rows[i, 3], rows[i, 4]))
+best <- degrees[which.min(rows[, 4])]
+cat(sprintf("\nLowest total error at degree %d\n", best))
+
+irr <- rows[1, 3]
+plot(degrees, rows[, 4], type = "o", pch = 17, col = "#E3120B", lwd = 2,
+     ylim = c(0, min(max(rows[, 4]) * 1.1, 12)),
+     xlab = "polynomial degree (model complexity)", ylab = "error")
+lines(degrees, rows[, 1], type = "o", pch = 19, col = "#076FA1", lwd = 2)
+lines(degrees, rows[, 2], type = "o", pch = 15, col = "#31417A", lwd = 2)
+abline(h = irr, col = "#666666", lty = 2)
+abline(v = best, col = "#666666", lty = 3)
+legend("top", c("total error", "bias^2", "variance", "irreducible"),
+       col = c("#E3120B", "#076FA1", "#31417A", "#666666"),
+       pch = c(17, 19, 15, NA), lty = c(1, 1, 1, 2), bty = "n")
+```
+
+:::
+
+Both languages locate the minimum at degree three. Bias falls off a cliff once the model is
+flexible enough to bend (degrees one and two are starved), and from there variance climbs
+steadily, dragging the total back up. The best model is not the one that fits the training
+data best; it is the one that balances the two errors. Notice also that the total never
+drops below the dashed irreducible line: $\sigma^2$ is the price of admission.
+
+Python and R draw their random samples from different generators, so the printed bias and
+variance differ in the last digits and the high-degree variance drifts apart by a few
+percent. The shape of the curve, and the degree at which it bottoms out, are the same.
+
+Bias and variance are not spread evenly across the input. Near the edges of $[0, 1]$, where
+data is sparse and a high-degree polynomial has the least to anchor it, variance spikes
+sharply; in the well-sampled interior it stays small. This is why extrapolation is
+dangerous: the same fit that is trustworthy in the middle is wild at the boundary.
+
+## Learning curves
+
+A second diagnostic holds complexity fixed and varies the *amount* of data, plotting
+training and test error as the sample grows. The gap between the two curves is the
+signature of variance.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
+
+def true_f(x):
+    return np.sin(2 * np.pi * x)
+
+def make_data(n, noise=0.3, seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+    x = np.random.uniform(0, 1, n)
+    return x, true_f(x) + np.random.normal(0, noise, n)
+
+def learning_curve(degree, sizes, n_trials=50, noise=0.3):
+    np.random.seed(999)                                   # one fixed test set
+    x_test = np.random.uniform(0, 1, 100)
+    y_test = true_f(x_test) + np.random.normal(0, noise, 100)
+    train_mse, test_mse = [], []
+    for m in sizes:
+        tr, te = [], []
+        for s in range(n_trials):
+            xt, yt = make_data(m, noise, seed=s)
+            coef = np.polyfit(xt, yt, degree)
+            yp_tr = np.clip(np.polyval(coef, xt), -10, 10)
+            yp_te = np.clip(np.polyval(coef, x_test), -10, 10)
+            tr.append(np.mean((yt - yp_tr) ** 2))
+            te.append(np.mean((y_test - yp_te) ** 2))
+        train_mse.append(np.mean(tr)); test_mse.append(np.mean(te))
+    return train_mse, test_mse
+
+sizes = [20, 30, 50, 80, 120, 160]
+fig, axes = plt.subplots(1, 3, figsize=(13, 4.2))
+for ax, degree, title in zip(axes, [1, 4, 12],
+                             ["Degree 1 (high bias)", "Degree 4 (good fit)",
+                              "Degree 12 (high variance)"]):
+    tr, te = learning_curve(degree, sizes)
+    ax.plot(sizes, tr, "o-", color="#076FA1", linewidth=2, label="training MSE")
+    ax.plot(sizes, te, "s-", color="#E3120B", linewidth=2, label="test MSE")
+    ax.axhline(0.09, color="#666666", linestyle="--", label="irreducible")
+    ax.set_title(title); ax.set_xlabel("training set size")
+    ax.legend(loc="upper right", fontsize=8)
+axes[0].set_ylabel("MSE")
+plt.tight_layout(); plt.show()
+
+print("Degree 12 train vs test MSE by size:")
+tr, te = learning_curve(12, sizes)
+for m, a, b in zip(sizes, tr, te):
+    print(f"  n={m:>3}: train={a:.3f}  test={b:.3f}  gap={b - a:.3f}")
+```
+
+## R
+```{webr}
+true_f <- function(x) sin(2 * pi * x)
+make_data <- function(n, noise = 0.3, seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  x <- runif(n, 0, 1); list(x = x, y = true_f(x) + rnorm(n, 0, noise))
+}
+poly_fit  <- function(x, y, degree) qr.solve(outer(2 * x - 1, 0:degree, `^`), y)
+poly_pred <- function(x, b) as.vector(outer(2 * x - 1, 0:(length(b) - 1), `^`) %*% b)
+
+learning_curve <- function(degree, sizes, n_trials = 50, noise = 0.3) {
+  set.seed(999)                                          # one fixed test set
+  x_test <- runif(100, 0, 1)
+  y_test <- true_f(x_test) + rnorm(100, 0, noise)
+  train_mse <- numeric(length(sizes)); test_mse <- numeric(length(sizes))
+  for (j in seq_along(sizes)) {
+    m <- sizes[j]; tr <- numeric(n_trials); te <- numeric(n_trials)
+    for (s in 0:(n_trials - 1)) {
+      d <- make_data(m, noise, seed = s); b <- poly_fit(d$x, d$y, degree)
+      yp_tr <- pmin(pmax(poly_pred(d$x, b), -10), 10)
+      yp_te <- pmin(pmax(poly_pred(x_test, b), -10), 10)
+      tr[s + 1] <- mean((d$y - yp_tr)^2); te[s + 1] <- mean((y_test - yp_te)^2)
+    }
+    train_mse[j] <- mean(tr); test_mse[j] <- mean(te)
+  }
+  list(train = train_mse, test = test_mse)
+}
+
+sizes <- c(20, 30, 50, 80, 120, 160)
+par(mfrow = c(1, 3))
+for (k in 1:3) {
+  degree <- c(1, 4, 12)[k]
+  title  <- c("Degree 1 (high bias)", "Degree 4 (good fit)",
+              "Degree 12 (high variance)")[k]
+  lc <- learning_curve(degree, sizes)
+  yhi <- max(lc$train, lc$test)
+  plot(sizes, lc$train, type = "o", pch = 19, col = "#076FA1", lwd = 2,
+       ylim = c(0, yhi), main = title, xlab = "training set size", ylab = "MSE")
+  lines(sizes, lc$test, type = "o", pch = 15, col = "#E3120B", lwd = 2)
+  abline(h = 0.09, col = "#666666", lty = 2)
+  legend("topright", c("training MSE", "test MSE", "irreducible"),
+         col = c("#076FA1", "#E3120B", "#666666"),
+         pch = c(19, 15, NA), lty = c(1, 1, 2), bty = "n")
+}
+
+cat("Degree 12 train vs test MSE by size:\n")
+lc <- learning_curve(12, sizes)
+for (j in seq_along(sizes))
+  cat(sprintf("  n=%3d: train=%.3f  test=%.3f  gap=%.3f\n",
+              sizes[j], lc$train[j], lc$test[j], lc$test[j] - lc$train[j]))
+```
+
+:::
+
+The degree-twelve panel tells the variance story cleanly: training error is near zero from
+the start, while test error begins enormous and falls toward the noise floor as more data
+pins the model down. More data shrinks variance. It does **not** shrink bias: the degree-one
+panel converges quickly, but both curves settle well above $\sigma^2$, because a straight
+line can never bend into a sine no matter how many points it sees. The numbers again differ
+between Python and R at the same trailing-digit level, for the same reason as before.
+
+| Learning-curve pattern | Diagnosis | Remedy |
+|---|---|---|
+| both errors high, small gap | high bias (underfitting) | richer model, better features |
+| training low, test high, large gap | high variance (overfitting) | more data, regularization, simpler model |
+| both settle near $\sigma^2$ | good fit | model is well matched to the problem |
+
+## A modern footnote: double descent
+
+The U-shaped curve is the classical picture, and it is the right one for the models in this
+book. In the heavily overparameterized regime of modern deep learning, researchers have
+observed a second descent: past the point where the model can interpolate the training data
+exactly, test error can fall *again*. That phenomenon is beyond our scope here, but it is
+worth knowing that the tidy U-shape is the beginning of the story, not the whole of it.
+
+The trade-off is the reason the next two chapters exist. Cross-validation (Chapter 6)
+estimates the test-error curve so we can find its minimum without peeking at held-out data,
+and regularization (Chapter 7) attacks variance directly by shrinking the coefficients that
+let a flexible model thrash.
+
+::: {.explore}
+[Try it]{.lbl}
+Lower the noise from `0.3` to `0.1` and rerun the trade-off sweep. The irreducible floor
+drops to $0.01$, and with cleaner data the variance penalty for high degree shrinks, so the
+optimal degree shifts higher. Quiet problems can afford more complex models.
+:::

@@ -1,0 +1,57 @@
+---
+title: "Learning from Data"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 1 · Introduction]{.eyebrow}
+
+# Learning from Data
+
+[Every model earns its keep by beating the simplest guess there is.]{.dek}
+:::
+
+Welcome to the interactive companion to *Learning Machines: A Statistical Introduction*. Each chapter pairs the book's exposition with code you can **run in your browser** — Python via Pyodide, R via WebR — or **open in Colab** for the deep-learning chapters. Nothing to install; the code below runs on your own machine, in this page.
+
+Machine learning is the art of turning data into predictions that hold up on cases you have not seen. Before reaching for anything elaborate, it pays to fix a [baseline]{.term}: the simplest model that ignores the inputs entirely and predicts the same number every time. For a numeric target, that number is the mean. Any model worth its complexity must do better than this.
+
+Compute the baseline on a set of Frankfurt sale prices, and the error it leaves behind. Every later chapter is a campaign to shrink that error.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+
+```{pyodide}
+import numpy as np
+price = np.array([164,384,465,420,520,610,700,760,820,900,
+                  560,430,500,650,720,790,980,260,330,410.])
+
+baseline = price.mean()                       # the simplest model: predict the average
+mse = ((price - baseline) ** 2).mean()        # the error it leaves behind
+
+print(f"baseline prediction = {baseline:6.1f}")
+print(f"baseline MSE        = {mse:8.1f}")
+```
+
+## R
+
+```{webr}
+price <- c(164,384,465,420,520,610,700,760,820,900,
+           560,430,500,650,720,790,980,260,330,410)
+
+baseline <- mean(price)                       # the simplest model: predict the average
+mse <- mean((price - baseline)^2)             # the error it leaves behind
+
+cat(sprintf("baseline prediction = %6.1f\n", baseline))
+cat(sprintf("baseline MSE        = %8.1f\n", mse))
+```
+
+:::
+
+The mean is the maximum-likelihood prediction under a model with no inputs. It is also, in a sense the book makes precise, the place every regression starts: ordinary least squares (Chapter 2) is what you get when you let the prediction tilt with the features instead of staying flat.
+
+::: {.explore}
+[Try it]{.lbl}
+
+What is the smallest model that beats this baseline? Try predicting from a single feature, the living area, and see how much of the variance a straight line can explain. That is exactly where Chapter 2 begins.
+:::

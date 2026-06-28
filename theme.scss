@@ -1,0 +1,113 @@
+/*-- scss:defaults --*/
+$fs-blue:  #31417A;
+$blue:     #076FA1;
+$cyan:     #2FC1D3;
+$red:      #E3120B;
+$ink:      #23252e;
+$gray:     #6b6e78;
+$faint:    #a2a5ad;
+$rule:     #e6e3da;
+$paper:    #fcfbf8;
+
+$font-family-sans-serif: "Source Serif 4", Georgia, serif;
+$font-family-monospace:  "Inconsolata", ui-monospace, monospace;
+$headings-font-family:   "Fraunces", Georgia, serif;
+$font-size-root:  18px;
+$body-color:      $ink;
+$body-bg:         $paper;
+$primary:         $fs-blue;
+$link-color:      $blue;
+$link-hover-color:$fs-blue;
+$border-color:    $rule;
+$code-block-bg:   #ffffff;
+$toc-color:       $fs-blue;
+$navbar-bg:       #ffffff;
+
+/*-- scss:rules --*/
+/* Fonts are loaded via <link> in the HTML head (see _quarto.yml include-in-header);
+   loading them there rather than @import here keeps Quarto's SCSS color-variable
+   analyzer from misreading the URL's "&" characters as parent selectors. */
+
+/* Always reserve the vertical scrollbar gutter so switching a tabset (R vs Python,
+   different heights) can't change the page width and shift the margin TOC sideways. */
+html{ scrollbar-gutter: stable; overflow-y: scroll; }
+body{ font-optical-sizing:auto; line-height:1.64; }
+h1,h2,h3,h4{ font-family:"Fraunces"; font-optical-sizing:auto; font-weight:600; letter-spacing:-.01em; color:$ink; }
+h2{ margin-top:2em; }
+
+/* navbar: signature red tab + Fraunces wordmark */
+.navbar{ border-bottom:1px solid $rule; }
+.navbar-brand{ font-family:"Fraunces"; font-weight:600; color:$fs-blue !important; display:inline-flex; align-items:center; }
+.navbar-brand::before{ content:""; display:inline-block; width:24px; height:24px; background:$red; margin-right:12px; }
+
+/* sidebar */
+.sidebar-item-text{ font-size:14.5px; }
+.sidebar-link.active,
+.sidebar-item-text.active{
+  color:$fs-blue !important; font-weight:700 !important;
+  background:rgba(49,65,122,0.09) !important;     /* faint FS-blue wash */
+  box-shadow:inset 3px 0 0 $red;                  /* red accent bar, no layout shift */
+  border-radius:0 4px 4px 0;
+}
+.sidebar-title{ font-family:"Inconsolata"; text-transform:uppercase; letter-spacing:.16em; font-size:11px; color:$faint; }
+
+/* TOC right rail */
+#TOC .active{ color:$fs-blue !important; border-left-color:$red !important; font-weight:600; }
+
+/* we render our own hero; suppress Quarto's default title block */
+#title-block-header{ display:none; }
+
+/* hero (chapter opener — B treatment) */
+.lm-hero{ border-bottom:1px solid $rule; padding-bottom:14px; margin-bottom:30px; }
+.lm-hero .eyebrow{ font-family:"Inconsolata"; font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:$red; font-weight:600; }
+.lm-hero h1{ font-size:50px; line-height:1.03; margin:.18em 0 .12em; }
+.lm-hero .dek{ font-family:"Fraunces"; font-style:italic; font-weight:400; font-size:21px; color:$gray; }
+
+p{ max-width:42rem; }
+.term{ font-weight:600; color:$fs-blue; }
+
+/* definition box (echoes the book's myDefinition) */
+.defbox{ border:1px solid $rule; border-left:4px solid $fs-blue; background:#fff; padding:18px 22px; margin:26px 0; max-width:42rem; }
+.defbox .lbl{ font-family:"Inconsolata"; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:$fs-blue; font-weight:700; margin-bottom:9px; }
+.defbox .math{ font-family:"Source Serif 4"; font-style:italic; font-size:21px; text-align:center; margin:2px 0; }
+.defbox .math sub,.defbox .math sup{ font-style:normal; }
+
+/* exploration callout */
+.explore{ background:#eef0f6; border-radius:6px; padding:18px 22px; margin:30px 0; max-width:42rem; }
+.explore .lbl{ font-family:"Inconsolata"; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:$red; font-weight:700; margin-bottom:6px; }
+.explore p{ margin:0; font-size:16.5px; }
+
+/* Colab badge + button */
+.colab{ display:inline-flex; align-items:center; gap:7px; font-family:"Inconsolata"; font-size:11.5px; color:$gray; border:1px solid $rule; border-radius:3px; padding:5px 10px; margin:12px 0; }
+.colab .dot{ width:13px; height:13px; border-radius:3px; background:linear-gradient(135deg,#F9AB00,#E8710A); }
+.colab-btn{ display:inline-flex; align-items:center; gap:9px; font-family:"Inconsolata"; font-size:14px; font-weight:600; color:#fff !important; background:$fs-blue; border-radius:5px; padding:11px 18px; text-decoration:none; margin:18px 0; }
+.colab-btn:hover{ background:#26315e; color:#fff !important; }
+.colab-btn .dot{ width:16px; height:16px; border-radius:4px; background:linear-gradient(135deg,#F9AB00,#E8710A); }
+
+/* Economist-style chart */
+figure.lm-chart{ margin:26px 0; max-width:42rem; }
+.lm-chart .grid{ stroke:#ebe8df; stroke-width:1; }
+.lm-chart .axis{ stroke:#cfccc2; stroke-width:1; }
+.lm-chart text{ font-family:"Inconsolata"; fill:$gray; }
+.lm-chart .pt{ fill:$blue; opacity:.9; }
+.lm-chart .fit{ stroke:$fs-blue; stroke-width:2.6; fill:none; }
+.lm-chart .ctitle{ font-family:"Source Serif 4"; fill:$ink; font-weight:600; }
+.lm-chart .csub{ font-family:"Source Serif 4"; fill:$gray; font-style:italic; }
+figcaption{ font-family:"Source Serif 4"; font-style:italic; color:$gray; font-size:13.5px; }
+
+/* code + live cells */
+pre,code{ font-family:"Inconsolata"; }
+div.sourceCode{ border:1px solid $rule; border-radius:6px; }
+.qle-controls .btn, .qle-button-run, button.qle-button-run{
+  background:$red !important; border:0 !important; color:#fff !important;
+  font-family:"Inconsolata"; font-weight:600; letter-spacing:.03em;
+}
+
+/* dual-language tabs (Python / R) */
+.panel-tabset > .nav-tabs{ border-bottom:1px solid $rule; gap:2px; }
+.panel-tabset .nav-link{ font-family:"Inconsolata"; font-size:13px; letter-spacing:.04em; color:$gray; border:0; border-radius:0; padding:6px 15px; }
+.panel-tabset .nav-link.active{ color:$fs-blue; font-weight:700; background:transparent; border-bottom:2px solid $red; }
+.panel-tabset .nav-link:hover{ color:$fs-blue; }
+
+/* footer */
+.nav-footer{ border-top:1px solid $rule; font-family:"Inconsolata"; font-size:12px; color:$gray; }

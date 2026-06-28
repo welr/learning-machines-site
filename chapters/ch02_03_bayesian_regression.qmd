@@ -1,0 +1,312 @@
+---
+title: "Bayesian Linear Regression"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 2 · Regression Models]{.eyebrow}
+
+# Bayesian Linear Regression
+
+[Give the coefficients a prior and the same data returns not one line but a distribution over lines, with a closed-form Gaussian posterior that sampling methods only approximate.]{.dek}
+:::
+
+Ordinary least squares returns a single coefficient vector, the one that minimizes
+squared error. Bayesian regression returns a [posterior]{.term}: a full distribution over
+coefficients, formed by combining a [prior]{.term} (what we believed before seeing data)
+with the likelihood (how the data weighs each candidate). When the prior on the
+coefficients is Gaussian and the noise is Gaussian with known variance, that posterior is
+itself Gaussian and available in closed form. This is the [conjugate]{.term} case, where
+prior and posterior share a family, so updating is linear algebra rather than simulation.
+It is also the analytic truth that the Markov chain Monte Carlo of the full notebook
+approximates.
+
+::: {.defbox}
+[Gaussian Posterior (conjugate regression)]{.lbl}
+[ &Sigma;<sub>n</sub> = (&Sigma;<sub>0</sub><sup>&#8722;1</sup> + &sigma;<sup>&#8722;2</sup>X&#8868;X)<sup>&#8722;1</sup> &nbsp;&nbsp;&nbsp; &mu;<sub>n</sub> = &Sigma;<sub>n</sub>(&Sigma;<sub>0</sub><sup>&#8722;1</sup>&mu;<sub>0</sub> + &sigma;<sup>&#8722;2</sup>X&#8868;y) ]{.math}
+:::
+
+Here $(\boldsymbol{\mu}_0, \boldsymbol{\Sigma}_0)$ are the prior mean and covariance,
+$\sigma^2$ is the known noise variance, and $(\boldsymbol{\mu}_n, \boldsymbol{\Sigma}_n)$
+are the posterior mean and covariance. With a broad (vague) prior the
+$\boldsymbol{\Sigma}_0^{-1}$ term nearly vanishes and $\boldsymbol{\mu}_n$ collapses onto
+the OLS estimate. A tight prior pulls it toward $\boldsymbol{\mu}_0$. The next cell makes
+that comparison concrete.
+
+## The posterior mean against OLS
+
+We generate thirty points from $y = 1 + 2x + \varepsilon$ with noise standard deviation
+$0.5$, place a broad Gaussian prior on the intercept and slope, and read off the posterior
+in one matrix expression. The posterior mean lands beside the OLS estimate, and the
+posterior standard deviations report how sure we are of each coefficient, something OLS
+delivers only through a separate calculation.
+
+The two languages draw their noise from different random number generators, so their data
+sets are not identical and the last digits differ. Both posteriors sit near the true
+$(1, 2)$, and in each language the posterior mean tracks that language's OLS fit.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+np.set_printoptions(precision=3, suppress=True)
+np.random.seed(42)
+
+# Synthetic data: y = 1 + 2x + noise, with known noise sd 0.5
+true_theta = np.array([1.0, 2.0])
+true_sigma = 0.5
+n = 30
+x = np.random.uniform(0, 3, n)
+y = true_theta[0] + true_theta[1] * x + np.random.normal(0, true_sigma, n)
+
+# Design matrix with an intercept column
+X = np.column_stack([np.ones(n), x])
+
+# Gaussian prior on (theta0, theta1): mean 0, broad covariance
+prior_mean = np.array([0.0, 0.0])
+prior_cov  = np.diag([10.0, 10.0])
+noise_var  = true_sigma**2                 # treat sigma^2 as known
+
+# Conjugate Gaussian posterior (closed form)
+prior_prec = np.linalg.inv(prior_cov)
+post_cov   = np.linalg.inv(prior_prec + (X.T @ X) / noise_var)
+post_mean  = post_cov @ (prior_prec @ prior_mean + (X.T @ y) / noise_var)
+
+# OLS estimate for comparison
+ols = np.linalg.inv(X.T @ X) @ (X.T @ y)
+post_sd = np.sqrt(np.diag(post_cov))
+
+print("                 theta0    theta1")
+print(f"posterior mean  {post_mean[0]:7.3f} {post_mean[1]:7.3f}")
+print(f"OLS estimate    {ols[0]:7.3f} {ols[1]:7.3f}")
+print(f"true value      {true_theta[0]:7.3f} {true_theta[1]:7.3f}")
+print(f"\nposterior sd    {post_sd[0]:7.3f} {post_sd[1]:7.3f}")
+```
+
+## R
+```{webr}
+set.seed(42)
+
+# Synthetic data: y = 1 + 2x + noise, with known noise sd 0.5
+true_theta <- c(1.0, 2.0)
+true_sigma <- 0.5
+n <- 30
+x <- runif(n, 0, 3)
+y <- true_theta[1] + true_theta[2] * x + rnorm(n, 0, true_sigma)
+
+# Design matrix with an intercept column
+X <- cbind(1, x)
+
+# Gaussian prior on (theta0, theta1): mean 0, broad covariance
+prior_mean <- c(0, 0)
+prior_cov  <- diag(c(10, 10))
+noise_var  <- true_sigma^2                 # treat sigma^2 as known
+
+# Conjugate Gaussian posterior (closed form)
+prior_prec <- solve(prior_cov)
+post_cov   <- solve(prior_prec + (t(X) %*% X) / noise_var)
+post_mean  <- as.vector(post_cov %*% (prior_prec %*% prior_mean + (t(X) %*% y) / noise_var))
+
+# OLS estimate for comparison
+ols <- as.vector(solve(t(X) %*% X, t(X) %*% y))
+post_sd <- sqrt(diag(post_cov))
+
+cat("                 theta0    theta1\n")
+cat(sprintf("posterior mean  %7.3f %7.3f\n", post_mean[1], post_mean[2]))
+cat(sprintf("OLS estimate    %7.3f %7.3f\n", ols[1], ols[2]))
+cat(sprintf("true value      %7.3f %7.3f\n", true_theta[1], true_theta[2]))
+cat(sprintf("\nposterior sd    %7.3f %7.3f\n", post_sd[1], post_sd[2]))
+```
+
+:::
+
+## Predictive uncertainty that widens away from the data
+
+A point estimate predicts a single $y$ for each new $x$. The posterior predicts a
+distribution. For an input $x^\*$ the [posterior predictive]{.term} variance is
+$x^{\*\top}\boldsymbol{\Sigma}_n x^\* + \sigma^2$: parameter uncertainty plus observation
+noise. Plot the posterior mean line with its 95% [credible interval]{.term} and the band
+tells an honest story. It is tightest where the data cluster and flares outward where the
+model is extrapolating, because the parameter-uncertainty term grows as $x^\*$ moves from
+the data center.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+
+np.random.seed(42)
+true_theta = np.array([1.0, 2.0]); true_sigma = 0.5
+n = 30
+x = np.random.uniform(0, 3, n)
+y = true_theta[0] + true_theta[1] * x + np.random.normal(0, true_sigma, n)
+X = np.column_stack([np.ones(n), x])
+
+prior_cov = np.diag([10.0, 10.0]); noise_var = true_sigma**2
+prior_prec = np.linalg.inv(prior_cov)
+post_cov  = np.linalg.inv(prior_prec + (X.T @ X) / noise_var)
+post_mean = post_cov @ ((X.T @ y) / noise_var)        # prior mean is zero
+
+# Posterior predictive over a grid: mean and variance at each x*
+xs = np.linspace(-0.5, 3.5, 100)
+Xs = np.column_stack([np.ones(len(xs)), xs])
+pred_mean = Xs @ post_mean
+pred_var  = np.sum((Xs @ post_cov) * Xs, axis=1) + noise_var
+pred_sd   = np.sqrt(pred_var)
+
+fig, ax = plt.subplots(figsize=(8, 5))
+ax.fill_between(xs, pred_mean - 1.96 * pred_sd, pred_mean + 1.96 * pred_sd,
+                color="#076FA1", alpha=0.20, label="95% credible band")
+ax.plot(xs, pred_mean, color="#31417A", linewidth=2.5, label="posterior mean")
+ax.plot(xs, true_theta[0] + true_theta[1] * xs, color="#666666", linestyle="--",
+        linewidth=2, label="true line")
+ax.scatter(x, y, s=50, color="#076FA1", edgecolor="white", zorder=5, label="data")
+ax.set_xlabel("x"); ax.set_ylabel("y"); ax.legend(loc="upper left")
+plt.tight_layout(); plt.show()
+
+# The band is narrowest near the data center and widens outward
+print(f"predictive sd at x=1.5 (center): {pred_sd[np.argmin(np.abs(xs - 1.5))]:.3f}")
+print(f"predictive sd at x=3.5 (edge):   {pred_sd[-1]:.3f}")
+```
+
+## R
+```{webr}
+set.seed(42)
+true_theta <- c(1.0, 2.0); true_sigma <- 0.5
+n <- 30
+x <- runif(n, 0, 3)
+y <- true_theta[1] + true_theta[2] * x + rnorm(n, 0, true_sigma)
+X <- cbind(1, x)
+
+prior_cov <- diag(c(10, 10)); noise_var <- true_sigma^2
+prior_prec <- solve(prior_cov)
+post_cov  <- solve(prior_prec + (t(X) %*% X) / noise_var)
+post_mean <- as.vector(post_cov %*% ((t(X) %*% y) / noise_var))   # prior mean is zero
+
+# Posterior predictive over a grid: mean and variance at each x*
+xs <- seq(-0.5, 3.5, length.out = 100)
+Xs <- cbind(1, xs)
+pred_mean <- as.vector(Xs %*% post_mean)
+pred_var  <- rowSums((Xs %*% post_cov) * Xs) + noise_var
+pred_sd   <- sqrt(pred_var)
+
+plot(x, y, pch = 19, col = "#076FA1", xlim = c(-0.5, 3.5),
+     xlab = "x", ylab = "y")
+polygon(c(xs, rev(xs)),
+        c(pred_mean - 1.96 * pred_sd, rev(pred_mean + 1.96 * pred_sd)),
+        col = rgb(7, 111, 161, 50, maxColorValue = 255), border = NA)
+lines(xs, pred_mean, col = "#31417A", lwd = 2.5)
+lines(xs, true_theta[1] + true_theta[2] * xs, col = "#666666", lty = 2, lwd = 2)
+points(x, y, pch = 19, col = "#076FA1")
+legend("topleft", bty = "n",
+       legend = c("data", "posterior mean", "true line", "95% band"),
+       col = c("#076FA1", "#31417A", "#666666", "#076FA1"),
+       pch = c(19, NA, NA, 15), lty = c(NA, 1, 2, NA))
+
+cat(sprintf("predictive sd at x=1.5 (center): %.3f\n", pred_sd[which.min(abs(xs - 1.5))]))
+cat(sprintf("predictive sd at x=3.5 (edge):   %.3f\n", pred_sd[length(pred_sd)]))
+```
+
+:::
+
+## What the prior does
+
+Prior and data jointly determine the posterior, and the balance between them is the whole
+point of going Bayesian. Hold the data fixed and vary only the prior. A vague prior steps
+aside and lets the data speak, recovering OLS. A tight prior centered on the truth sharpens
+the estimate. A tight prior centered on the wrong values drags the posterior mean away,
+though enough data eventually overrules it.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+
+np.random.seed(42)
+true_theta = np.array([1.0, 2.0]); true_sigma = 0.5
+n = 30
+x = np.random.uniform(0, 3, n)
+y = true_theta[0] + true_theta[1] * x + np.random.normal(0, true_sigma, n)
+X = np.column_stack([np.ones(n), x])
+noise_var = true_sigma**2
+
+def posterior_mean(prior_mean, prior_cov):
+    P = np.linalg.inv(prior_cov)
+    S = np.linalg.inv(P + (X.T @ X) / noise_var)
+    return S @ (P @ prior_mean + (X.T @ y) / noise_var)
+
+priors = [
+    ("vague",             np.array([0.0,  0.0]), np.diag([100.0, 100.0])),
+    ("informative right", np.array([1.0,  2.0]), np.diag([0.5, 0.5])),
+    ("informative wrong", np.array([5.0, -1.0]), np.diag([0.5, 0.5])),
+]
+
+print(f"{'prior':<18} theta0   theta1")
+for name, m0, S0 in priors:
+    m = posterior_mean(m0, S0)
+    print(f"{name:<18}{m[0]:6.3f}  {m[1]:6.3f}")
+print(f"{'(truth)':<18}{true_theta[0]:6.3f}  {true_theta[1]:6.3f}")
+```
+
+## R
+```{webr}
+set.seed(42)
+true_theta <- c(1.0, 2.0); true_sigma <- 0.5
+n <- 30
+x <- runif(n, 0, 3)
+y <- true_theta[1] + true_theta[2] * x + rnorm(n, 0, true_sigma)
+X <- cbind(1, x)
+noise_var <- true_sigma^2
+
+posterior_mean <- function(prior_mean, prior_cov) {
+  P <- solve(prior_cov)
+  S <- solve(P + (t(X) %*% X) / noise_var)
+  as.vector(S %*% (P %*% prior_mean + (t(X) %*% y) / noise_var))
+}
+
+priors <- list(
+  list("vague",             c(0,  0), diag(c(100, 100))),
+  list("informative right", c(1,  2), diag(c(0.5, 0.5))),
+  list("informative wrong", c(5, -1), diag(c(0.5, 0.5)))
+)
+
+cat(sprintf("%-18s theta0   theta1\n", "prior"))
+for (p in priors) {
+  m <- posterior_mean(p[[2]], p[[3]])
+  cat(sprintf("%-18s%6.3f  %6.3f\n", p[[1]], m[1], m[2]))
+}
+cat(sprintf("%-18s%6.3f  %6.3f\n", "(truth)", true_theta[1], true_theta[2]))
+```
+
+:::
+
+A Gaussian prior on the coefficients is the same object as the L2 penalty of ridge
+regression. The posterior mean under that prior is exactly the ridge (MAP) estimate, with
+the prior variance setting the inverse of the penalty strength. The Bayesian and the
+regularized least-squares views meet here, a connection Chapter 7 returns to.
+
+## When the posterior has no closed form
+
+The Gaussian posterior above exists because a Gaussian prior is conjugate to a Gaussian
+likelihood. Most models break that symmetry. Put a prior on the noise scale itself, swap
+the Gaussian likelihood for a logistic or Poisson link, or stack a hierarchy of groups, and
+the posterior integral loses its closed form. [Markov chain Monte Carlo]{.term} then draws
+samples from the posterior instead of solving for it. The companion notebook runs the full
+PyMC version, sampling this same regression with the NUTS sampler so you can check the draws
+against the exact posterior computed above.
+
+```{=html}
+<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+```
+
+::: {.explore}
+[Try it]{.lbl}
+In the prior cell, shrink the wrong prior's covariance from `diag(0.5, 0.5)` to
+`diag(0.01, 0.01)` and re-run: a confident wrong prior drags the posterior mean far from the
+data. Then raise `n` from 30 to 300 and watch even that stubborn prior surrender as the
+likelihood takes over.
+:::

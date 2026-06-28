@@ -1,0 +1,100 @@
+---
+title: "Attention and Transformers"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 11 · Attention & the Transformer]{.eyebrow}
+
+# Attention and Transformers
+
+[Each token's new representation is a weighted average of the others: the Nadaraya–Watson smoother of Chapter 8, with the similarity learned.]{.dek}
+:::
+
+The book reaches [attention]{.term} not as a novelty but as a return. To build the representation of a token, attention takes a weighted average of value vectors, with the weights set by how similar a query is to each key. That is the kernel smoother of Chapter 8, with two changes: the notion of similarity is now learned rather than fixed, and the weights are normalized by a softmax. The notebook makes the mechanism concrete by tracing exact values through the computation rather than drawing arrows between boxes.
+
+Why gather context at all? Consider the word "bank" in "I deposited money at the bank" and "we sat by the river bank." The meaning depends on the surrounding words, so a good representation must incorporate them. Attention gives each position a way to pull information from every other position in proportion to relevance.
+
+## Scaled dot-product attention
+
+Each input is projected three ways. The [query]{.term} asks what this position is looking for, the [key]{.term} advertises what each position contains, and the [value]{.term} carries the information each position contributes. Scoring a query against every key by dot product, scaling, and passing through a softmax yields a probability distribution over positions; the output is the weighted average of the values.
+
+::: {.defbox}
+[Scaled Dot-Product Attention]{.lbl}
+
+[ Attention(Q, K, V) = softmax( QK<sup>&#8868;</sup> / &radic;d<sub>k</sub> ) V ]{.math}
+:::
+
+Read this beside the Nadaraya–Watson estimator and the kinship is unmistakable. The softmax term is exactly a vector of kernel weights, and multiplying by V is the weighted average those weights define. The only thing learned is the set of projections that produce Q, K, and V, which is to say the similarity metric itself.
+
+From this chapter onward the models are built in PyTorch, which wants a numerical stack and ideally a GPU, more than a browser sandbox can carry; one click opens the full notebook on Google's free hardware with no local install.
+
+```{=html}
+<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+```
+
+```python
+import torch
+import torch.nn.functional as F
+
+def scaled_dot_product_attention(Q, K, V, mask=None):
+    """Q, K, V: (..., seq_len, d_k). Returns context vectors and attention weights."""
+    d_k = Q.size(-1)
+    scores = (Q @ K.transpose(-2, -1)) / d_k ** 0.5   # query–key similarity
+    if mask is not None:                              # causal mask: no peeking ahead
+        scores = scores.masked_fill(mask == 0, float("-inf"))
+    weights = F.softmax(scores, dim=-1)               # the kernel weights of Chapter 8
+    context = weights @ V                             # weighted average of the values
+    return context, weights
+```
+
+The division by &radic;d<sub>k</sub> is not cosmetic. Dot products grow with dimension, so their variance scales with d<sub>k</sub>; left unscaled, the scores push the softmax into a saturated region where gradients all but vanish. Dividing by &radic;d<sub>k</sub> holds the variance near one regardless of dimension and keeps the softmax in a useful range.
+
+## Multi-head attention
+
+A single head captures one kind of relationship. [Multi-head attention]{.term} runs several heads in parallel, each with its own learned projections, then concatenates their outputs and projects once more. Different heads specialize: in a trained model one may track syntactic agreement while another links a pronoun to its referent. The notebook builds the multi-head layer from the function above, splitting the model dimension across heads so the parallel attention costs no more than a single wide one.
+
+## Position and causality
+
+Self-attention is permutation-equivariant: it treats its input as a set, not a sequence, so on its own it cannot tell "dog bites man" from "man bites dog." Position is restored by adding a [positional encoding]{.term} to each embedding. The original transformer uses sinusoids of geometrically spaced frequencies, where low dimensions oscillate quickly to mark local position and high dimensions slowly to mark global position, and relative offsets become linear combinations of the encodings.
+
+Autoregressive models such as GPT carry one more constraint. When predicting the next token, a position must attend only to those before it, never ahead. A [causal mask]{.term}, the lower-triangular pattern passed to `masked_fill` above, sets every future score to negative infinity before the softmax, so position t draws on positions 1 through t alone. This is what lets the model be trained on all positions at once without leaking the answer.
+
+## A transformer block
+
+The block that the next chapter stacks into a language model wraps two sublayers. First comes multi-head self-attention, added back to its input through a [residual connection]{.term} and stabilized by [layer normalization]{.term}; then a position-wise feed-forward network, again with a residual and a norm. Residuals open a direct path for gradients through many layers, and layer norm holds the distribution of activations steady as they pass through the depth.
+
+```python
+import torch.nn as nn
+
+class TransformerBlock(nn.Module):
+    """Multi-head self-attention, then a position-wise feed-forward network,
+    each wrapped in a residual connection and layer normalization."""
+    def __init__(self, d_model, n_heads, d_ff, dropout=0.1):
+        super().__init__()
+        self.attention = MultiHeadAttention(d_model, n_heads)   # h heads in parallel
+        self.norm1 = nn.LayerNorm(d_model)
+        self.ff = nn.Sequential(
+            nn.Linear(d_model, d_ff), nn.ReLU(),
+            nn.Linear(d_ff, d_model),
+        )
+        self.norm2 = nn.LayerNorm(d_model)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x, mask=None):
+        attn_out, weights = self.attention(x, mask)
+        x = self.norm1(x + self.dropout(attn_out))    # attention, residual, norm
+        ff_out = self.ff(x)
+        x = self.norm2(x + self.dropout(ff_out))      # feed-forward, residual, norm
+        return x, weights
+```
+
+Here `MultiHeadAttention` is the layer the notebook builds around `scaled_dot_product_attention`. Nothing in the block would surprise a reader who understood kernel smoothing and the gradient descent of Chapter 3; the transformer is those ideas, made deep and made trainable. Stacking many such blocks gives the architecture that Chapter 12 turns into a language model.
+
+One cost is worth naming. Because every token attends to every other, attention is O(n&sup2;) in sequence length n: a thousand-token sequence means roughly a million pairwise scores per layer. That quadratic scaling motivates sparse, linear, and flash-attention variants, though standard attention remains the right default for the moderate sequence lengths most applications use.
+
+::: {.explore}
+[Try it]{.lbl}
+
+In Colab, set `Q = K = V` and run attention with the projections frozen to the identity. With a fixed, un-learned similarity the layer reduces exactly to the Chapter 8 kernel smoother. Then let the network learn `W_q`, `W_k`, and `W_v`, and watch the heads discover which tokens should attend to which: that learned similarity is the whole of what attention adds.
+:::

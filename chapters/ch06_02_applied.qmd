@@ -1,0 +1,224 @@
+---
+title: "Applied — Evaluating a Classifier"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 6 · Model Evaluation]{.eyebrow}
+
+# Applied — Evaluating a Classifier
+
+[Training a classifier is the easy half. The chapter is the other half: judging it with a confusion matrix, precision, recall, and an ROC curve with its AUC.]{.dek}
+:::
+
+A classifier outputs probabilities, and a probability is not yet a verdict. To turn it into
+one we pick a threshold, and every choice of threshold trades one kind of mistake against
+another. Evaluation is the discipline of measuring those trade-offs honestly. We fit a
+logistic-regression classifier and then run it through the chapter's toolkit: the
+[confusion matrix]{.term}, the [precision]{.term} / [recall]{.term} / $F_1$ triple built on
+its four counts, and the [ROC curve]{.term} with its [AUC]{.term}.
+
+The Python panels use the Wisconsin breast-cancer data, 569 tumors with thirty measurements
+each, labeled malignant or benign; it ships inside scikit-learn, so nothing downloads. Base R
+has no such dataset, so the R panels simulate a comparable two-class problem and fit the same
+kind of logistic model. The numbers differ between the two columns because the data differ;
+the evaluation machinery is identical.
+
+::: {.defbox}
+[Precision, Recall, F&#8321;]{.lbl}
+[ precision = TP / (TP + FP) &nbsp;&middot;&nbsp; recall = TP / (TP + FN) &nbsp;&middot;&nbsp; F&#8321; = 2 &middot; precision &middot; recall / (precision + recall) ]{.math}
+:::
+
+## The confusion matrix, and the metrics built on it
+
+At a threshold of $0.5$ the [confusion matrix]{.term} tallies the four outcomes: true and
+false positives, true and false negatives. Treating "benign" as the positive class,
+[precision]{.term} asks what fraction of the cases flagged benign really are, and
+[recall]{.term} asks what fraction of the truly benign cases were caught. $F_1$ is their
+harmonic mean, a single number that punishes a model for sacrificing one to inflate the other.
+The heatmap below is just the matrix, shaded by count.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score
+
+# The Wisconsin breast-cancer data ships inside scikit-learn, so no download.
+data = load_breast_cancer()
+X_tr, X_te, y_tr, y_te = train_test_split(
+    data.data, data.target, test_size=0.25, random_state=0, stratify=data.target)
+scaler = StandardScaler().fit(X_tr)
+clf = LogisticRegression(max_iter=5000).fit(scaler.transform(X_tr), y_tr)
+proba = clf.predict_proba(scaler.transform(X_te))[:, 1]   # P(benign)
+pred = (proba >= 0.5).astype(int)
+
+cm = confusion_matrix(y_te, pred)                          # rows = actual, cols = predicted
+print("Confusion matrix [rows actual, cols predicted]:")
+print(cm)
+print(f"precision {precision_score(y_te, pred):.3f} | "
+      f"recall {recall_score(y_te, pred):.3f} | F1 {f1_score(y_te, pred):.3f}")
+
+fig, ax = plt.subplots(figsize=(3.9, 3.7))
+ax.imshow(cm, cmap="Blues")
+for i in range(2):
+    for j in range(2):
+        ax.text(j, i, cm[i, j], ha="center", va="center", fontsize=13, color="#31417A")
+ax.set_xticks([0, 1]); ax.set_xticklabels(["malignant", "benign"])
+ax.set_yticks([0, 1]); ax.set_yticklabels(["malignant", "benign"])
+ax.set_xlabel("predicted"); ax.set_ylabel("actual")
+plt.tight_layout()
+plt.show()
+```
+
+## R
+```{webr}
+# Base R has no breast-cancer dataset, so we simulate a comparable two-class
+# problem: two overlapping measurements, benign cases sitting higher on both.
+set.seed(0)
+n <- 400
+y  <- rbinom(n, 1, 0.6)                                  # 1 = benign, 0 = malignant
+x1 <- rnorm(n, mean = ifelse(y == 1, 2.0, 0), sd = 1.4)
+x2 <- rnorm(n, mean = ifelse(y == 1, 1.5, 0), sd = 1.4)
+
+idx   <- sample(n, size = 0.75 * n)                      # 75 / 25 split
+train <- data.frame(y, x1, x2)[idx, ]
+test  <- data.frame(y, x1, x2)[-idx, ]
+
+fit   <- glm(y ~ x1 + x2, family = binomial, data = train)
+proba <- predict(fit, newdata = test, type = "response") # P(benign)
+pred  <- as.integer(proba >= 0.5)
+
+cm <- table(actual    = factor(test$y, levels = c(0, 1)),
+            predicted = factor(pred,   levels = c(0, 1)))
+cat("Confusion matrix [rows actual, cols predicted]:\n")
+print(cm)
+
+TP <- cm["1","1"]; FP <- cm["0","1"]; FN <- cm["1","0"]; TN <- cm["0","0"]
+precision <- TP / (TP + FP)
+recall    <- TP / (TP + FN)
+f1        <- 2 * precision * recall / (precision + recall)
+cat(sprintf("precision %.3f | recall %.3f | F1 %.3f\n", precision, recall, f1))
+
+# Confusion-matrix heatmap, blue identity (rows actual, cols predicted)
+counts <- matrix(c(TN, FP, FN, TP), nrow = 2, byrow = TRUE)
+labels <- c("malignant", "benign")
+shade  <- counts / max(counts)
+plot(NA, xlim = c(0, 2), ylim = c(0, 2), axes = FALSE, asp = 1,
+     xlab = "predicted", ylab = "actual")
+for (i in 1:2) for (j in 1:2) {
+  rect(j - 1, 2 - i, j, 3 - i,
+       col = rgb(7, 111, 161, alpha = 255 * shade[i, j], maxColorValue = 255),
+       border = "white")
+  text(j - 0.5, 2.5 - i, counts[i, j], cex = 1.4, col = "#31417A")
+}
+axis(1, at = c(0.5, 1.5), labels = labels, tick = FALSE)
+axis(2, at = c(1.5, 0.5), labels = labels, tick = FALSE, las = 1)
+```
+
+:::
+
+A high-recall, high-precision matrix has its mass on the diagonal: most cases are graded
+correctly, and the off-diagonal counts are the errors. But every count here is a hostage to
+that one threshold of $0.5$. Move it, and the whole table shifts.
+
+## ROC and AUC: every threshold at once
+
+Rather than commit to one threshold, sweep it from $1$ down to $0$ and record, at each stop,
+the true-positive rate against the false-positive rate. The trace is the [ROC curve]{.term}.
+The [AUC]{.term}, the area beneath it, has a clean reading: it is the probability that the
+model scores a random positive above a random negative. A perfect ranker scores $1$; blind
+guessing traces the diagonal and scores $0.5$. It summarizes a classifier across all
+thresholds at once, before any threshold is chosen.
+
+The R panel computes the same curve from first principles: sweep the predicted probabilities,
+count the rates, and integrate the area with the trapezoidal rule. scikit-learn's
+`roc_curve` and `roc_auc_score` do exactly this, faster.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_curve, roc_auc_score
+
+data = load_breast_cancer()
+X_tr, X_te, y_tr, y_te = train_test_split(
+    data.data, data.target, test_size=0.25, random_state=0, stratify=data.target)
+scaler = StandardScaler().fit(X_tr)
+clf = LogisticRegression(max_iter=5000).fit(scaler.transform(X_tr), y_tr)
+proba = clf.predict_proba(scaler.transform(X_te))[:, 1]   # P(benign)
+
+fpr, tpr, _ = roc_curve(y_te, proba)
+auc = roc_auc_score(y_te, proba)
+print(f"AUC = {auc:.3f}")
+
+fig, ax = plt.subplots(figsize=(5, 4.5))
+ax.plot(fpr, tpr, color="#076FA1", lw=2, label=f"AUC = {auc:.3f}")
+ax.plot([0, 1], [0, 1], color="#666666", ls="--", lw=1, label="chance")
+ax.set_xlabel("false-positive rate"); ax.set_ylabel("true-positive rate")
+ax.legend()
+plt.tight_layout()
+plt.show()
+```
+
+## R
+```{webr}
+# Same simulated two-class problem as the confusion-matrix panel.
+set.seed(0)
+n <- 400
+y  <- rbinom(n, 1, 0.6)
+x1 <- rnorm(n, mean = ifelse(y == 1, 2.0, 0), sd = 1.4)
+x2 <- rnorm(n, mean = ifelse(y == 1, 1.5, 0), sd = 1.4)
+idx   <- sample(n, size = 0.75 * n)
+train <- data.frame(y, x1, x2)[idx, ]
+test  <- data.frame(y, x1, x2)[-idx, ]
+fit   <- glm(y ~ x1 + x2, family = binomial, data = train)
+proba <- predict(fit, newdata = test, type = "response")
+yt    <- test$y
+
+# Sweep the threshold across every predicted probability and read off the rates.
+thr <- sort(unique(c(0, proba, 1)), decreasing = TRUE)
+P <- sum(yt == 1); N <- sum(yt == 0)
+tpr <- sapply(thr, function(t) sum(proba >= t & yt == 1) / P)
+fpr <- sapply(thr, function(t) sum(proba >= t & yt == 0) / N)
+
+# AUC by the trapezoidal rule under the ROC curve.
+o   <- order(fpr)
+auc <- sum(diff(fpr[o]) * (head(tpr[o], -1) + tail(tpr[o], -1)) / 2)
+cat(sprintf("AUC = %.3f\n", auc))
+
+plot(fpr, tpr, type = "l", col = "#076FA1", lwd = 2,
+     xlim = c(0, 1), ylim = c(0, 1),
+     xlab = "false-positive rate", ylab = "true-positive rate")
+abline(0, 1, col = "#666666", lty = 2)
+legend("bottomright", legend = c(sprintf("AUC = %.3f", auc), "chance"),
+       col = c("#076FA1", "#666666"), lty = c(1, 2), lwd = c(2, 1), bty = "n")
+```
+
+:::
+
+The breast-cancer classifier rides close to the top-left corner, an AUC near $0.99$: these
+classes separate cleanly. The simulated R problem overlaps more, so its curve bows less and
+its AUC is lower. That is the honest reading of AUC. It rates the ranking, not the dataset,
+and an easy problem flatters any reasonable model.
+
+::: {.explore}
+[Try it]{.lbl}
+Move the threshold off $0.5$ and watch precision trade against recall. For a cancer screen,
+which error is worse, a missed malignancy or a false alarm, and which way should the threshold
+move? Then recall that a model can post a high AUC yet be poorly *calibrated*: bin the
+predicted probabilities and plot predicted against observed frequency to ask whether "0.7"
+really means 70%.
+:::

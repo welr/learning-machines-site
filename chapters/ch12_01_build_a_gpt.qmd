@@ -1,0 +1,112 @@
+---
+title: "Capstone — Build a GPT"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 12 · Large Language Models]{.eyebrow}
+
+# Capstone — Build a GPT
+
+[Assemble Chapter 11's transformer blocks into a character-level language model and train it by next-token prediction, the maximum likelihood of Chapter 2 at scale.]{.dek}
+:::
+
+The book ends where it has been heading since the first regression line. A [GPT]{.term} is a stack of the transformer blocks of Chapter 11, trained on one objective: predict the next token. That objective is [maximum likelihood]{.term}, the principle that produced ordinary least squares in Chapter 2, now applied to a categorical distribution over a vocabulary, exactly as in the softmax regression of Chapter 4. The capstone writes each piece you have read about, an attention head, a transformer block, the training loop, and autoregressive generation, then trains a model of about a third of a million parameters until it produces rough Shakespeare on a laptop.
+
+The step-by-step structure follows Andrej Karpathy's *"Let's build GPT"* lecture and his [nanoGPT](https://github.com/karpathy/nanoGPT); the code is our own, in the book's notation. For real tokenization and GPT-2-scale weights, nanoGPT is where to go next.
+
+## Characters in, characters out
+
+Production models tokenize text into sub-word pieces (Chapter 12). Here we keep things as simple as possible and work [character by character]{.term}, so the vocabulary is just the set of distinct characters in the corpus, Karpathy's *Tiny Shakespeare*, about a megabyte of the plays. An `encode` map sends each character to an integer and `decode` sends it back. A batch is a stack of random fixed-length windows, with the targets shifted one position right: at every position the model is asked to predict the next character. That one-position shift is the entire supervision signal. The model never sees a label beyond "what came next."
+
+## A transformer block
+
+The heart of a block is [self-attention]{.term} (Chapter 11). Each position is projected to a query, a key, and a value; every query is scored against every key; the scores are scaled by the square root of the head width to keep the softmax out of saturation; a [causal mask]{.term} forces position *t* to ignore everything after it; and a softmax turns the surviving scores into weights that mix the values. [Multi-head attention]{.term} runs several such heads in parallel slices of the model width and concatenates them. A block follows that with a position-wise feed-forward network, and wraps each sublayer in the two devices that make deep transformers trainable: a [residual connection]{.term}, the gradient highway of Chapter 9, and [layer normalization]{.term} applied before each sublayer.
+
+PyTorch wants a numerical stack and ideally a GPU, more than a browser sandbox can carry, and the notebook downloads a small text corpus to train on, so the capstone runs in Google Colab: one click, free hardware, no local install.
+
+```{=html}
+<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open the capstone in Google Colab</a>
+```
+
+The code below is here for reference; open it in Colab to run and modify it. A block is attention then feed-forward, each computed on a normalized copy of the input and added back through the residual.
+
+```python
+import torch.nn as nn
+
+class Block(nn.Module):
+    """A transformer block: pre-norm attention and feed-forward, each with a residual."""
+    def __init__(self, n_embd, n_head):
+        super().__init__()
+        head_size = n_embd // n_head
+        self.attn = MultiHeadAttention(n_head, head_size)
+        self.ffwd = FeedForward()
+        self.norm1 = nn.LayerNorm(n_embd)
+        self.norm2 = nn.LayerNorm(n_embd)
+
+    def forward(self, x):
+        x = x + self.attn(self.norm1(x))     # residual around attention
+        x = x + self.ffwd(self.norm2(x))     # residual around feed-forward
+        return x
+```
+
+## Next-token prediction is maximum likelihood
+
+The full model strings it together: a token embedding and a position embedding (attention has no built-in sense of order), a stack of blocks, a final layer norm, and a linear head that maps each position to a score over the vocabulary. Given targets, `forward` returns the [cross-entropy]{.term} between those scores and the next characters. This is the next-token objective in full, and it is the same loss as Chapter 4's softmax regression, now evaluated at every position of every sequence.
+
+::: {.defbox}
+[The Next-Token Objective]{.lbl}
+
+[ minimize &nbsp; &minus;&sum;<sub>t</sub> log p<sub>&theta;</sub>(x<sub>t+1</sub> &nbsp;|&nbsp; x<sub>1</sub>,&hellip;,x<sub>t</sub>) &nbsp;=&nbsp; cross-entropy &nbsp;=&nbsp; the MLE of Chapter 2 ]{.math}
+:::
+
+```python
+import torch
+import torch.nn.functional as F
+
+class GPTLanguageModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.token_embedding = nn.Embedding(vocab_size, n_embd)
+        self.position_embedding = nn.Embedding(block_size, n_embd)
+        self.blocks = nn.Sequential(*[Block(n_embd, n_head) for _ in range(n_layer)])
+        self.norm_final = nn.LayerNorm(n_embd)
+        self.lm_head = nn.Linear(n_embd, vocab_size)
+
+    def forward(self, idx, targets=None):
+        B, T = idx.shape
+        tok = self.token_embedding(idx)                              # (B, T, n_embd)
+        pos = self.position_embedding(torch.arange(T, device=idx.device))
+        x = self.norm_final(self.blocks(tok + pos))
+        logits = self.lm_head(x)                                     # (B, T, vocab_size)
+        if targets is None:
+            return logits, None
+        # next-token cross-entropy: the maximum likelihood of Chapter 2, at scale
+        loss = F.cross_entropy(logits.view(B * T, vocab_size), targets.view(B * T))
+        return logits, loss
+```
+
+## Training
+
+Minimizing that average cross-entropy is the training loop you already met in Chapter 9 and used unchanged in Chapter 10. Draw a batch, compute the loss, zero the gradients, backpropagate, step the optimizer. Only the model and the data differ. Alongside the loss it is worth reporting the [perplexity]{.term}, the exponential of the cross-entropy, the effective number of equally likely characters the model is choosing among at each step.
+
+```python
+optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+
+for step in range(max_iters + 1):
+    x, y = get_batch("train")             # windows of characters; y is x shifted one right
+    _, loss = model(x, y)                 # forward pass returns the next-token cross-entropy
+    optimizer.zero_grad(set_to_none=True)
+    loss.backward()                       # backpropagation
+    optimizer.step()                      # theta <- theta - lr * grad
+```
+
+To generate, the model runs forward one character at a time: take the logits at the last position, turn them into a distribution, sample, append, and repeat. This is [autoregressive decoding]{.term}. Two controls from Chapter 12 shape the output: a [temperature]{.term} that divides the logits before the softmax, sharpening or flattening the distribution, and an optional [top-k]{.term} truncation that keeps only the most probable characters.
+
+A third of a million parameters, trained for a couple of minutes on a megabyte of text, learns the *shape* of the data: line breaks, speaker labels in capitals, the rhythm of the verse, plausible-looking words. It is not yet coherent. That gap is the subject of Chapter 12's scaling laws, in which the cross-entropy floor lies far below where we are and the way down is more parameters and more data, grown together. nanoGPT is this same architecture scaled up until the babble becomes fluent.
+
+::: {.explore}
+[Try it]{.lbl}
+
+In Colab, train for a few hundred steps and watch the loss fall, then sample at temperatures 0.5, 0.8, and 1.2 and compare. Low temperature is cautious and repetitive; high temperature is adventurous and error-prone. Then swap *Tiny Shakespeare* for a different corpus, a public-domain economics text, say, and re-run from the data step: the same estimator of Chapter 2 learns an entirely different voice.
+:::

@@ -1,0 +1,221 @@
+---
+title: "Applied — Logistic Regression, Odds, and a Generative Cousin"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 4 · Classification]{.eyebrow}
+
+# Applied — Logistic Regression, Odds, and a Generative Cousin
+
+[Read a fitted logistic model as a table of odds, then watch its generative cousin, linear discriminant analysis, land in almost the same place.]{.dek}
+:::
+
+A short companion to the classification chapter. We fit [logistic regression]{.term} to a
+screening dataset, read its coefficients as [odds]{.term}, and then fit [linear discriminant
+analysis]{.term}, the *generative* counterpart to logistic regression's *discriminative* fit,
+to see how close the two land.
+
+The source notebook fetches the Pima diabetes data over the network. That download cannot run
+in the browser, so we simulate a comparable screening dataset from a known two-Gaussian model,
+which has the side benefit of making the shared-covariance assumption behind linear discriminant
+analysis exactly true. Five markers (glucose, BMI, age, blood pressure, and HDL) separate a
+positive class from a negative one; we standardize them so each coefficient measures the effect
+of a one-standard-deviation change, which makes the coefficients comparable.
+
+## Logistic regression, read as odds
+
+Logistic regression models the [log-odds]{.term} of a positive test as a linear function of the
+features. A coefficient is therefore a change in log-odds, and exponentiating it gives an
+[odds ratio]{.term}: the factor by which the odds of a positive test multiply for a
+one-standard-deviation rise in that feature. Above one raises the odds; below one lowers them.
+
+::: {.defbox}
+[Logistic Regression in Log-Odds]{.lbl}
+[ log( p ∕ (1 − p) ) = θ₀ + θ₁x₁ + ⋯ + θₚxₚ &nbsp;&nbsp;⟹&nbsp;&nbsp; odds ratioⱼ = exp(θⱼ) ]{.math}
+:::
+
+The bar chart sorts the five markers by their odds ratio. Glucose and BMI multiply the odds the
+most; HDL, a protective marker, sits below one and lowers them. Because the data are simulated,
+Python and R draw from different random number generators, so the exact odds ratios and the test
+accuracy differ between the two panels. The ranking of the markers is the same in both.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LogisticRegression
+
+# A simulated screening dataset (no network): five markers, two classes
+# drawn from Gaussians with a SHARED covariance.
+rng = np.random.default_rng(0)
+names = ["glucose", "bmi", "age", "blood pressure", "hdl"]
+shift = np.array([1.3, 0.9, 0.5, 0.3, -0.8])     # positive-class mean shift
+n = 200                                           # patients per class
+neg = rng.normal(0, 1, (n, 5))
+pos = rng.normal(0, 1, (n, 5)) + shift
+X = np.vstack([neg, pos]); y = np.r_[np.zeros(n), np.ones(n)].astype(int)
+
+# 75/25 split, then standardize so each coefficient is a per-SD effect
+idx = rng.permutation(len(X)); cut = int(0.75 * len(X))
+tr, te = idx[:cut], idx[cut:]
+mu, sd = X[tr].mean(0), X[tr].std(0)
+X_tr, X_te = (X[tr] - mu) / sd, (X[te] - mu) / sd
+y_tr, y_te = y[tr], y[te]
+
+logreg = LogisticRegression(max_iter=1000).fit(X_tr, y_tr)
+odds = np.exp(logreg.coef_[0])                    # exp(coefficient) = odds ratio
+order = np.argsort(odds)
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.barh(range(len(names)), odds[order],
+        color=["#076FA1" if o > 1 else "#666666" for o in odds[order]])
+ax.axvline(1.0, color="#E3120B", lw=1)
+ax.set_yticks(range(len(names))); ax.set_yticklabels([names[i] for i in order])
+ax.set_xlabel("odds ratio  (exp of coefficient)")
+plt.tight_layout(); plt.show()
+
+for i in order[::-1]:
+    print(f"  {names[i]:>14}: OR = {odds[i]:.2f}")
+print(f"\ntest accuracy: {logreg.score(X_te, y_te):.3f}")
+```
+
+## R
+```{webr}
+# A simulated screening dataset (no network): five markers, two classes
+# drawn from Gaussians with a SHARED covariance.
+set.seed(0)
+names <- c("glucose", "bmi", "age", "blood pressure", "hdl")
+shift <- c(1.3, 0.9, 0.5, 0.3, -0.8)     # positive-class mean shift
+n <- 200                                  # patients per class
+neg <- matrix(rnorm(n * 5), n, 5)
+pos <- matrix(rnorm(n * 5), n, 5) + matrix(shift, n, 5, byrow = TRUE)
+X <- rbind(neg, pos); y <- c(rep(0, n), rep(1, n))
+
+# 75/25 split, then standardize so each coefficient is a per-SD effect
+idx <- sample(nrow(X)); cut <- floor(0.75 * nrow(X))
+tr <- idx[1:cut]; te <- idx[(cut + 1):nrow(X)]
+mu <- colMeans(X[tr, ]); sds <- apply(X[tr, ], 2, sd)
+X_tr <- scale(X[tr, ], center = mu, scale = sds)
+X_te <- scale(X[te, ], center = mu, scale = sds)
+y_tr <- y[tr]; y_te <- y[te]
+
+df <- as.data.frame(X_tr); colnames(df) <- paste0("f", 1:5); df$y <- y_tr
+logreg <- glm(y ~ ., data = df, family = binomial)
+odds <- exp(coef(logreg)[-1])             # exp(coefficient) = odds ratio (drop intercept)
+ord <- order(odds)
+
+cols <- ifelse(odds[ord] > 1, "#076FA1", "#666666")
+barplot(odds[ord], names.arg = names[ord], horiz = TRUE, las = 1,
+        col = cols, xlab = "odds ratio  (exp of coefficient)")
+abline(v = 1.0, col = "#E3120B", lwd = 1)
+
+for (i in rev(ord)) cat(sprintf("  %14s: OR = %.2f\n", names[i], odds[i]))
+test_df <- as.data.frame(X_te); colnames(test_df) <- paste0("f", 1:5)
+prob <- predict(logreg, newdata = test_df, type = "response")
+cat(sprintf("\ntest accuracy: %.3f\n", mean((prob > 0.5) == (y_te == 1))))
+```
+
+:::
+
+## Discriminative versus generative
+
+Logistic regression is [discriminative]{.term}: it models $P(y \mid \mathbf{x})$ directly.
+Linear discriminant analysis is its [generative]{.term} sibling. It models each class's feature
+distribution and applies Bayes' rule, which, under a shared Gaussian covariance, also yields a
+*linear* boundary. Our data were generated with exactly that shared covariance, so the two
+methods should land in nearly the same place, and they do.
+
+Python uses scikit-learn's `LinearDiscriminantAnalysis`. R has no discriminant routine in its
+base distribution, so we implement the core idea in a few lines: estimate each class mean and a
+single pooled covariance, then assign each test point to the class with the larger discriminant
+score. The production tool in R is `MASS::lda`; the hand-rolled version below shows what it
+computes.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+
+# Same simulated screening dataset, regenerated so the cell stands alone.
+rng = np.random.default_rng(0)
+shift = np.array([1.3, 0.9, 0.5, 0.3, -0.8])
+n = 200
+neg = rng.normal(0, 1, (n, 5))
+pos = rng.normal(0, 1, (n, 5)) + shift
+X = np.vstack([neg, pos]); y = np.r_[np.zeros(n), np.ones(n)].astype(int)
+
+idx = rng.permutation(len(X)); cut = int(0.75 * len(X))
+tr, te = idx[:cut], idx[cut:]
+mu, sd = X[tr].mean(0), X[tr].std(0)
+X_tr, X_te = (X[tr] - mu) / sd, (X[te] - mu) / sd
+y_tr, y_te = y[tr], y[te]
+
+logreg = LogisticRegression(max_iter=1000).fit(X_tr, y_tr)   # discriminative
+lda = LinearDiscriminantAnalysis().fit(X_tr, y_tr)           # generative
+
+print(f"logistic regression  (discriminative)  test accuracy: {logreg.score(X_te, y_te):.3f}")
+print(f"linear discriminant  (generative)      test accuracy: {lda.score(X_te, y_te):.3f}")
+```
+
+## R
+```{webr}
+# Same simulated screening dataset, regenerated so the cell stands alone.
+set.seed(0)
+shift <- c(1.3, 0.9, 0.5, 0.3, -0.8)
+n <- 200
+neg <- matrix(rnorm(n * 5), n, 5)
+pos <- matrix(rnorm(n * 5), n, 5) + matrix(shift, n, 5, byrow = TRUE)
+X <- rbind(neg, pos); y <- c(rep(0, n), rep(1, n))
+
+idx <- sample(nrow(X)); cut <- floor(0.75 * nrow(X))
+tr <- idx[1:cut]; te <- idx[(cut + 1):nrow(X)]
+mu <- colMeans(X[tr, ]); sds <- apply(X[tr, ], 2, sd)
+X_tr <- scale(X[tr, ], center = mu, scale = sds)
+X_te <- scale(X[te, ], center = mu, scale = sds)
+y_tr <- y[tr]; y_te <- y[te]
+
+# Logistic regression: discriminative, models P(y | x) directly
+df <- as.data.frame(X_tr); colnames(df) <- paste0("f", 1:5); df$y <- y_tr
+logreg <- glm(y ~ ., data = df, family = binomial)
+test_df <- as.data.frame(X_te); colnames(test_df) <- paste0("f", 1:5)
+p_lr <- predict(logreg, newdata = test_df, type = "response")
+acc_lr <- mean((p_lr > 0.5) == (y_te == 1))
+
+# Linear discriminant analysis by hand: generative, models each class then
+# applies Bayes' rule under a shared (pooled) covariance.
+mu0 <- colMeans(X_tr[y_tr == 0, ]); mu1 <- colMeans(X_tr[y_tr == 1, ])
+n0 <- sum(y_tr == 0); n1 <- sum(y_tr == 1)
+Sp <- ((n0 - 1) * cov(X_tr[y_tr == 0, ]) +
+       (n1 - 1) * cov(X_tr[y_tr == 1, ])) / (n0 + n1 - 2)
+Sinv <- solve(Sp)
+disc <- function(M, m, prior)
+  as.vector(M %*% Sinv %*% m) - 0.5 * drop(t(m) %*% Sinv %*% m) + log(prior)
+d0 <- disc(X_te, mu0, n0 / (n0 + n1))
+d1 <- disc(X_te, mu1, n1 / (n0 + n1))
+acc_lda <- mean((d1 > d0) == (y_te == 1))
+
+cat(sprintf("logistic regression  (discriminative)  test accuracy: %.3f\n", acc_lr))
+cat(sprintf("linear discriminant  (generative)      test accuracy: %.3f\n", acc_lda))
+```
+
+:::
+
+The two classifiers reach almost identical accuracy. That is no accident here: when the
+generative model's assumptions hold, its decision boundary and logistic regression's coincide in
+the limit. The textbook's Ng--Jordan note adds the practical wrinkle: with little data the
+generative model can win, because it borrows strength from its assumptions; with abundant data
+the discriminative model usually catches up and passes it.
+
+::: {.explore}
+[Try it]{.lbl}
+Shrink the training set to a few dozen patients (lower `cut`, or slice `tr`) and rerun the
+comparison. Which classifier degrades less? Then break the shared-covariance assumption by
+scaling the positive class's features before the split, and watch the linear discriminant lose
+its edge as its modeling assumption stops holding.
+:::

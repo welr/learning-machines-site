@@ -1,0 +1,112 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - index.qmd
+    - chapters/*.qmd
+
+website:
+  title: "Learning Machines"
+  description: "A Statistical Introduction — interactive companion"
+  navbar:
+    background: light
+    pinned: true
+    right:
+      - icon: github
+        href: "https://github.com/"
+  sidebar:
+    style: floating
+    search: true
+    collapse-level: 1
+    contents:
+      - text: "Contents"
+      - href: index.qmd
+        text: "1 · Introduction"
+      - section: "2 · Regression Models"
+        contents:
+          - href: chapters/ch02_01_polynomial_regression.qmd
+            text: "Polynomial Regression"
+          - href: chapters/ch02_02_linear_regression_ols.qmd
+            text: "Ordinary Least Squares"
+          - href: chapters/ch02_03_bayesian_regression.qmd
+            text: "Bayesian Regression"
+          - href: chapters/ch02_04_applied.qmd
+            text: "Applied: Real Data"
+      - section: "3 · Gradient Descent"
+        contents:
+          - href: chapters/ch03_01_gradient_descent.qmd
+            text: "Gradient Descent"
+      - section: "4 · Classification"
+        contents:
+          - href: chapters/ch04_01_logistic_regression.qmd
+            text: "Logistic Regression"
+          - href: chapters/ch04_02_multiclass.qmd
+            text: "Multi-Class Classification"
+          - href: chapters/ch04_03_applied.qmd
+            text: "Applied: Odds & LDA"
+      - section: "5 · Learning Theory"
+        contents:
+          - href: chapters/ch05_01_bias_variance.qmd
+            text: "The Bias–Variance Trade-off"
+      - section: "6 · Model Evaluation"
+        contents:
+          - href: chapters/ch06_01_model_evaluation.qmd
+            text: "Model Evaluation"
+          - href: chapters/ch06_02_applied.qmd
+            text: "Applied: A Classifier"
+      - section: "7 · Regularization"
+        contents:
+          - href: chapters/ch07_01_regularization.qmd
+            text: "Ridge and LASSO"
+          - href: chapters/ch07_02_applied.qmd
+            text: "Applied: The Path"
+      - section: "8 · Kernels, Trees, Ensembles"
+        contents:
+          - href: chapters/ch08_01_trees_ensembles.qmd
+            text: "Decision Trees & Ensembles"
+          - href: chapters/ch08_02_kernel_methods.qmd
+            text: "Kernel Methods"
+          - href: chapters/ch08_03_applied.qmd
+            text: "Applied: Decision Boundaries"
+      - section: "9 · Neural Networks"
+        contents:
+          - href: chapters/ch09_01_backpropagation.qmd
+            text: "Backpropagation"
+          - href: chapters/ch09_02_applied.qmd
+            text: "Applied: A Net in PyTorch"
+      - section: "10 · Convolutional Networks"
+        contents:
+          - href: chapters/ch10_01_convnets.qmd
+            text: "Convolutional Networks"
+          - href: chapters/ch10_02_applied.qmd
+            text: "Applied: A ConvNet"
+      - section: "11 · Attention & Transformers"
+        contents:
+          - href: chapters/ch11_01_attention_transformers.qmd
+            text: "Attention & Transformers"
+          - href: chapters/ch11_02_applied.qmd
+            text: "Applied: From Scratch"
+      - section: "12 · Language Models"
+        contents:
+          - href: chapters/ch12_01_build_a_gpt.qmd
+            text: "Capstone: Build a GPT"
+  page-footer:
+    border: true
+    left: "Learning Machines · A Statistical Introduction"
+    right: "Run in the browser — Python via Pyodide, R via WebR"
+
+format:
+  live-html:
+    theme: theme.scss
+    include-in-header:
+      text: |
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Inconsolata:wght@400;500;600&display=swap" rel="stylesheet">
+    toc: true
+    toc-title: "On this page"
+    grid:
+      sidebar-width: 290px
+      body-width: 820px
+      margin-width: 220px
+    code-tools: false

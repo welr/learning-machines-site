@@ -1,0 +1,152 @@
+---
+title: "Applied — Attention from Scratch"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 11 · Attention & the Transformer]{.eyebrow}
+
+# Applied — Attention from Scratch
+
+[Build the self-attention head and the transformer block, then train a one-head model and watch it learn where to look.]{.dek}
+:::
+
+This is the keystone rung toward the book's capstone. Here you build the two pieces a GPT assembles: a self-attention [Head]{.term} and a transformer [Block]{.term}. First you watch attention compute on a concrete input, seeing the causal mask make each position look only backward; then you train a one-head model on a tiny task and watch it learn where to look. The head you write here is the exact code the Chapter 12 capstone drops into its GPT.
+
+## The attention head
+
+A single [head]{.term} of self-attention projects each position to a [query]{.term}, a [key]{.term}, and a [value]{.term}. It scores every query against every key, scales by &radic;d&#8342; to keep the scores well-conditioned, masks the future so a position sees only itself and the past, softmaxes the scores into weights, and returns the weighted sum of the values. The [causal mask]{.term} is what makes the model autoregressive: position $t$ may attend to positions $0$ through $t$, never ahead.
+
+::: {.defbox}
+[Scaled Dot-Product Attention]{.lbl}
+
+[ Attention(Q, K, V) = softmax(QK&#8868; / &radic;d&#8342;) V ]{.math}
+:::
+
+From Chapter 9 onward the models train with PyTorch, which wants a numerical stack and ideally a GPU; that is more than a browser sandbox can carry, so this notebook runs in **Google Colab**, one click to Google's free hardware with no local install. The code below is here for reference; open it in Colab to run, inspect, and modify it.
+
+```{=html}
+<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+```
+
+```python
+import torch
+import torch.nn as nn
+from torch.nn import functional as F
+
+class Head(nn.Module):
+    """One head of causal self-attention; stores its weights so we can inspect them."""
+    def __init__(self, n_embd, head_size, block_size):
+        super().__init__()
+        self.key   = nn.Linear(n_embd, head_size, bias=False)
+        self.query = nn.Linear(n_embd, head_size, bias=False)
+        self.value = nn.Linear(n_embd, head_size, bias=False)
+        self.register_buffer("tril", torch.tril(torch.ones(block_size, block_size)))
+        self.attn_weights = None
+
+    def forward(self, x):
+        B, T, C = x.shape
+        k = self.key(x)
+        q = self.query(x)
+        weights = q @ k.transpose(-2, -1) * k.shape[-1] ** -0.5            # scaled scores
+        weights = weights.masked_fill(self.tril[:T, :T] == 0, float("-inf"))  # causal mask
+        weights = F.softmax(weights, dim=-1)                              # rows sum to 1
+        self.attn_weights = weights.detach()                             # keep for plotting
+        return weights @ self.value(x)
+```
+
+## See it compute
+
+Feed a short random sequence through an untrained head and read its attention matrix. Entry $(i, j)$ is how much position $i$ attends to position $j$. Because of the mask the matrix is lower-triangular, every position attends only to itself and earlier ones, and each row sums to one. In Colab the heatmap shows this at a glance, even before any training.
+
+## From a head to a transformer block
+
+[Multi-head attention]{.term} runs several heads in parallel and concatenates their outputs; a [transformer block]{.term} wraps multi-head attention and a position-wise feed-forward network in residual connections and layer normalization, the residual you built in Chapter 10. These are the same classes the capstone uses, unchanged.
+
+```python
+class MultiHeadAttention(nn.Module):
+    def __init__(self, num_heads, head_size, n_embd, block_size):
+        super().__init__()
+        self.heads = nn.ModuleList([Head(n_embd, head_size, block_size) for _ in range(num_heads)])
+        self.proj = nn.Linear(num_heads * head_size, n_embd)
+
+    def forward(self, x):
+        return self.proj(torch.cat([h(x) for h in self.heads], dim=-1))
+
+
+class FeedForward(nn.Module):
+    def __init__(self, n_embd):
+        super().__init__()
+        self.net = nn.Sequential(nn.Linear(n_embd, 4 * n_embd), nn.ReLU(), nn.Linear(4 * n_embd, n_embd))
+
+    def forward(self, x):
+        return self.net(x)
+
+
+class Block(nn.Module):
+    def __init__(self, n_embd, n_head, block_size):
+        super().__init__()
+        self.attn = MultiHeadAttention(n_head, n_embd // n_head, n_embd, block_size)
+        self.ffwd = FeedForward(n_embd)
+        self.norm1 = nn.LayerNorm(n_embd); self.norm2 = nn.LayerNorm(n_embd)
+
+    def forward(self, x):
+        x = x + self.attn(self.norm1(x))     # residual around attention
+        x = x + self.ffwd(self.norm2(x))     # residual around feed-forward
+        return x
+```
+
+## Does it learn where to look?
+
+Attention earns its keep only if the network can learn what to attend to. Here is a task that forces the issue: at every position, predict the [first token]{.term} of the sequence. The only way to know the first token at position $t$ is to look back to position $0$, so a causal head must learn to attend there. We train with the same loop as Chapters 9 and 10: draw a batch, compute the loss, backpropagate, step the optimizer.
+
+```python
+V, T, n_embd = 12, 8, 32
+
+def get_batch(batch=64):
+    x = torch.randint(0, V, (batch, T))
+    y = x[:, 0:1].expand(batch, T).contiguous()   # target = the first token, at every position
+    return x, y
+
+class RecallModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.tok = nn.Embedding(V, n_embd)
+        self.pos = nn.Embedding(T, n_embd)
+        self.head = Head(n_embd, n_embd, T)
+        self.norm = nn.LayerNorm(n_embd)
+        self.out = nn.Linear(n_embd, V)
+
+    def forward(self, x, y=None):
+        B, Tt = x.shape
+        h = self.tok(x) + self.pos(torch.arange(Tt))
+        h = self.norm(self.head(h))
+        logits = self.out(h)
+        loss = None if y is None else F.cross_entropy(logits.reshape(-1, V), y.reshape(-1))
+        return logits, loss
+
+model = RecallModel()
+optimizer = torch.optim.AdamW(model.parameters(), lr=3e-3)
+for step in range(601):
+    x, y = get_batch()
+    _, loss = model(x, y)
+    optimizer.zero_grad(set_to_none=True)
+    loss.backward()
+    optimizer.step()
+    if step % 150 == 0:
+        with torch.no_grad():
+            xv, yv = get_batch(256)
+            logits, _ = model(xv)
+            acc = (logits.argmax(-1) == yv).float().mean().item()
+        print(f"step {step:3d} | loss {loss.item():.3f} | accuracy {acc:.3f}")
+```
+
+Within a few hundred steps the accuracy climbs toward one, and the averaged attention matrix collapses onto a single column: every position has learned to look back to position $0$, where the answer lives. Give it a different task and the head would learn to look elsewhere. This is what neither the MLP of Chapter 9 nor the convolution of Chapter 10 can do, route information from one position to another in a content-dependent way.
+
+**The capstone.** In Chapter 12 you stack these exact blocks into a GPT and train it on real text with the same loop you have now used three times. Only the scale and the data change; you have already written every part.
+
+::: {.explore}
+[Try it]{.lbl}
+
+In Colab, change the target to the *previous* token (shift the sequence right by one) and retrain; the learned attention should move to the sub-diagonal, each position looking one step back. Then remove the causal mask, predict the *last* token instead, and see where the attention goes. Finally, add a second head, or swap the single `Head` for the full `Block`, and watch whether the heads specialize.
+:::

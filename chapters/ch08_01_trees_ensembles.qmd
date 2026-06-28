@@ -1,0 +1,668 @@
+---
+title: "Decision Trees and Ensembles"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 8 · Kernel Methods, Trees & Ensembles]{.eyebrow}
+
+# Decision Trees and Ensembles
+
+[A tree asks a sequence of yes/no questions; the art is choosing the questions, and the power comes from combining many imperfect trees into one strong predictor.]{.dek}
+:::
+
+A [decision tree]{.term} carves the feature space into rectangles with axis-aligned cuts.
+At each node it asks whether a single feature exceeds a threshold, sends the point left or
+right, and repeats until a leaf delivers a prediction. This [recursive partitioning]{.term}
+is easy to read off a diagram, but a diagram hides the two questions that matter: where does
+each cut go, and what happens when one tree is not enough? The code below answers both. We
+measure how mixed a node is, find the split that purifies it most, watch a single tree
+overfit, and then build the two ensembles that fix it, [bagging]{.term} and
+[boosting]{.term}.
+
+## Measuring impurity
+
+A split is good when it makes the child nodes purer than the parent. To act on that we need
+a number for "mixed." Two are standard. [Gini impurity]{.term} is the probability that two
+random draws from the node disagree in class; [entropy]{.term} is the information content of
+the class distribution. Both are zero at a pure node and largest when the classes are evenly
+mixed, and in practice they track each other closely.
+
+::: {.defbox}
+[Impurity of a binary node]{.lbl}
+[ Gini &nbsp; G = 1 &minus; &Sigma; p<sub>k</sub><sup>2</sup> &nbsp;&nbsp;&nbsp;&nbsp; Entropy &nbsp; H = &minus; &Sigma; p<sub>k</sub> log<sub>2</sub> p<sub>k</sub> ]{.math}
+:::
+
+Plotting all three measures (including the blunter misclassification error) against the class
+proportion $p$ shows why Gini and entropy are preferred for growing trees: they are strictly
+concave, so any split that moves the children away from $p = 0.5$ is rewarded, even one that
+leaves the majority class unchanged.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Binary node: p is the fraction of class-1 points it contains.
+p = np.linspace(0.001, 0.999, 200)
+gini     = 1 - p**2 - (1 - p)**2
+entropy  = -p * np.log2(p) - (1 - p) * np.log2(1 - p)
+misclass = 1 - np.maximum(p, 1 - p)
+
+fig, ax = plt.subplots(figsize=(7, 5))
+ax.plot(p, gini,        color="#076FA1", lw=2.5, label="Gini")
+ax.plot(p, entropy / 2, color="#31417A", lw=2.5, label="Entropy / 2")
+ax.plot(p, misclass,    color="#666666", lw=2.5, ls="--", label="Misclassification")
+ax.axvline(0.5, color="#666666", ls=":", alpha=0.5)
+ax.set_xlabel("Proportion of class 1 ($p$)")
+ax.set_ylabel("Impurity")
+ax.set_xlim(0, 1); ax.set_ylim(0, 0.55)
+ax.legend()
+plt.tight_layout()
+plt.show()
+
+print("Impurity of a node as it gets purer:")
+for pv in [0.50, 0.70, 0.90, 0.99]:
+    g = 1 - pv**2 - (1 - pv)**2
+    print(f"  p = {pv:.2f}   Gini = {g:.3f}")
+```
+
+## R
+```{webr}
+# Binary node: p is the fraction of class-1 points it contains.
+p <- seq(0.001, 0.999, length.out = 200)
+gini     <- 1 - p^2 - (1 - p)^2
+entropy  <- -p * log2(p) - (1 - p) * log2(1 - p)
+misclass <- 1 - pmax(p, 1 - p)
+
+plot(p, gini, type = "l", lwd = 2.5, col = "#076FA1",
+     xlab = "Proportion of class 1 (p)", ylab = "Impurity",
+     xlim = c(0, 1), ylim = c(0, 0.55))
+lines(p, entropy / 2, lwd = 2.5, col = "#31417A")
+lines(p, misclass, lwd = 2.5, lty = 2, col = "#666666")
+abline(v = 0.5, lty = 3, col = "#666666")
+legend("topright", bty = "n",
+       legend = c("Gini", "Entropy / 2", "Misclassification"),
+       col = c("#076FA1", "#31417A", "#666666"), lwd = 2.5, lty = c(1, 1, 2))
+
+cat("Impurity of a node as it gets purer:\n")
+for (pv in c(0.50, 0.70, 0.90, 0.99)) {
+  g <- 1 - pv^2 - (1 - pv)^2
+  cat(sprintf("  p = %.2f   Gini = %.3f\n", pv, g))
+}
+```
+
+:::
+
+The two languages evaluate the same closed-form impurities, so the printed Gini values agree
+to every digit: $0.500$ at an even split, falling to $0.020$ once the node is $99\%$ one
+class.
+
+## One split: the decision stump
+
+The smallest possible tree makes a single cut. It is called a [decision stump]{.term}, and
+finding the best one is the engine inside every tree: scan every feature and every candidate
+threshold, and keep the split whose weighted child impurity is lowest. The reduction it
+achieves is the [impurity gain]{.term}.
+
+::: {.defbox}
+[Impurity gain of a split]{.lbl}
+[ gain = I(parent) &minus; (n<sub>L</sub>/n) I(left) &minus; (n<sub>R</sub>/n) I(right) ]{.math}
+:::
+
+On a small two-class data set built to overlap across both axes, the best stump cuts $x_1$ at
+$-0.5$ and recovers about five-sixths of the points. It cannot do better, because no single
+axis-aligned line separates these classes. That gap is the whole motivation for what follows:
+deeper trees, or many trees.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# A small fixed 2D data set: two classes that mostly separate but overlap.
+x1 = np.array([0.5, 1.5, 2.5, 1.0, 2.0, -1.5, -0.5, -1.5, -2.0, -1.0, -2.5, 2.0])
+x2 = np.array([1.0, 2.0, 1.5, 2.5, 0.5, -1.0, -1.0, -2.0, -0.5, -1.5, -1.0, 1.0])
+y  = np.array([1,   1,   1,   1,   1,   1,    0,    0,    0,    0,    0,    0])
+X  = np.column_stack([x1, x2])
+
+def gini(labels):
+    if len(labels) == 0:
+        return 0.0
+    p = labels.mean()
+    return 1 - p**2 - (1 - p)**2
+
+def best_split(X, y):
+    """Find the single axis-aligned split that most reduces weighted Gini."""
+    n, d = X.shape
+    parent = gini(y)
+    best = (-np.inf, None, None)        # (gain, feature, threshold)
+    for feature in range(d):
+        for t in np.unique(X[:, feature]):
+            left = X[:, feature] <= t
+            if left.sum() == 0 or (~left).sum() == 0:
+                continue
+            child = left.mean() * gini(y[left]) + (~left).mean() * gini(y[~left])
+            gain = parent - child
+            if gain > best[0]:
+                best = (gain, feature, t)
+    return best
+
+gain, feature, t = best_split(X, y)
+labels = ["x1", "x2"]
+left = X[:, feature] <= t
+left_pred  = int(y[left].mean() >= 0.5)
+right_pred = int(y[~left].mean() >= 0.5)
+stump_pred = np.where(left, left_pred, right_pred)
+acc = (stump_pred == y).mean()
+
+print(f"Parent Gini impurity : {gini(y):.3f}")
+print(f"Best split           : {labels[feature]} <= {t:.2f}")
+print(f"Impurity gain        : {gain:.3f}")
+print(f"Left leaf -> class {left_pred}   ({left.sum()} points)")
+print(f"Right leaf -> class {right_pred}  ({(~left).sum()} points)")
+print(f"Stump train accuracy : {acc:.1%}  (one split cannot separate the overlap)")
+
+fig, ax = plt.subplots(figsize=(7, 5))
+ax.scatter(x1[y == 0], x2[y == 0], c="#076FA1", s=70, edgecolor="white", label="class 0")
+ax.scatter(x1[y == 1], x2[y == 1], c="#E3120B", s=70, edgecolor="white", label="class 1")
+if feature == 0:
+    ax.axvline(t, color="#31417A", lw=2, ls="--")
+else:
+    ax.axhline(t, color="#31417A", lw=2, ls="--")
+ax.set_xlabel("$x_1$"); ax.set_ylabel("$x_2$")
+ax.legend()
+plt.tight_layout()
+plt.show()
+```
+
+## R
+```{webr}
+# A small fixed 2D data set: two classes that mostly separate but overlap.
+x1 <- c(0.5, 1.5, 2.5, 1.0, 2.0, -1.5, -0.5, -1.5, -2.0, -1.0, -2.5, 2.0)
+x2 <- c(1.0, 2.0, 1.5, 2.5, 0.5, -1.0, -1.0, -2.0, -0.5, -1.5, -1.0, 1.0)
+y  <- c(1,   1,   1,   1,   1,   1,    0,    0,    0,    0,    0,    0)
+X  <- cbind(x1, x2)
+
+gini <- function(labels) {
+  if (length(labels) == 0) return(0)
+  p <- mean(labels)
+  1 - p^2 - (1 - p)^2
+}
+
+best_split <- function(X, y) {
+  # Find the single axis-aligned split that most reduces weighted Gini.
+  d <- ncol(X)
+  parent <- gini(y)
+  best_gain <- -Inf; best_feature <- NA; best_t <- NA
+  for (feature in 1:d) {
+    for (t in sort(unique(X[, feature]))) {
+      left <- X[, feature] <= t
+      if (sum(left) == 0 || sum(!left) == 0) next
+      child <- mean(left) * gini(y[left]) + mean(!left) * gini(y[!left])
+      gain <- parent - child
+      if (gain > best_gain) {
+        best_gain <- gain; best_feature <- feature; best_t <- t
+      }
+    }
+  }
+  list(gain = best_gain, feature = best_feature, threshold = best_t)
+}
+
+fit <- best_split(X, y)
+labels <- c("x1", "x2")
+left <- X[, fit$feature] <= fit$threshold
+left_pred  <- as.integer(mean(y[left]) >= 0.5)
+right_pred <- as.integer(mean(y[!left]) >= 0.5)
+stump_pred <- ifelse(left, left_pred, right_pred)
+acc <- mean(stump_pred == y)
+
+cat(sprintf("Parent Gini impurity : %.3f\n", gini(y)))
+cat(sprintf("Best split           : %s <= %.2f\n", labels[fit$feature], fit$threshold))
+cat(sprintf("Impurity gain        : %.3f\n", fit$gain))
+cat(sprintf("Left leaf -> class %d   (%d points)\n", left_pred, sum(left)))
+cat(sprintf("Right leaf -> class %d  (%d points)\n", right_pred, sum(!left)))
+cat(sprintf("Stump train accuracy : %.1f%%  (one split cannot separate the overlap)\n", 100 * acc))
+
+cols <- ifelse(y == 1, "#E3120B", "#076FA1")
+plot(x1, x2, col = cols, pch = 19, cex = 1.6, xlab = "x1", ylab = "x2")
+if (fit$feature == 1) abline(v = fit$threshold, col = "#31417A", lwd = 2, lty = 2)
+if (fit$feature == 2) abline(h = fit$threshold, col = "#31417A", lwd = 2, lty = 2)
+legend("topleft", legend = c("class 0", "class 1"),
+       col = c("#076FA1", "#E3120B"), pch = 19, bty = "n")
+```
+
+:::
+
+Both languages search the same fixed data and report the same answer: split $x_1 \le -0.5$,
+gain $0.222$, training accuracy $83.3\%$.
+
+## Depth, and why a single tree overfits
+
+Recursion turns the stump into a tree. Apply `best_split` to each child, then to its
+children, and keep going until the leaves are pure or a depth limit stops you. Depth is the
+tree's complexity dial. A depth-one stump underfits; a moderate depth captures the real
+structure; an unlimited tree keeps splitting until every training point sits in its own pure
+leaf. That last tree has zero training error and jagged, noise-chasing boundaries, the
+signature of [overfitting]{.term}. Push the depth up and the training error falls to zero
+while the test error turns back upward. A single tree is a low-bias, high-variance model: it
+will memorize whatever data it is given. The companion notebook grows the full recursive tree
+and plots that train-versus-test crossover; here we go straight to the two cures, both of
+which keep the trees but stop trusting any one of them.
+
+## Bagging: averaging cuts variance
+
+The first cure is [bootstrap aggregating]{.term}, or bagging: train many trees on
+[bootstrap]{.term} resamples of the data and average their predictions. Because each tree
+sees a slightly different sample, each lands its splits in a slightly different place, and
+averaging cancels that scatter. A [random forest]{.term} adds a second shuffle, restricting
+each split to a random subset of features so the trees decorrelate further.
+
+To see the mechanism with base R alone we bag stumps on a noisy sine. One stump is a single
+crude step; a hundred stumps fit to a hundred resamples average into a smoother staircase that
+tracks the curve better. The exact improvement depends on the resampling, so the two languages
+report different percentages from their different generators, but bagging lowers the error
+either way. Note also that stumps are high-bias learners, so averaging can only do so much
+here: the residual wobble it leaves behind is exactly what boosting attacks next.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+np.random.seed(0)
+
+# Noisy samples from a sine; the truth f(x) = sin(x) is unknown to the learner.
+n = 80
+x = np.sort(np.random.uniform(0, 6, n))
+y = np.sin(x) + np.random.normal(0, 0.3, n)
+
+def fit_stump(x, y):
+    """Best single split that minimizes within-leaf squared error."""
+    best_sse, best_t = np.inf, None
+    for t in np.unique(x)[:-1]:
+        left = x <= t
+        sse = ((y[left] - y[left].mean())**2).sum() + ((y[~left] - y[~left].mean())**2).sum()
+        if sse < best_sse:
+            best_sse, best_t = sse, t
+    left = x <= best_t
+    return best_t, y[left].mean(), y[~left].mean()
+
+def predict_stump(stump, xq):
+    t, left_val, right_val = stump
+    return np.where(xq <= t, left_val, right_val)
+
+grid = np.linspace(0, 6, 300)
+truth = np.sin(grid)
+
+single = predict_stump(fit_stump(x, y), grid)
+
+B = 100
+bagged = np.zeros_like(grid)
+for _ in range(B):
+    idx = np.random.choice(n, n, replace=True)   # bootstrap resample
+    bagged += predict_stump(fit_stump(x[idx], y[idx]), grid)
+bagged /= B
+
+mse_single = np.mean((single - truth)**2)
+mse_bagged = np.mean((bagged - truth)**2)
+print(f"Single stump  MSE vs truth : {mse_single:.4f}")
+print(f"{B} bagged stumps MSE vs truth : {mse_bagged:.4f}")
+print(f"Variance averaged away     : {1 - mse_bagged/mse_single:.0%} lower error")
+
+fig, ax = plt.subplots(figsize=(7, 5))
+ax.scatter(x, y, c="#666666", s=25, alpha=0.5, label="noisy data")
+ax.plot(grid, truth, color="#31417A", lw=2, ls="--", label="truth  sin(x)")
+ax.plot(grid, single, color="#666666", lw=1.5, label="single stump")
+ax.plot(grid, bagged, color="#076FA1", lw=2.5, label=f"{B} bagged stumps")
+ax.set_xlabel("$x$"); ax.set_ylabel("$y$")
+ax.legend()
+plt.tight_layout()
+plt.show()
+```
+
+## R
+```{webr}
+set.seed(0)
+
+# Noisy samples from a sine; the truth f(x) = sin(x) is unknown to the learner.
+n <- 80
+x <- sort(runif(n, 0, 6))
+y <- sin(x) + rnorm(n, 0, 0.3)
+
+fit_stump <- function(x, y) {
+  # Best single split that minimizes within-leaf squared error.
+  best_sse <- Inf; best_t <- NA
+  cand <- head(sort(unique(x)), -1)
+  for (t in cand) {
+    left <- x <= t
+    sse <- sum((y[left] - mean(y[left]))^2) + sum((y[!left] - mean(y[!left]))^2)
+    if (sse < best_sse) { best_sse <- sse; best_t <- t }
+  }
+  left <- x <= best_t
+  list(t = best_t, left_val = mean(y[left]), right_val = mean(y[!left]))
+}
+
+predict_stump <- function(stump, xq) {
+  ifelse(xq <= stump$t, stump$left_val, stump$right_val)
+}
+
+grid <- seq(0, 6, length.out = 300)
+truth <- sin(grid)
+
+single <- predict_stump(fit_stump(x, y), grid)
+
+B <- 100
+bagged <- numeric(length(grid))
+for (b in 1:B) {
+  idx <- sample(n, n, replace = TRUE)            # bootstrap resample
+  bagged <- bagged + predict_stump(fit_stump(x[idx], y[idx]), grid)
+}
+bagged <- bagged / B
+
+mse_single <- mean((single - truth)^2)
+mse_bagged <- mean((bagged - truth)^2)
+cat(sprintf("Single stump  MSE vs truth : %.4f\n", mse_single))
+cat(sprintf("%d bagged stumps MSE vs truth : %.4f\n", B, mse_bagged))
+cat(sprintf("Variance averaged away     : %.0f%% lower error\n",
+            100 * (1 - mse_bagged / mse_single)))
+
+plot(x, y, col = "#666666", pch = 19, cex = 0.6, xlab = "x", ylab = "y")
+lines(grid, truth, col = "#31417A", lwd = 2, lty = 2)
+lines(grid, single, col = "#666666", lwd = 1.5)
+lines(grid, bagged, col = "#076FA1", lwd = 2.5)
+legend("topright", bty = "n",
+       legend = c("truth  sin(x)", "single stump", paste(B, "bagged stumps")),
+       col = c("#31417A", "#666666", "#076FA1"), lwd = c(2, 1.5, 2.5), lty = c(2, 1, 1))
+```
+
+:::
+
+The base-R loop above is a teaching toy. In practice you would reach for `randomForest`
+(or `ranger`) in R and `RandomForestClassifier` in scikit-learn, which add feature randomness,
+out-of-bag scoring, and fast C internals.
+
+## Boosting: correcting the residuals
+
+[Gradient boosting]{.term} builds the ensemble the opposite way. Instead of training trees in
+parallel and averaging, it trains them in sequence, and each new tree fits the part of the
+target the current ensemble still gets wrong, the [residual]{.term}. A small
+[learning rate]{.term} $\nu$ shrinks each contribution so the model improves in careful steps
+rather than overshooting.
+
+::: {.defbox}
+[Gradient boosting update]{.lbl}
+[ F<sub>m</sub>(x) = F<sub>m&minus;1</sub>(x) + &nu; h<sub>m</sub>(x), &nbsp; with h<sub>m</sub> fit to y &minus; F<sub>m&minus;1</sub>(x) ]{.math}
+:::
+
+Each stump is too weak to fit a sine on its own, but the additive sequence drives the error
+down round after round. Here we boost on the noise-free curve so the two languages can be
+compared digit for digit: the mean squared error falls from $0.298$ after one stump to
+$0.007$ after forty.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Deterministic target so the two languages can be compared digit for digit.
+x = np.linspace(0, 6, 80)
+y = np.sin(x)
+
+def fit_stump(x, r):
+    """Regression stump fit to the current residuals r."""
+    best_sse, best_t = np.inf, None
+    for t in np.unique(x)[:-1]:
+        left = x <= t
+        sse = ((r[left] - r[left].mean())**2).sum() + ((r[~left] - r[~left].mean())**2).sum()
+        if sse < best_sse:
+            best_sse, best_t = sse, t
+    left = x <= best_t
+    return best_t, r[left].mean(), r[~left].mean()
+
+def predict_stump(stump, xq):
+    t, lv, rv = stump
+    return np.where(xq <= t, lv, rv)
+
+lr = 0.3
+rounds = 40
+pred = np.zeros_like(x)
+stumps = []
+for m in range(1, rounds + 1):
+    residual = y - pred                 # what the ensemble still gets wrong
+    stump = fit_stump(x, residual)      # one stump aimed at the residual
+    stumps.append(stump)
+    pred += lr * predict_stump(stump, x)
+    if m in (1, 2, 5, 10, 20, 40):
+        print(f"round {m:2d}   MSE = {np.mean((y - pred)**2):.4f}")
+
+grid = np.linspace(0, 6, 300)
+ensemble = sum(lr * predict_stump(s, grid) for s in stumps)
+fig, ax = plt.subplots(figsize=(7, 5))
+ax.plot(grid, np.sin(grid), color="#31417A", lw=2, ls="--", label="truth  sin(x)")
+ax.plot(grid, ensemble, color="#076FA1", lw=2.5, label=f"boosted ({rounds} stumps)")
+ax.scatter(x, y, c="#666666", s=15, alpha=0.4)
+ax.set_xlabel("$x$"); ax.set_ylabel("$y$")
+ax.legend()
+plt.tight_layout()
+plt.show()
+```
+
+## R
+```{webr}
+# Deterministic target so the two languages can be compared digit for digit.
+x <- seq(0, 6, length.out = 80)
+y <- sin(x)
+
+fit_stump <- function(x, r) {
+  # Regression stump fit to the current residuals r.
+  best_sse <- Inf; best_t <- NA
+  cand <- head(sort(unique(x)), -1)
+  for (t in cand) {
+    left <- x <= t
+    sse <- sum((r[left] - mean(r[left]))^2) + sum((r[!left] - mean(r[!left]))^2)
+    if (sse < best_sse) { best_sse <- sse; best_t <- t }
+  }
+  left <- x <= best_t
+  list(t = best_t, left_val = mean(r[left]), right_val = mean(r[!left]))
+}
+
+predict_stump <- function(stump, xq) {
+  ifelse(xq <= stump$t, stump$left_val, stump$right_val)
+}
+
+lr <- 0.3
+rounds <- 40
+pred <- numeric(length(x))
+stumps <- vector("list", rounds)
+for (m in 1:rounds) {
+  residual <- y - pred                 # what the ensemble still gets wrong
+  stump <- fit_stump(x, residual)      # one stump aimed at the residual
+  stumps[[m]] <- stump
+  pred <- pred + lr * predict_stump(stump, x)
+  if (m %in% c(1, 2, 5, 10, 20, 40)) {
+    cat(sprintf("round %2d   MSE = %.4f\n", m, mean((y - pred)^2)))
+  }
+}
+
+grid <- seq(0, 6, length.out = 300)
+ensemble <- numeric(length(grid))
+for (s in stumps) ensemble <- ensemble + lr * predict_stump(s, grid)
+
+plot(grid, sin(grid), type = "l", col = "#31417A", lwd = 2, lty = 2,
+     xlab = "x", ylab = "y")
+lines(grid, ensemble, col = "#076FA1", lwd = 2.5)
+points(x, y, col = "#666666", pch = 19, cex = 0.4)
+legend("topright", bty = "n",
+       legend = c("truth  sin(x)", paste0("boosted (", rounds, " stumps)")),
+       col = c("#31417A", "#076FA1"), lwd = c(2, 2.5), lty = c(2, 1))
+```
+
+:::
+
+The MSE sequence is identical in both languages, falling monotonically as the stumps stack up.
+Production gradient boosters, `gbm` in R and scikit-learn's `GradientBoostingClassifier`,
+follow this same logic; `XGBoost` and `LightGBM` add second-order updates and histogram splits
+and are the standard tools for tabular data.
+
+## Bagging versus boosting
+
+The two ensembles share the same base learner but pull opposite levers on the bias-variance
+trade-off.
+
+| Aspect | Bagging / random forest | Boosting |
+|---|---|---|
+| Trees are trained | in parallel, independently | in sequence, each fixing the last |
+| Each tree is | deep (low bias, high variance) | shallow (a stump or near-stump) |
+| The ensemble reduces | variance | bias |
+| More trees | help, with diminishing returns | help until they start to overfit |
+| Key knobs | number of trees, features per split | rounds, learning rate, tree depth |
+
+## Which features matter
+
+A tree records how much impurity each split removes, so summing those reductions per feature
+across the ensemble gives a natural [feature importance]{.term}: the mean impurity decrease.
+The forest of stumps below, each fit to a bootstrap resample on a random pair of features,
+concentrates almost all of its importance on the two features that actually drive the label
+and leaves the noise features near zero. The two languages draw different resamples, so the
+exact weights differ, but both rank feature 0 first and feature 2 second.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+np.random.seed(1)
+
+# Four features, but only 0 and 2 carry signal (0 the stronger).
+n, d = 300, 4
+X = np.random.randn(n, d)
+signal = 1.5 * X[:, 0] + 1.0 * X[:, 2]
+y = (signal + 0.5 * np.random.randn(n) > 0).astype(int)
+
+def gini(labels):
+    if len(labels) == 0:
+        return 0.0
+    p = labels.mean()
+    return 1 - p**2 - (1 - p)**2
+
+def best_split(X, y, feats):
+    parent = gini(y)
+    best_gain, best_f = 0.0, None
+    for f in feats:
+        for t in np.quantile(X[:, f], np.linspace(0.1, 0.9, 15)):
+            left = X[:, f] <= t
+            if left.sum() == 0 or (~left).sum() == 0:
+                continue
+            child = left.mean() * gini(y[left]) + (~left).mean() * gini(y[~left])
+            gain = parent - child
+            if gain > best_gain:
+                best_gain, best_f = gain, f
+    return best_f, best_gain
+
+# A small forest of stumps: bootstrap rows, random 2-feature subset each time,
+# tally how much Gini each chosen feature removes (mean impurity decrease).
+B, m = 100, 2
+importance = np.zeros(d)
+for _ in range(B):
+    idx = np.random.choice(n, n, replace=True)
+    feats = np.random.choice(d, m, replace=False)
+    f, gain = best_split(X[idx], y[idx], feats)
+    if f is not None:
+        importance[f] += gain
+importance /= importance.sum()
+
+for j in range(d):
+    mark = "  <- signal" if j in (0, 2) else ""
+    print(f"feature {j}: importance {importance[j]:.3f}{mark}")
+
+fig, ax = plt.subplots(figsize=(7, 4))
+colors = ["#076FA1" if j in (0, 2) else "#666666" for j in range(d)]
+ax.barh([f"feature {j}" for j in range(d)], importance, color=colors, edgecolor="white")
+ax.set_xlabel("Importance (mean impurity decrease)")
+ax.invert_yaxis()
+plt.tight_layout()
+plt.show()
+```
+
+## R
+```{webr}
+set.seed(1)
+
+# Four features, but only 0 and 2 (1-indexed: 1 and 3) carry signal.
+n <- 300; d <- 4
+X <- matrix(rnorm(n * d), n, d)
+signal <- 1.5 * X[, 1] + 1.0 * X[, 3]
+y <- as.integer(signal + 0.5 * rnorm(n) > 0)
+
+gini <- function(labels) {
+  if (length(labels) == 0) return(0)
+  p <- mean(labels)
+  1 - p^2 - (1 - p)^2
+}
+
+best_split <- function(X, y, feats) {
+  parent <- gini(y)
+  best_gain <- 0; best_f <- NA
+  for (f in feats) {
+    for (t in quantile(X[, f], probs = seq(0.1, 0.9, length.out = 15))) {
+      left <- X[, f] <= t
+      if (sum(left) == 0 || sum(!left) == 0) next
+      child <- mean(left) * gini(y[left]) + mean(!left) * gini(y[!left])
+      gain <- parent - child
+      if (gain > best_gain) { best_gain <- gain; best_f <- f }
+    }
+  }
+  list(feature = best_f, gain = best_gain)
+}
+
+# A small forest of stumps: bootstrap rows, random 2-feature subset each time,
+# tally how much Gini each chosen feature removes (mean impurity decrease).
+B <- 100; m <- 2
+importance <- numeric(d)
+for (b in 1:B) {
+  idx <- sample(n, n, replace = TRUE)
+  feats <- sample(d, m)
+  res <- best_split(X[idx, , drop = FALSE], y[idx], feats)
+  if (!is.na(res$feature)) importance[res$feature] <- importance[res$feature] + res$gain
+}
+importance <- importance / sum(importance)
+
+for (j in 1:d) {
+  mark <- if (j %in% c(1, 3)) "  <- signal" else ""
+  cat(sprintf("feature %d: importance %.3f%s\n", j - 1, importance[j], mark))
+}
+
+cols <- ifelse(seq_len(d) %in% c(1, 3), "#076FA1", "#666666")
+barplot(rev(importance), horiz = TRUE, col = rev(cols), border = "white",
+        names.arg = rev(paste("feature", 0:(d - 1))), las = 1,
+        xlab = "Importance (mean impurity decrease)")
+```
+
+:::
+
+Real implementations expose this for free: scikit-learn's `feature_importances_` and
+`randomForest`'s `importance()` report the same mean-impurity-decrease, averaged over a full
+forest of deep trees rather than a handful of stumps.
+
+Trees are weak on their own and strong in committee. A single tree is readable but
+overfits; bagging averages many high-variance trees into a stable predictor; boosting stacks
+many high-bias stumps into a flexible one. The same impurity-and-split machinery powers all
+three, which is why one chapter holds them together.
+
+::: {.explore}
+[Try it]{.lbl}
+In the boosting cell, change the learning rate `lr` from `0.3` to `0.05` and to `1.0`, and
+re-run. A small rate needs far more rounds to reach the same MSE but resists overfitting; a
+rate of `1.0` lurches toward the target and can overshoot. Then raise the stump count `B` in
+the bagging cell and watch the error flatten out, the diminishing return that makes "more
+trees" safe but not free.
+:::

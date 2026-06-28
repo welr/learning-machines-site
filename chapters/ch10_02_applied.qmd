@@ -1,0 +1,106 @@
+---
+title: "Applied: A Convolutional Network"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 10 · Representation Learning]{.eyebrow}
+
+# Applied: A Convolutional Network
+
+[Swap a flat MLP for a network that respects the grid, and the same training loop does more with far fewer parameters.]{.dek}
+:::
+
+Rung two. The data is the same subsample of Fashion-MNIST you met in Chapter 9, and the training loop is identical. Only the model changes: from a flat [multilayer perceptron]{.term} that treats every pixel as unrelated to its neighbors, to a [convolutional network]{.term} that exploits the layout the MLP throws away. Along the way you build a [residual block]{.term}, the skip connection at the heart of Chapter 10's ResNets and, not by coincidence, the same `x + F(x)` that lets a deep transformer block train at all.
+
+The MLP flattens each image to a vector of 784 numbers. A convolution needs the grid, so we keep every image as a $1 \times 28 \times 28$ tensor: one channel, twenty-eight rows, twenty-eight columns. Nothing else about the data changes.
+
+## A residual block
+
+Stacking many convolutions makes optimization hard, because the gradient has a long way to travel back through the stack. A residual block fixes this by adding the block's input back to its output, so each block only has to learn a *correction* to the identity rather than the whole mapping. That added `+ x` is a gradient highway: it gives the gradient a short path home.
+
+::: {.defbox}
+[Residual Block]{.lbl}
+
+[ **y** = &phi;( **x** + F(**x**) ) ]{.math}
+:::
+
+Here F is two padded convolutions, each with batch normalization and a ReLU; &phi; is the final activation. The convolutions are *same-shape*, so input and output have matching dimensions and the sum is well defined.
+
+```python
+import torch.nn as nn
+
+class ResidualBlock(nn.Module):
+    """Two same-shape convolutions with a skip connection: relu(x + F(x))."""
+    def __init__(self, channels):
+        super().__init__()
+        self.conv1 = nn.Conv2d(channels, channels, kernel_size=3, padding=1)
+        self.bn1   = nn.BatchNorm2d(channels)
+        self.conv2 = nn.Conv2d(channels, channels, kernel_size=3, padding=1)
+        self.bn2   = nn.BatchNorm2d(channels)
+        self.relu  = nn.ReLU()
+
+    def forward(self, x):
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        return self.relu(out + x)            # the residual connection
+```
+
+The models train in **Google Colab**, where a free GPU keeps the convolutions quick; the code here is for reading, the Colab button below is for running.
+
+```{=html}
+<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+```
+
+## The model
+
+The full network is small: two convolution-and-pool stages that shrink $28 \times 28$ down to $7 \times 7$ while growing the channel count, one residual block, then a linear head to the ten classes. Watch the parameter count. It comes in far under the Chapter 9 MLP's roughly 235k, because a convolution shares one small filter across the whole image instead of wiring every pixel to every unit.
+
+```python
+class CNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 16, kernel_size=3, padding=1), nn.ReLU(), nn.MaxPool2d(2),   # 28 -> 14
+            nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU(), nn.MaxPool2d(2),  # 14 -> 7
+            ResidualBlock(32),
+        )
+        self.head = nn.Sequential(nn.Flatten(), nn.Linear(32 * 7 * 7, 10))
+
+    def forward(self, x):
+        return self.head(self.features(x))
+```
+
+The final layer is once again the affine-plus-softmax classifier from Chapter 4. The convolutional stack learns *what* to look for; the linear head decides what the features mean.
+
+## Training: the same loop
+
+The loop below is the one from Chapter 9, unchanged. That is the whole point. Swapping the model does not change how we train it: cross-entropy loss, an AdamW step, repeat. The only concession to the larger network is evaluating accuracy in batches, since the convolutions hold more activations in memory than the MLP did.
+
+```python
+import torch
+
+loss_fn = nn.CrossEntropyLoss()
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+batch_size, epochs = 128, 10
+
+for epoch in range(epochs):
+    order = torch.randperm(len(X_tr))
+    for i in range(0, len(X_tr), batch_size):
+        batch = order[i : i + batch_size]
+        loss = loss_fn(model(X_tr[batch]), y_tr[batch])
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()
+    print(f"epoch {epoch + 1:2d} | train loss {loss.item():.3f}")
+```
+
+The convolutional network beats the Chapter 9 MLP, and does it with a fraction of the parameters. Its [inductive bias]{.term}, locality and translation equivariance, matches the structure of images, so it spends its parameters where they help. The residual block let us add depth without making optimization harder.
+
+The residual you just wrote is the same `x + F(x)` that wraps attention and the feed-forward network inside a transformer block. In Chapter 11 you build the attention that goes *inside* that block; in Chapter 12 you assemble the whole thing into a GPT, still trained by the loop you have now used twice.
+
+::: {.explore}
+[Try it]{.lbl}
+
+In Colab, remove the residual block and send the second pooling output straight to the head, then stack two more plain convolutions in its place. Does training get harder, or the accuracy worse? Then go the other way: add a second residual block, or widen the channels past 32, and see how far you can push test accuracy before the extra capacity stops paying off.
+:::

@@ -1,0 +1,122 @@
+---
+title: "Convolutional Neural Networks"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 10 · Representation Learning]{.eyebrow}
+
+# Convolutional Neural Networks
+
+[*One filter, slid across every position: weight sharing is a structured prior, and it is what lets a network learn to see.*]{.dek}
+:::
+
+A dense network treats every pixel as unrelated to its neighbors. For an image that is both a poor assumption and an extravagant number of parameters: a fully connected layer over a 28&times;28 digit needs a separate weight for every pixel-to-unit pair. A [convolutional network]{.term} assumes something instead. The same small [filter]{.term} (a kernel of a few weights) is applied at every location, so a pattern learned in one corner is recognized everywhere. The book reads this weight sharing as a [structured prior]{.term}, the spatial cousin of the regularization in Chapter 7: rather than learn that nearby pixels are related, the architecture bakes it in.
+
+The operation itself is concrete. A 2D convolution slides the filter across the image and computes a dot product at each position. The result is a [feature map]{.term} that lights up wherever the filter's pattern appears.
+
+::: {.defbox}
+[2D Convolution]{.lbl}
+
+[ (I &lowast; K)[i, j] = &Sigma;<sub>m, n</sub> &thinsp; I[i+m, j+n] &middot; K[m, n] ]{.math}
+:::
+
+A hand-designed vertical-edge filter responds positively to dark-to-light transitions and negatively to light-to-dark ones; a horizontal one does the same top to bottom. The point of the chapter is that we will not design these by hand for long. A trained network discovers its own filters, and the first-layer filters it learns turn out to resemble exactly these edge detectors, recovered from data rather than supplied.
+
+[Pooling]{.term} follows convolution to shrink the feature maps. Max pooling keeps the strongest activation in each small window, which both reduces computation and buys a measure of [translation invariance]{.term}: the network cares that an edge is present, less about its exact pixel. Convolution gives equivariance (shift the input, shift the feature map); pooling converts some of that into invariance.
+
+A working architecture stacks these into blocks. Each block is convolution, then a ReLU nonlinearity, then pooling; a few blocks build a hierarchy where early layers detect edges and strokes and later layers assemble them into shapes. The stack ends by flattening the final feature maps and passing them to a fully connected head, which is the same affine-plus-softmax classifier from Chapter 4, now a generalized linear model on *learned* features instead of raw pixels.
+
+This page runs in **Google Colab** because the model is built and trained in PyTorch with `torchvision` for the MNIST data, and a GPU turns minutes of training into seconds. The code below is for reference; open it in Colab to run and change it.
+
+```{=html}
+<a class="colab-btn" href="https://colab.research.google.com/" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+```
+
+The convolution is worth seeing stripped down once, before handing it to an optimized layer. We design an edge filter, slide it manually, and read the feature map.
+
+```python
+import numpy as np
+
+def conv2d(image, kernel):
+    """2D convolution, no padding, stride 1."""
+    H, W = image.shape
+    kH, kW = kernel.shape
+    out = np.zeros((H - kH + 1, W - kW + 1))
+    for i in range(out.shape[0]):
+        for j in range(out.shape[1]):
+            patch = image[i:i+kH, j:j+kW]
+            out[i, j] = np.sum(patch * kernel)   # dot product at this position
+    return out
+
+vertical_edge = np.array([[-1, 0, 1],
+                          [-1, 0, 1],
+                          [-1, 0, 1]])           # +ve on dark -> light
+
+image = np.zeros((10, 10)); image[2:8, 2:8] = 1  # white square on black
+feature_map = conv2d(image, vertical_edge)       # lights up at the square's edges
+```
+
+In practice `nn.Conv2d` handles batches, multiple channels, and the GPU. Two parameters shape the output: `stride` (how far the filter moves each step) and `padding` (zeros around the border; `padding=1` with a 3&times;3 filter keeps the output the same size as the input). The network below stacks two convolutional blocks and a linear head.
+
+```python
+import torch.nn as nn
+import torch.nn.functional as F
+
+class SimpleCNN(nn.Module):
+    """Conv -> ReLU -> Pool, twice, then a GLM head."""
+    def __init__(self, n_classes=10):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 16, kernel_size=3, padding=1)   # one filter bank, slid everywhere
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
+        self.pool  = nn.MaxPool2d(2, 2)
+        self.fc1   = nn.Linear(32 * 7 * 7, 64)                    # 28 -> 14 -> 7 after two poolings
+        self.fc2   = nn.Linear(64, n_classes)                    # affine + softmax: the Chapter 4 classifier
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))                     # 28x28 -> 14x14
+        x = self.pool(F.relu(self.conv2(x)))                     # 14x14 -> 7x7
+        x = x.flatten(1)                                         # hand the learned features to the head
+        x = F.relu(self.fc1(x))
+        return self.fc2(x)
+```
+
+Training is the loop from Chapter 3, unchanged in principle. We load MNIST, then for each batch run a forward pass, compute the cross-entropy loss, let `loss.backward()` supply the gradients by backpropagation, and step the optimizer.
+
+```python
+import torch
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.1307,), (0.3081,)),   # MNIST mean and std
+])
+train_loader = DataLoader(datasets.MNIST('./data', train=True,  download=True, transform=transform),
+                          batch_size=64, shuffle=True)
+
+model     = SimpleCNN().to(device)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+criterion = nn.CrossEntropyLoss()
+
+for epoch in range(5):
+    model.train()
+    for data, target in train_loader:
+        data, target = data.to(device), target.to(device)
+        optimizer.zero_grad()
+        loss = criterion(model(data), target)     # forward pass + loss
+        loss.backward()                           # gradients by backprop
+        optimizer.step()                          # theta <- theta - lr * grad
+```
+
+After a few epochs the network reaches around 99% on the held-out test digits. Two things are worth looking at once it has trained. The first-layer filters, visualized as 3&times;3 images, look like oriented edge detectors, the very things we built by hand at the top of this page, now learned from data. And the feature maps at each layer show the hierarchy at work: the first block responds to edges and strokes, the second, smaller after pooling, responds to higher-level pieces of the digit. The mistakes the model does make tend to fall on ambiguous or poorly written digits, cases where a person might hesitate too.
+
+That is the chapter's claim, made operational. The network is not handed a feature extractor; it learns what to look for, and weight sharing is the prior that makes learning it possible from modest data.
+
+::: {.explore}
+[Try it]{.lbl}
+
+Count the parameters in the two `Conv2d` layers, then count what a single dense layer over all 784 pixels would need to produce the same number of feature maps. The ratio is the prior expressed in arithmetic. Then, in Colab, add an `nn.Dropout` after `fc1` or swap MNIST for Fashion-MNIST (same shape, harder classes) and watch how the learned filters change.
+:::
