@@ -120,6 +120,7 @@ for i in range(2):
 ax.set_xticks([0, 1]); ax.set_xticklabels(["malignant", "benign"])
 ax.set_yticks([0, 1]); ax.set_yticklabels(["malignant", "benign"])
 ax.set_xlabel("predicted"); ax.set_ylabel("actual")
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
 plt.tight_layout()
 plt.show()
 ```
@@ -284,6 +285,8 @@ ax.plot(fpr, tpr, color="#076FA1", lw=2, label=f"AUC = {auc:.3f}")
 ax.plot([0, 1], [0, 1], color="#666666", ls="--", lw=1, label="chance")
 ax.set_xlabel("false-positive rate"); ax.set_ylabel("true-positive rate")
 ax.legend()
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
+ax.grid(color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 ```
@@ -342,9 +345,11 @@ fpr <- sapply(thr, function(t) sum(proba >= t & yt == 0) / N)
 auc <- sum(diff(fpr) * (head(tpr, -1) + tail(tpr, -1)) / 2)
 cat(sprintf("AUC = %.3f\n", auc))
 
-plot(fpr, tpr, type = "l", col = "#076FA1", lwd = 2,
+plot(fpr, tpr, type = "l", col = "#076FA1", lwd = 2, bty = "l",
      xlim = c(0, 1), ylim = c(0, 1),
      xlab = "false-positive rate", ylab = "true-positive rate")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+lines(fpr, tpr, col = "#076FA1", lwd = 2)
 abline(0, 1, col = "#666666", lty = 2)
 legend("bottomright", legend = c(sprintf("AUC = %.3f", auc), "chance"),
        col = c("#076FA1", "#666666"), lty = c(1, 2), lwd = c(2, 1), bty = "n")

@@ -79,7 +79,8 @@ Loss = np.array([[mse(a, b) for a in g0] for b in g1])
 fig, ax = plt.subplots(figsize=(7, 5.5))
 levels = np.logspace(np.log10(Loss.min() + 0.05), np.log10(Loss.max()), 18)
 ax.contour(B0, B1, Loss, levels=levels, colors="#666666", linewidths=0.6, alpha=0.7)
-ax.contourf(B0, B1, Loss, levels=levels, cmap="Blues_r", alpha=0.30)
+cf = ax.contourf(B0, B1, Loss, levels=levels, cmap="Blues_r", alpha=0.30)
+fig.colorbar(cf, ax=ax, label="loss (MSE)")
 
 # Negative-gradient arrows: the downhill direction at each grid point
 for a in np.linspace(-0.5, 2.5, 8):
@@ -202,7 +203,8 @@ Loss = np.array([[mse(a, b) for a in g0] for b in g1])
 fig, (axL, axR) = plt.subplots(1, 2, figsize=(12, 5))
 levels = np.logspace(np.log10(Loss.min() + 0.05), np.log10(Loss.max()), 18)
 axL.contour(B0, B1, Loss, levels=levels, colors="#666666", linewidths=0.5, alpha=0.5)
-axL.contourf(B0, B1, Loss, levels=levels, cmap="Blues_r", alpha=0.20)
+cfL = axL.contourf(B0, B1, Loss, levels=levels, cmap="Blues_r", alpha=0.20)
+fig.colorbar(cfL, ax=axL, label="loss (MSE)")
 
 for lr, color, label in rates:
     path = descend(lr, 40, start)
@@ -223,6 +225,8 @@ axR.set_xlabel("iteration")
 axR.set_ylabel("MSE loss")
 axR.set_title("Convergence")
 axR.legend(loc="upper right", fontsize=8)
+for s in ["top", "right"]: axR.spines[s].set_visible(False)
+axR.grid(axis="y", color="#e6e3da", lw=0.8); axR.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 
@@ -286,7 +290,8 @@ legend("topright", c(sapply(rates, `[[`, 3), "start", "optimum"),
 # Right: convergence, loss vs iteration on a log scale
 loss_curves <- lapply(paths, function(p) apply(p, 1, function(b) mse(b[1], b[2])))
 plot(NA, xlim = c(0, 40), ylim = range(unlist(loss_curves), opt_loss), log = "y",
-     xlab = "iteration", ylab = "MSE loss", main = "Convergence")
+     xlab = "iteration", ylab = "MSE loss", main = "Convergence", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 for (k in seq_along(rates))
   lines(0:40, loss_curves[[k]], col = rates[[k]][[2]], lwd = 1.8)
 abline(h = opt_loss, col = "#666666", lty = 2)
@@ -360,6 +365,8 @@ ax.set_xlabel("iteration")
 ax.set_ylabel("MSE loss")
 ax.set_title(f"A step past 2/lambda_max = {alpha_crit:.2f} explodes")
 ax.legend()
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 ```
@@ -401,7 +408,9 @@ cat(sprintf("alpha = 0.30 (> %.2f): final loss %.3e\n", alpha_crit, tail(L_diver
 
 plot(0:20, L_diverge, type = "o", col = "#E3120B", pch = 19, log = "y",
      xlab = "iteration", ylab = "MSE loss",
-     main = sprintf("A step past 2/lambda_max = %.2f explodes", alpha_crit))
+     main = sprintf("A step past 2/lambda_max = %.2f explodes", alpha_crit),
+     bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(0:20, L_stable, type = "o", col = "#076FA1", pch = 19)
 legend("bottomright", c("alpha = 0.30 (diverges)", "alpha = 0.25 (converges)"),
        col = c("#E3120B", "#076FA1"), lwd = 1.8, pch = 19, bty = "n")
@@ -469,6 +478,8 @@ ax.set_xlabel("iteration")
 ax.set_ylabel("MSE loss (full data)")
 ax.set_title("Batch vs stochastic gradient descent")
 ax.legend()
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 
@@ -515,7 +526,8 @@ L_sgd   <- run(0.05, n_iter, 1, start, 2)        # one sample at a time
 plot(0:n_iter, L_batch, type = "l", col = "#31417A", lwd = 2, log = "y",
      ylim = range(L_batch, L_mini, L_sgd, opt_loss),
      xlab = "iteration", ylab = "MSE loss (full data)",
-     main = "Batch vs stochastic gradient descent")
+     main = "Batch vs stochastic gradient descent", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(0:n_iter, L_mini, col = "#076FA1", lwd = 1.3)
 lines(0:n_iter, L_sgd, col = "#E3120B", lwd = 1.0)
 abline(h = opt_loss, col = "#666666", lty = 2)
@@ -592,7 +604,8 @@ Loss = np.array([[mse(a, b) for a in g0] for b in g1])
 fig, (axL, axR) = plt.subplots(1, 2, figsize=(12, 5))
 levels = np.logspace(np.log10(Loss.min() + 0.05), np.log10(Loss.max()), 18)
 axL.contour(B0, B1, Loss, levels=levels, colors="#666666", linewidths=0.5, alpha=0.5)
-axL.contourf(B0, B1, Loss, levels=levels, cmap="Blues_r", alpha=0.20)
+cfL = axL.contourf(B0, B1, Loss, levels=levels, cmap="Blues_r", alpha=0.20)
+fig.colorbar(cfL, ax=axL, label="loss (MSE)")
 axL.plot(P0[:, 0], P0[:, 1], "o-", color="#666666", ms=3, lw=1.4, label="plain GD")
 axL.plot(P1[:, 0], P1[:, 1], "s-", color="#076FA1", ms=3, lw=1.4, label="momentum (gamma=0.8)")
 axL.scatter(*start, color="black", s=70, zorder=5)
@@ -610,6 +623,8 @@ axR.set_xlabel("iteration")
 axR.set_ylabel("MSE loss")
 axR.set_title("Momentum reaches the floor sooner")
 axR.legend(fontsize=8)
+for s in ["top", "right"]: axR.spines[s].set_visible(False)
+axR.grid(axis="y", color="#e6e3da", lw=0.8); axR.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 
@@ -679,7 +694,9 @@ l0 <- apply(P0, 1, function(b) mse(b[1], b[2]))
 l1 <- apply(P1, 1, function(b) mse(b[1], b[2]))
 plot(0:n_iter, l0, type = "l", col = "#666666", lwd = 2, log = "y",
      ylim = range(l0, l1, opt_loss),
-     xlab = "iteration", ylab = "MSE loss", main = "Momentum reaches the floor sooner")
+     xlab = "iteration", ylab = "MSE loss", main = "Momentum reaches the floor sooner",
+     bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(0:n_iter, l1, col = "#076FA1", lwd = 2)
 abline(h = opt_loss, col = "#666666", lty = 2)
 legend("topright", c("plain GD", "momentum (gamma=0.8)"),

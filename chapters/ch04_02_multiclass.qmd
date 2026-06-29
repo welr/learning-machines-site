@@ -68,6 +68,8 @@ for c in range(3):
                linewidths=1.2, label=f"Class {c}", zorder=3)
 ax.set_xlabel("Feature x1"); ax.set_ylabel("Feature x2")
 ax.legend(loc="upper right")
+for s in ax.spines.values(): s.set_color("#cfccc2")   # treatment-B light frame
+ax.tick_params(colors="#666666")
 plt.tight_layout(); plt.show()
 ```
 
@@ -155,6 +157,8 @@ for c in range(K):
     ax.scatter(X[m, 0], X[m, 1], c=colors[c], s=60, edgecolors="white",
                linewidths=1.2, zorder=3, label=f"Class {c}")
 ax.set_xlabel("Feature x1"); ax.set_ylabel("Feature x2"); ax.legend(loc="upper right")
+for s in ax.spines.values(): s.set_color("#cfccc2")   # treatment-B light frame
+ax.tick_params(colors="#666666")
 plt.tight_layout(); plt.show()
 ```
 
@@ -277,6 +281,8 @@ for c in range(K):
     ax.scatter(X[m, 0], X[m, 1], c=colors[c], s=60, edgecolors="white",
                linewidths=1.2, zorder=3, label=f"Class {c}")
 ax.set_xlabel("Feature x1"); ax.set_ylabel("Feature x2"); ax.legend(loc="upper right")
+for s in ax.spines.values(): s.set_color("#cfccc2")   # treatment-B light frame
+ax.tick_params(colors="#666666")
 plt.tight_layout(); plt.show()
 ```
 

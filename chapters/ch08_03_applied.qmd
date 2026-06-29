@@ -84,6 +84,12 @@ ax.set_yticks(range(len(order)))
 ax.set_yticklabels([data.feature_names[k] for k in order][::-1], fontsize=9)
 ax.set_xlabel("mean impurity decrease")
 ax.set_title("Random forest: eight most important features")
+for s in ["top", "right"]:
+    ax.spines[s].set_visible(False)
+for s in ["left", "bottom"]:
+    ax.spines[s].set_color("#cfccc2")
+ax.grid(axis="x", color="#e6e3da", lw=0.8)   # faint grid on the value axis
+ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 print(f"top 8 features account for {importances[order].sum():.1%} of total importance")
@@ -215,8 +221,18 @@ for ax, (name, model) in zip(axes.ravel(), models):
     ax.scatter(Xm[:, 0], Xm[:, 1], c=point[ym], s=14,
                edgecolors="white", linewidths=0.3)
     ax.set_title(name, fontsize=10)
-    ax.set_xticks([]); ax.set_yticks([])
-axes.ravel()[-1].axis("off")          # five models, six panels
+    for s in ["top", "right", "left", "bottom"]:   # light frame; keep both feature axes
+        ax.spines[s].set_color("#cfccc2")
+    ax.tick_params(colors="#666666", labelsize=8)
+
+# Five models, six panels: use the empty sixth panel for a white-box class legend.
+legend_ax = axes.ravel()[-1]
+legend_ax.axis("off")
+handles = [plt.Line2D([], [], marker="o", linestyle="", markersize=9,
+                      markerfacecolor=point[k], markeredgecolor="white",
+                      label=f"class {k}") for k in (0, 1)]
+legend_ax.legend(handles=handles, loc="center", title="true class", frameon=True,
+                 facecolor="white", framealpha=0.92, edgecolor="#cfccc2", fontsize=11)
 fig.tight_layout()
 plt.show()
 ```
@@ -270,6 +286,8 @@ draw <- function(pred, title) {
   z <- matrix(pred, nrow = length(xs))
   image(xs, ys, z, col = region, xlab = "feature 1", ylab = "feature 2", main = title)
   points(X[, 1], X[, 2], pch = 21, bg = pts[lab + 1], col = "white", cex = 0.9)
+  legend("bottomright", legend = c("class 0", "class 1"), pch = 21,
+         pt.bg = pts, col = "white", bg = "white", box.col = "#cfccc2", cex = 0.8)
 }
 
 par(mfrow = c(1, 2))

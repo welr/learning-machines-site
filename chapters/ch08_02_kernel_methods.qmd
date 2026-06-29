@@ -84,10 +84,14 @@ acc <- mean(as.integer(r2 < thresh) == y)
 par(mfrow = c(1, 2))
 plot(X[, 1], X[, 2], col = ifelse(y == 0, "#076FA1", "#E3120B"), pch = 19,
      asp = 1, xlab = "x1", ylab = "x2", main = "Original space: no line separates")
+legend("topright", c("outer", "inner"), col = c("#076FA1", "#E3120B"),
+       pch = 19, bty = "n", cex = 0.8)
 plot(r2, rep(0, length(r2)), col = ifelse(y == 0, "#076FA1", "#E3120B"), pch = 19,
      yaxt = "n", ylab = "", xlab = "phi(x) = x1^2 + x2^2",
      main = "Lifted to r^2: a threshold separates")
 abline(v = thresh, col = "#31417A", lty = 2, lwd = 2)
+legend("topright", sprintf("threshold = %.1f", thresh), col = "#31417A",
+       lty = 2, lwd = 2, bty = "n", cex = 0.8)
 
 cat(sprintf("Threshold rule on the lift: %.1f%% training accuracy\n", 100 * acc))
 ```
@@ -267,10 +271,11 @@ for ax, g in zip(axes, [0.3, 2.0, 10.0, 50.0]):
     clf = SVC(kernel="rbf", gamma=g).fit(X, y)
     Z = clf.predict(grid).reshape(xx.shape)
     ax.contourf(xx, yy, Z, alpha=0.25, cmap=cmap)
-    ax.scatter(X[y==0, 0], X[y==0, 1], c="#076FA1", s=14)
-    ax.scatter(X[y==1, 0], X[y==1, 1], c="#E3120B", s=14)
+    ax.scatter(X[y==0, 0], X[y==0, 1], c="#076FA1", s=14, label="outer")
+    ax.scatter(X[y==1, 0], X[y==1, 1], c="#E3120B", s=14, label="inner")
     ax.set_title(f"$\\gamma$ = {g}   ({len(clf.support_vectors_)} SV)", fontsize=10)
     ax.set_aspect("equal"); ax.set_xticks([]); ax.set_yticks([])
+axes[0].legend(loc="upper right", fontsize=8, framealpha=0.9)
 plt.tight_layout(); plt.show()
 
 print("Small gamma underfits (smooth); large gamma overfits (islands), and support vectors multiply.")
@@ -306,6 +311,9 @@ for (g in c(0.3, 2, 10, 50)) {
         main = sprintf("gamma = %g", g))
   contour(gx, gx, Z, levels = 0, add = TRUE, drawlabels = FALSE, col = "#31417A", lwd = 1.5)
   points(X, pch = 19, cex = 0.5, col = ifelse(d$y == 0, "#076FA1", "#E3120B"))
+  if (g == 0.3)
+    legend("topright", c("outer", "inner"), col = c("#076FA1", "#E3120B"),
+           pch = 19, bty = "n", cex = 0.7)
 }
 
 cat("Small gamma underfits (smooth); large gamma overfits (islands wrapping single points).\n")
@@ -352,6 +360,8 @@ ax.scatter(xs, ys, c="#076FA1", s=28, edgecolor="white", linewidths=0.5, label="
 ax.plot(grid, smooth, color="#31417A", lw=2.5, label="Nadaraya-Watson smooth")
 ax.legend(fontsize=9); ax.set_xlabel("x"); ax.set_ylabel("y")
 ax.set_title("Normalize the kernel weights, then average: one attention head")
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout(); plt.show()
 
 # At any query the normalized weights sum to exactly 1 -- that is the softmax.
@@ -378,7 +388,8 @@ for (j in seq_along(grid)) {
 }
 
 plot(xs, ys, col = "#076FA1", pch = 19, xlab = "x", ylab = "y",
-     main = "Normalize the kernel weights, then average: one attention head")
+     main = "Normalize the kernel weights, then average: one attention head", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(grid, smooth, col = "#31417A", lwd = 2.5)
 legend("topright", c("data", "Nadaraya-Watson smooth"),
        col = c("#076FA1", "#31417A"), pch = c(19, NA), lwd = c(NA, 2.5), bty = "n")

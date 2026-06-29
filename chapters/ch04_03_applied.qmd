@@ -88,6 +88,8 @@ ax.minorticks_off()
 ax.axvline(1.0, color="#666666", lw=1.2)
 ax.set_yticks(range(len(names))); ax.set_yticklabels([names[i] for i in order])
 ax.set_xlabel("odds ratio  (log scale)")
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
+ax.grid(axis="x", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout(); plt.show()
 
 for i in order[::-1]:
@@ -125,7 +127,8 @@ ord <- order(odds)
 cols <- ifelse(odds[ord] > 1, "#076FA1", "#9E4F00")
 par(mar = c(4, 7, 2, 2))
 plot(NA, xlim = c(0.17, 9.5), ylim = c(0.4, length(ord) + 0.6), log = "x",
-     xaxt = "n", yaxt = "n", xlab = "odds ratio  (log scale)", ylab = "")
+     xaxt = "n", yaxt = "n", xlab = "odds ratio  (log scale)", ylab = "", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 axis(1, at = c(0.25, 0.5, 1, 2, 4, 8), labels = c("0.25", "0.5", "1", "2", "4", "8"))
 axis(2, at = seq_along(ord), labels = names[ord], las = 1, tick = FALSE)
 rect(1, seq_along(ord) - 0.35, odds[ord], seq_along(ord) + 0.35, col = cols, border = NA)

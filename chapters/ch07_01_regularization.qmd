@@ -84,6 +84,8 @@ ax.plot(grid, np.sin(2*np.pi*grid), color="#666666", lw=2, ls="--", label="true 
 ax.plot(grid, G @ theta_ols,   color="#E3120B", lw=2.2, label="degree-9 OLS (overfit)")
 ax.plot(grid, G @ theta_ridge, color="#31417A", lw=2.2, label="ridge (lambda=0.01)")
 ax.set_ylim(-2, 2); ax.set_xlabel("x"); ax.set_ylabel("y"); ax.legend(fontsize=8)
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout(); plt.show()
 ```
 
@@ -112,7 +114,8 @@ cat(sprintf("max|theta|  ridge: %12.1f\n", max(abs(theta_ridge))))
 
 grid <- seq(0, 1, length.out = 200)
 G <- poly_features(grid, degree)
-plot(x, y, pch = 19, col = "#076FA1", cex = 1.4, ylim = c(-2, 2), xlab = "x", ylab = "y")
+plot(x, y, pch = 19, col = "#076FA1", cex = 1.4, ylim = c(-2, 2), xlab = "x", ylab = "y", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(grid, sin(2*pi*grid),       col = "#666666", lwd = 2, lty = 2)
 lines(grid, G %*% theta_ols,      col = "#E3120B", lwd = 2.2)
 lines(grid, G %*% theta_ridge,    col = "#31417A", lwd = 2.2)
@@ -209,6 +212,8 @@ for j in range(ridge_path.shape[1]):
 for ax, t in zip(axes, ["Ridge: shrink, never zero", "LASSO: snap to zero"]):
     ax.set_xscale("log"); ax.axhline(0, color="#666666", ls="--", lw=1)
     ax.set_xlabel("lambda"); ax.set_title(t, loc="left")
+    for s in ["top", "right"]: ax.spines[s].set_visible(False)
+    ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 axes[0].set_ylabel("coefficient")
 plt.tight_layout(); plt.show()
 ```
@@ -263,11 +268,13 @@ cat(sprintf("at lambda=%.2f: ridge keeps %d/%d coefs, LASSO keeps %d/%d\n",
             lam0, nz_r, degree, nz_l, degree))
 
 par(mfrow = c(1, 2))
-matplot(lams, ridge_path, type = "l", lty = 1, lwd = 1.6, log = "x",
+matplot(lams, ridge_path, type = "l", lty = 1, lwd = 1.6, log = "x", bty = "l",
         xlab = "lambda", ylab = "coefficient", main = "Ridge: shrink, never zero")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 abline(h = 0, col = "#666666", lty = 2)
-matplot(lams, lasso_path, type = "l", lty = 1, lwd = 1.6, log = "x",
+matplot(lams, lasso_path, type = "l", lty = 1, lwd = 1.6, log = "x", bty = "l",
         xlab = "lambda", ylab = "coefficient", main = "LASSO: snap to zero")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 abline(h = 0, col = "#666666", lty = 2)
 par(mfrow = c(1, 1))
 ```
@@ -312,6 +319,7 @@ for ax in axes:
                edgecolor="white", label="OLS")
     ax.set_aspect("equal"); ax.set_xlim(-3, 3); ax.set_ylim(-3, 3)
     ax.set_xlabel(r"$\theta_1$")
+    for s in ["top", "right"]: ax.spines[s].set_visible(False)
 axes[0].set_ylabel(r"$\theta_2$")
 
 r = 1.3
@@ -333,7 +341,7 @@ g <- seq(-3, 3, length.out = 200)
 loss <- outer(g, g, function(a, b) (a - 1.5)^2 + 0.35 * (b - 2.0)^2)
 
 draw_panel <- function(shape, sol, title) {
-  contour(g, g, loss, nlevels = 12, col = "#076FA1", drawlabels = FALSE, asp = 1,
+  contour(g, g, loss, nlevels = 12, col = "#076FA1", drawlabels = FALSE, asp = 1, bty = "l",
           xlab = expression(theta[1]), ylab = expression(theta[2]), main = title)
   abline(h = 0, v = 0, col = "#666666")
   if (shape == "circle") {

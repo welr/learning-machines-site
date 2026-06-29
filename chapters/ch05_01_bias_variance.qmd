@@ -70,6 +70,8 @@ ax.scatter(x, y, s=70, color="#076FA1", edgecolor="white", zorder=3,
            label="noisy sample (n = 20)")
 ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_xlim(0, 1)
 ax.legend(loc="upper right")
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout(); plt.show()
 
 print(f"Noise std = 0.3  ->  irreducible error sigma^2 = {0.3**2:.2f}")
@@ -86,7 +88,8 @@ y <- true_f(x) + rnorm(20, 0, 0.3)
 
 grid <- seq(0, 1, length.out = 200)
 plot(x, y, pch = 19, col = "#076FA1", cex = 1.4, xlim = c(0, 1),
-     xlab = "x", ylab = "y")
+     xlab = "x", ylab = "y", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(grid, true_f(grid), col = "#31417A", lwd = 2.5)
 legend("topright", c("true f(x) = sin(2 pi x)", "noisy sample (n = 20)"),
        col = c("#31417A", "#076FA1"), lwd = c(2.5, NA), pch = c(NA, 19), bty = "n")
@@ -150,6 +153,8 @@ for ax, degree, title in zip(axes, [1, 3, 12],
     ax.set_title(f"{title}\nbias$^2$={bias2:.3f}  var={var:.3f}")
     ax.set_xlim(0, 1); ax.set_ylim(-2, 2); ax.set_xlabel("x")
     ax.legend(loc="upper right", fontsize=8)
+    for s in ["top", "right"]: ax.spines[s].set_visible(False)
+    ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 axes[0].set_ylabel("y")
 plt.tight_layout(); plt.show()
 ```
@@ -187,7 +192,8 @@ for (k in 1:3) {
   bias2 <- mean((mean_fit - true_f(grid))^2)
   varc  <- mean(apply(preds, 2, function(col) mean((col - mean(col))^2)))
   plot(grid, true_f(grid), type = "n", ylim = c(-2, 2), xlab = "x", ylab = "y",
-       main = sprintf("%s\nbias^2=%.3f  var=%.3f", title, bias2, varc))
+       main = sprintf("%s\nbias^2=%.3f  var=%.3f", title, bias2, varc), bty = "l")
+  grid(col = "#e6e3da", lty = 1, lwd = 0.6)
   for (i in 1:nrow(preds))
     lines(grid, preds[i, ], col = adjustcolor("#076FA1", alpha.f = 0.15))
   lines(grid, mean_fit, col = "#31417A", lwd = 2.5)
@@ -266,6 +272,8 @@ ax.axvline(best, color="#666666", linestyle=":", alpha=0.7)
 ax.set_xlabel("polynomial degree (model complexity)")
 ax.set_ylabel("error"); ax.set_ylim(0, min(max(total) * 1.1, 12))
 ax.legend(loc="upper center")
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout(); plt.show()
 ```
 
@@ -305,7 +313,8 @@ cat(sprintf("\nLowest total error at degree %d\n", best))
 irr <- rows[1, 3]
 plot(degrees, rows[, 4], type = "o", pch = 17, col = "#E3120B", lwd = 2,
      ylim = c(0, min(max(rows[, 4]) * 1.1, 12)),
-     xlab = "polynomial degree (model complexity)", ylab = "error")
+     xlab = "polynomial degree (model complexity)", ylab = "error", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(degrees, rows[, 1], type = "o", pch = 19, col = "#076FA1", lwd = 2)
 lines(degrees, rows[, 2], type = "o", pch = 15, col = "#31417A", lwd = 2)
 abline(h = irr, col = "#666666", lty = 2)
@@ -384,6 +393,8 @@ for ax, degree, title in zip(axes, [1, 3, 12],
     ax.axhline(0.09, color="#666666", linestyle="--", label="irreducible")
     ax.set_title(title); ax.set_xlabel("training set size")
     ax.legend(loc="upper right", fontsize=8)
+    for s in ["top", "right"]: ax.spines[s].set_visible(False)
+    ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 axes[0].set_ylabel("MSE")
 plt.tight_layout(); plt.show()
 
@@ -430,7 +441,9 @@ for (k in 1:3) {
   lc <- learning_curve(degree, sizes)
   yhi <- max(lc$train, lc$test)
   plot(sizes, lc$train, type = "o", pch = 19, col = "#076FA1", lwd = 2,
-       ylim = c(0, yhi), main = title, xlab = "training set size", ylab = "MSE")
+       ylim = c(0, yhi), main = title, xlab = "training set size", ylab = "MSE",
+       bty = "l")
+  grid(col = "#e6e3da", lty = 1, lwd = 0.6)
   lines(sizes, lc$test, type = "o", pch = 15, col = "#E3120B", lwd = 2)
   abline(h = 0.09, col = "#666666", lty = 2)
   legend("topright", c("training MSE", "test MSE", "irreducible"),

@@ -136,6 +136,10 @@ a1.plot(np.log10(alphas), ridge_coefs, color="#076FA1", lw=0.8, alpha=0.7)
 a1.set_title("ridge"); a1.set_xlabel(r"$\log_{10}$ penalty"); a1.set_ylabel("coefficient")
 a2.plot(np.log10(lasso_alphas), lasso_coefs.T, color="#31417A", lw=0.8, alpha=0.7)
 a2.set_title("LASSO"); a2.set_xlabel(r"$\log_{10}$ penalty")
+for ax in (a1, a2):
+    for s in ["top", "right"]:
+        ax.spines[s].set_visible(False)
+    ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 fig.tight_layout()
 plt.show()
 
@@ -190,11 +194,13 @@ ridge_path <- t(sapply(ridge_grid, function(l) ridge_fit(X, y, l)))
 
 par(mfrow = c(1, 2))
 matplot(log10(ridge_grid / n), ridge_path, type = "l", lty = 1, lwd = 1,
-        col = "#076FA1", main = "ridge",
+        col = "#076FA1", main = "ridge", bty = "l",
         xlab = "log10 penalty", ylab = "coefficient")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 matplot(log10(lam_grid), lasso_path, type = "l", lty = 1, lwd = 1,
-        col = "#31417A", main = "LASSO",
+        col = "#31417A", main = "LASSO", bty = "l",
         xlab = "log10 penalty", ylab = "coefficient")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 
 # Features re-enter as the LASSO penalty shrinks (strong -> weak).
 counts <- rowSums(lasso_path != 0)

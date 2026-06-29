@@ -173,6 +173,8 @@ ax.plot(xs, true_theta[0] + true_theta[1] * xs, color="#666666", linestyle="--",
         linewidth=2, label="true line")
 ax.scatter(x, y, s=50, color="#076FA1", edgecolor="white", zorder=5, label="data")
 ax.set_xlabel("x"); ax.set_ylabel("y"); ax.legend(loc="upper left")
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout(); plt.show()
 
 # The band is narrowest near the data center and widens outward
@@ -204,7 +206,8 @@ pred_sd   <- sqrt(pred_var)
 
 plot(x, y, pch = 19, col = "#076FA1", xlim = c(-3.5, 8.5),
      ylim = range(c(pred_mean - 1.96 * pred_sd, pred_mean + 1.96 * pred_sd)),
-     xlab = "x", ylab = "y")
+     xlab = "x", ylab = "y", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 polygon(c(xs, rev(xs)),
         c(pred_mean - 1.96 * pred_sd, rev(pred_mean + 1.96 * pred_sd)),
         col = rgb(7, 111, 161, 50, maxColorValue = 255), border = NA)

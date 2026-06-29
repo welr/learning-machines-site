@@ -94,6 +94,7 @@ ax.set_xlabel("Living area (m$^2$)"); ax.set_ylabel("Price (thousands)")
 ax.legend(loc="upper left")
 for s in ["top", "right"]:
     ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 ```
@@ -119,7 +120,8 @@ xs <- seq(45, 200, length.out = 300)
 
 plot(x, y, pch = 21, bg = "black", col = "white", cex = 1.4,
      xlim = c(45, 200), ylim = c(100, 500),
-     xlab = "Living area (m^2)", ylab = "Price (thousands)")
+     xlab = "Living area (m^2)", ylab = "Price (thousands)", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(xs, true(xs), col = "#666666", lty = 2, lwd = 2)
 specs <- list(c(1, "#076FA1"), c(2, "#31417A"), c(10, "#E3120B"))
 for (s in specs) {
@@ -178,6 +180,7 @@ ax.set_xlabel("Living area (m$^2$)"); ax.set_ylabel("Price (thousands)")
 ax.legend(loc="lower right")
 for s in ["top", "right"]:
     ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 
@@ -203,7 +206,8 @@ y_ext <- as.vector(design(x_ext, degree) %*% theta)
 
 plot(x, y, pch = 21, bg = "black", col = "white", cex = 1.4,
      xlim = c(30, 220), ylim = c(-250, 850),
-     xlab = "Living area (m^2)", ylab = "Price (thousands)")
+     xlab = "Living area (m^2)", ylab = "Price (thousands)", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 neg <- y_ext < 0
 polygon(c(x_ext, rev(x_ext)),
         c(ifelse(neg, y_ext, 0), rep(0, length(x_ext))),
@@ -278,6 +282,7 @@ ax.set_xlabel("Polynomial degree"); ax.set_ylabel("Mean squared error (log scale
 ax.set_xticks(list(degrees)); ax.legend()
 for s in ["top", "right"]:
     ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 
@@ -317,7 +322,8 @@ for (i in seq_along(degrees)) {
 best <- degrees[which.min(test_err)]
 plot(degrees, train_err, type = "b", pch = 19, col = "#076FA1", log = "y", lwd = 2,
      ylim = range(c(train_err, test_err)),
-     xlab = "Polynomial degree", ylab = "Mean squared error (log scale)")
+     xlab = "Polynomial degree", ylab = "Mean squared error (log scale)", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(degrees, test_err, type = "b", pch = 15, col = "#E3120B", lwd = 2)
 abline(v = best, col = "#666666", lty = 3, lwd = 1.5)
 legend("topleft", bty = "n",
@@ -367,6 +373,7 @@ ax.set_yscale("log")
 ax.set_xlabel("Polynomial degree"); ax.set_ylabel("Coefficient norm (log scale)")
 for s in ["top", "right"]:
     ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 
@@ -388,7 +395,8 @@ degrees <- c(1, 2, 5, 8, 10, 14)
 norms <- sapply(degrees, function(d) sqrt(sum(fit(d)[-1]^2)))   # exclude intercept
 
 barplot(norms, names.arg = degrees, col = "#076FA1", border = "white", log = "y",
-        xlab = "Polynomial degree", ylab = "Coefficient norm (log scale)")
+        xlab = "Polynomial degree", ylab = "Coefficient norm (log scale)", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 
 for (i in seq_along(degrees))
   cat(sprintf("degree %2d: ||theta|| = %.4g\n", degrees[i], norms[i]))

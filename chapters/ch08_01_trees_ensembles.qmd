@@ -67,6 +67,9 @@ ax.set_xlabel("Proportion of class 1 ($p$)")
 ax.set_ylabel("Impurity")
 ax.set_xlim(0, 1); ax.set_ylim(0, 0.55)
 ax.legend()
+for s in ["top", "right"]:
+    ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 
@@ -86,7 +89,9 @@ misclass <- 1 - pmax(p, 1 - p)
 
 plot(p, gini, type = "l", lwd = 2.5, col = "#076FA1",
      xlab = "Proportion of class 1 (p)", ylab = "Impurity",
-     xlim = c(0, 1), ylim = c(0, 0.55))
+     xlim = c(0, 1), ylim = c(0, 0.55), bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+lines(p, gini, lwd = 2.5, col = "#076FA1")
 lines(p, entropy / 2, lwd = 2.5, col = "#31417A")
 lines(p, misclass, lwd = 2.5, lty = 2, col = "#666666")
 abline(v = 0.5, lty = 3, col = "#666666")
@@ -183,6 +188,8 @@ else:
     ax.axhline(t, color="#31417A", lw=2, ls="--")
 ax.set_xlabel("$x_1$"); ax.set_ylabel("$x_2$")
 ax.legend()
+for s in ["top", "right"]:
+    ax.spines[s].set_visible(False)
 plt.tight_layout()
 plt.show()
 ```
@@ -236,7 +243,7 @@ cat(sprintf("Right leaf -> class %d  (%d points)\n", right_pred, sum(!left)))
 cat(sprintf("Stump train accuracy : %.1f%%  (one split cannot separate the overlap)\n", 100 * acc))
 
 cols <- ifelse(y == 1, "#E3120B", "#076FA1")
-plot(x1, x2, col = cols, pch = 19, cex = 1.6, xlab = "x1", ylab = "x2")
+plot(x1, x2, col = cols, pch = 19, cex = 1.6, xlab = "x1", ylab = "x2", bty = "l")
 if (fit$feature == 1) abline(v = fit$threshold, col = "#31417A", lwd = 2, lty = 2)
 if (fit$feature == 2) abline(h = fit$threshold, col = "#31417A", lwd = 2, lty = 2)
 legend("topleft", legend = c("class 0", "class 1"),
@@ -345,6 +352,10 @@ axR.plot(grid, moderate,  color="#076FA1", lw=2.5, label=f"depth {best} (moderat
 axR.plot(grid, overgrown, color="#E3120B", lw=1.5, label="depth 10 (overgrown)")
 axR.set_xlabel("$x$"); axR.set_ylabel("$y$")
 axR.set_title("A deep tree chases noise"); axR.legend()
+for a in (axL, axR):
+    for s in ["top", "right"]:
+        a.spines[s].set_visible(False)
+    a.grid(axis="y", color="#e6e3da", lw=0.8); a.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 ```
@@ -410,14 +421,17 @@ overgrown <- predict_tree(fit_tree(x_tr, y_tr, 0, 10),   grid)
 par(mfrow = c(1, 2))
 plot(depths, train_mse, type = "b", col = "#076FA1", lwd = 2.5, pch = 19,
      ylim = range(train_mse, test_mse), xlab = "tree depth", ylab = "MSE",
-     main = "Train falls, test turns up")
+     main = "Train falls, test turns up", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+lines(depths, train_mse, type = "b", col = "#076FA1", lwd = 2.5, pch = 19)
 lines(depths, test_mse, type = "b", col = "#E3120B", lwd = 2.5, pch = 19)
 abline(v = best, lty = 3, col = "#666666")
 legend("topright", legend = c("train", "test"),
        col = c("#076FA1", "#E3120B"), lwd = 2.5, pch = 19, bty = "n")
 
 plot(x_tr, y_tr, col = "#666666", pch = 19, cex = 0.6, xlab = "x", ylab = "y",
-     main = "A deep tree chases noise")
+     main = "A deep tree chases noise", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(grid, sin(grid), col = "#31417A", lwd = 2, lty = 2)
 lines(grid, moderate,  col = "#076FA1", lwd = 2.5)
 lines(grid, overgrown, col = "#E3120B", lwd = 1.5)
@@ -530,6 +544,9 @@ ax.plot(grid, single_grid, color="#E3120B", lw=1.3,          label="single deep 
 ax.plot(grid, bag_grid,    color="#076FA1", lw=2.5,          label=f"{B} bagged trees")
 ax.set_xlabel("$x$"); ax.set_ylabel("$y$")
 ax.legend()
+for s in ["top", "right"]:
+    ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 ```
@@ -600,7 +617,8 @@ cat(sprintf("%d bagged deep trees       test MSE : %.4f\n", B, bag_test))
 cat(sprintf("variance averaged away              : %.0f%% lower test error\n",
             100 * (1 - bag_test / single_test)))
 
-plot(x_tr, y_tr, col = "#666666", pch = 19, cex = 0.6, xlab = "x", ylab = "y")
+plot(x_tr, y_tr, col = "#666666", pch = 19, cex = 0.6, xlab = "x", ylab = "y", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(grid, truth,       col = "#31417A", lwd = 2, lty = 2)
 lines(grid, single_grid, col = "#E3120B", lwd = 1.3)
 lines(grid, bag_grid,    col = "#076FA1", lwd = 2.5)
@@ -679,6 +697,9 @@ ax.plot(grid, ensemble, color="#076FA1", lw=2.5, label=f"boosted ({rounds} stump
 ax.scatter(x, y, c="#666666", s=15, alpha=0.4)
 ax.set_xlabel("$x$"); ax.set_ylabel("$y$")
 ax.legend()
+for s in ["top", "right"]:
+    ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 ```
@@ -725,7 +746,9 @@ ensemble <- numeric(length(grid))
 for (s in stumps) ensemble <- ensemble + lr * predict_stump(s, grid)
 
 plot(grid, sin(grid), type = "l", col = "#31417A", lwd = 2, lty = 2,
-     xlab = "x", ylab = "y")
+     xlab = "x", ylab = "y", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+lines(grid, sin(grid), col = "#31417A", lwd = 2, lty = 2)
 lines(grid, ensemble, col = "#076FA1", lwd = 2.5)
 points(x, y, col = "#666666", pch = 19, cex = 0.4)
 legend("topright", bty = "n",
@@ -817,6 +840,9 @@ colors = ["#076FA1" if j in (0, 2) else "#666666" for j in range(d)]
 ax.barh([f"feature {j}" for j in range(d)], importance, color=colors, edgecolor="white")
 ax.set_xlabel("Importance (mean impurity decrease)")
 ax.invert_yaxis()
+for s in ["top", "right"]:
+    ax.spines[s].set_visible(False)
+ax.grid(axis="x", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 ```
@@ -870,9 +896,12 @@ for (j in 1:d) {
 }
 
 cols <- ifelse(seq_len(d) %in% c(1, 3), "#076FA1", "#666666")
+bp <- barplot(rev(importance), horiz = TRUE, col = rev(cols), border = "white",
+              names.arg = rev(paste("feature", 0:(d - 1))), las = 1,
+              xlab = "Importance (mean impurity decrease)")
+grid(nx = NULL, ny = NA, col = "#e6e3da", lty = 1, lwd = 0.6)
 barplot(rev(importance), horiz = TRUE, col = rev(cols), border = "white",
-        names.arg = rev(paste("feature", 0:(d - 1))), las = 1,
-        xlab = "Importance (mean impurity decrease)")
+        names.arg = rev(paste("feature", 0:(d - 1))), las = 1, add = TRUE)
 ```
 
 :::

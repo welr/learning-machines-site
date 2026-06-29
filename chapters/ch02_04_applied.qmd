@@ -193,6 +193,10 @@ ax.set_xlabel("weight (1000 lbs)")
 ax.set_ylabel("miles per gallon")
 ax.set_ylim(5, 36)
 ax.legend()
+for s in ["top", "right"]:
+    ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8)
+ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 ```
@@ -207,8 +211,9 @@ w_std    <- (wt - mean(wt)) / pop_sd(wt)
 grid     <- seq(min(wt), max(wt), length.out = 300)
 grid_std <- (grid - mean(wt)) / pop_sd(wt)
 
-plot(wt, mpg, pch = 19, col = "#076FA1", cex = 1.1,
+plot(wt, mpg, pch = 19, col = "#076FA1", cex = 1.1, bty = "l",
      xlab = "weight (1000 lbs)", ylab = "miles per gallon", ylim = c(5, 36))
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 
 degs <- c(1, 2, 10); cols <- c("#31417A", "#9E4F00", "#E3120B")
 for (i in seq_along(degs)) {

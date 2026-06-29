@@ -125,6 +125,10 @@ for xi, yi, yp in zip(x, y, y_pred):
 ax.set_xlabel("Floor area (hundreds of sq ft)")
 ax.set_ylabel("Price (thousands of $)")
 ax.legend()
+for s in ["top", "right"]:
+    ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8)
+ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 
@@ -143,9 +147,10 @@ theta <- solve(t(X) %*% X, t(X) %*% y)   # solve(A, b) avoids forming the invers
 y_pred <- as.vector(X %*% theta)
 residuals <- y - y_pred
 
-plot(x, y, pch = 19, col = "#076FA1", cex = 1.6,
+plot(x, y, pch = 19, col = "#076FA1", cex = 1.6, bty = "l",
      xlab = "Floor area (hundreds of sq ft)",
      ylab = "Price (thousands of $)")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 abline(a = theta[1], b = theta[2], col = "#31417A", lwd = 2)
 segments(x, y, x, y_pred, col = "#E3120B", lty = 2, lwd = 1.5)
 
@@ -249,6 +254,10 @@ ax.scatter(fitted, price - fitted, s=40, color="#076FA1", edgecolor="white")
 ax.axhline(0, color="black", linestyle="--", linewidth=1, alpha=0.6)
 ax.set_xlabel("Fitted values")
 ax.set_ylabel("Residuals")
+for s in ["top", "right"]:
+    ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8)
+ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 ```
@@ -274,8 +283,9 @@ cat("\nlm coefficients:\n")
 print(round(coef(fit), 2))
 
 fitted_vals <- as.vector(X %*% theta)
-plot(fitted_vals, price - fitted_vals, pch = 19, col = "#076FA1",
+plot(fitted_vals, price - fitted_vals, pch = 19, col = "#076FA1", bty = "l",
      xlab = "Fitted values", ylab = "Residuals")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 abline(h = 0, lty = 2)
 ```
 
