@@ -44,7 +44,7 @@ cross-product, leaving the intercept unpenalized. That one term tames the fit.
 ```{=html}
 <figure class="lm-figure">
 <img src="../figures/ch07_01_regularization.png" alt="Eight ridge coefficient paths plotted against penalty strength lambda on a logarithmic x-axis, each curve drifting smoothly toward the gray zero line as lambda grows.">
-<figcaption><strong>Ridge shrinkage paths.</strong> As the penalty strength &lambda; grows, every coefficient glides smoothly toward zero without ever quite reaching it. This is the result the code below reproduces.</figcaption>
+<figcaption><strong>Ridge shrinkage paths.</strong> As the penalty strength &lambda; grows, the coefficients are drawn smoothly toward zero without ever quite reaching it, though with correlated features a few swell or change sign before the penalty reins them in. This is the result the code below reproduces.</figcaption>
 </figure>
 ```
 
