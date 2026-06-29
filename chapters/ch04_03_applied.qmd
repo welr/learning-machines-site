@@ -37,8 +37,8 @@ one-standard-deviation rise in that feature. Above one raises the odds; below on
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch04_03_applied.png" alt="Horizontal bar chart of each marker's odds ratio, sorted by magnitude; glucose, BMI, age, and blood pressure exceed one while HDL falls below the reference line at one.">
-<figcaption><strong>Reading a logistic fit as odds.</strong> Each bar is a marker's odds ratio, exp of its coefficient: glucose and BMI multiply the odds of a positive test the most, while the protective marker HDL sits below the reference line at one and lowers them. This is the result the code below reproduces.</figcaption>
+<img src="../figures/ch04_03_applied.png" alt="Diverging horizontal bar chart on a log axis: each marker's odds ratio drawn as a bar from the OR = 1 reference line. Glucose, BMI, age, and blood pressure extend right of one; HDL extends left of one.">
+<figcaption><strong>Reading a logistic fit as odds.</strong> Each bar runs from OR = 1 to a marker's odds ratio (the exponential of its coefficient) on a log scale, so an effect that halves the odds reads as strongly as one that doubles them. Glucose and BMI raise the odds of a positive test most; HDL, the one protective marker, extends left of the line and lowers them by a comparable factor. This is the result the code below reproduces.</figcaption>
 </figure>
 ```
 
@@ -77,11 +77,17 @@ odds = np.exp(logreg.coef_[0])                    # exp(coefficient) = odds rati
 order = np.argsort(odds)
 
 fig, ax = plt.subplots(figsize=(7, 4))
-ax.barh(range(len(names)), odds[order],
-        color=["#076FA1" if o > 1 else "#666666" for o in odds[order]])
-ax.axvline(1.0, color="#E3120B", lw=1)
+# Each bar runs from OR = 1 to the odds ratio on a log axis, so a marker that
+# halves the odds reads as strongly as one that doubles them.
+ax.barh(range(len(names)), odds[order] - 1.0, left=1.0,
+        color=["#076FA1" if o > 1 else "#9E4F00" for o in odds[order]])
+ax.set_xscale("log")
+ax.set_xlim(0.17, 9.5)
+ax.set_xticks([0.25, 0.5, 1, 2, 4, 8]); ax.set_xticklabels(["0.25", "0.5", "1", "2", "4", "8"])
+ax.minorticks_off()
+ax.axvline(1.0, color="#666666", lw=1.2)
 ax.set_yticks(range(len(names))); ax.set_yticklabels([names[i] for i in order])
-ax.set_xlabel("odds ratio  (exp of coefficient)")
+ax.set_xlabel("odds ratio  (log scale)")
 plt.tight_layout(); plt.show()
 
 for i in order[::-1]:
@@ -114,10 +120,16 @@ logreg <- glm(y ~ ., data = df, family = binomial)
 odds <- exp(coef(logreg)[-1])             # exp(coefficient) = odds ratio (drop intercept)
 ord <- order(odds)
 
-cols <- ifelse(odds[ord] > 1, "#076FA1", "#666666")
-barplot(odds[ord], names.arg = names[ord], horiz = TRUE, las = 1,
-        col = cols, xlab = "odds ratio  (exp of coefficient)")
-abline(v = 1.0, col = "#E3120B", lwd = 1)
+# Each bar runs from OR = 1 to the odds ratio on a log axis, so a marker that
+# halves the odds reads as strongly as one that doubles them.
+cols <- ifelse(odds[ord] > 1, "#076FA1", "#9E4F00")
+par(mar = c(4, 7, 2, 2))
+plot(NA, xlim = c(0.17, 9.5), ylim = c(0.4, length(ord) + 0.6), log = "x",
+     xaxt = "n", yaxt = "n", xlab = "odds ratio  (log scale)", ylab = "")
+axis(1, at = c(0.25, 0.5, 1, 2, 4, 8), labels = c("0.25", "0.5", "1", "2", "4", "8"))
+axis(2, at = seq_along(ord), labels = names[ord], las = 1, tick = FALSE)
+rect(1, seq_along(ord) - 0.35, odds[ord], seq_along(ord) + 0.35, col = cols, border = NA)
+abline(v = 1.0, col = "#666666", lwd = 1.2)
 
 for (i in rev(ord)) cat(sprintf("  %14s: OR = %.2f\n", names[i], odds[i]))
 test_df <- as.data.frame(X_te); colnames(test_df) <- paste0("f", 1:5)
