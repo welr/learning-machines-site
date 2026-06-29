@@ -157,8 +157,9 @@ prior_prec = np.linalg.inv(prior_cov)
 post_cov  = np.linalg.inv(prior_prec + (X.T @ X) / noise_var)
 post_mean = post_cov @ ((X.T @ y) / noise_var)        # prior mean is zero
 
-# Posterior predictive over a grid: mean and variance at each x*
-xs = np.linspace(-0.5, 3.5, 100)
+# Posterior predictive over a grid that runs well beyond the data (x in [0,3]),
+# so the band's flare under extrapolation is visible
+xs = np.linspace(-3.5, 8.5, 100)
 Xs = np.column_stack([np.ones(len(xs)), xs])
 pred_mean = Xs @ post_mean
 pred_var  = np.sum((Xs @ post_cov) * Xs, axis=1) + noise_var
@@ -176,7 +177,7 @@ plt.tight_layout(); plt.show()
 
 # The band is narrowest near the data center and widens outward
 print(f"predictive sd at x=1.5 (center): {pred_sd[np.argmin(np.abs(xs - 1.5))]:.3f}")
-print(f"predictive sd at x=3.5 (edge):   {pred_sd[-1]:.3f}")
+print(f"predictive sd at x=8.5 (edge):   {pred_sd[-1]:.3f}")
 ```
 
 ## R
@@ -193,14 +194,16 @@ prior_prec <- solve(prior_cov)
 post_cov  <- solve(prior_prec + (t(X) %*% X) / noise_var)
 post_mean <- as.vector(post_cov %*% ((t(X) %*% y) / noise_var))   # prior mean is zero
 
-# Posterior predictive over a grid: mean and variance at each x*
-xs <- seq(-0.5, 3.5, length.out = 100)
+# Posterior predictive over a grid that runs well beyond the data (x in [0,3]),
+# so the band's flare under extrapolation is visible
+xs <- seq(-3.5, 8.5, length.out = 100)
 Xs <- cbind(1, xs)
 pred_mean <- as.vector(Xs %*% post_mean)
 pred_var  <- rowSums((Xs %*% post_cov) * Xs) + noise_var
 pred_sd   <- sqrt(pred_var)
 
-plot(x, y, pch = 19, col = "#076FA1", xlim = c(-0.5, 3.5),
+plot(x, y, pch = 19, col = "#076FA1", xlim = c(-3.5, 8.5),
+     ylim = range(c(pred_mean - 1.96 * pred_sd, pred_mean + 1.96 * pred_sd)),
      xlab = "x", ylab = "y")
 polygon(c(xs, rev(xs)),
         c(pred_mean - 1.96 * pred_sd, rev(pred_mean + 1.96 * pred_sd)),
@@ -214,7 +217,7 @@ legend("topleft", bty = "n",
        pch = c(19, NA, NA, 15), lty = c(NA, 1, 2, NA))
 
 cat(sprintf("predictive sd at x=1.5 (center): %.3f\n", pred_sd[which.min(abs(xs - 1.5))]))
-cat(sprintf("predictive sd at x=3.5 (edge):   %.3f\n", pred_sd[length(pred_sd)]))
+cat(sprintf("predictive sd at x=8.5 (edge):   %.3f\n", pred_sd[length(pred_sd)]))
 ```
 
 :::

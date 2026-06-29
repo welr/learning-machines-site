@@ -29,7 +29,7 @@ them all, while LASSO drives most of them to *exactly* zero and so performs
 ```{=html}
 <figure class="lm-figure">
 <img src="../figures/ch07_02_applied.png" alt="LASSO regularization path: thirty coefficients plotted against the penalty on a logarithmic axis; the eight blue informative-feature paths fall to exactly zero one at a time as the penalty grows, while the twenty-two gray spurious-feature paths sit on the zero line throughout.">
-<figcaption><strong>The LASSO path.</strong> As the penalty &lambda; grows, each coefficient is driven to <em>exactly</em> zero one at a time; the eight informative features (blue) survive deepest into the penalty while the spurious ones (gray) never leave the zero line, which is how the LASSO selects variables. This is the result the code below reproduces.</figcaption>
+<figcaption><strong>The LASSO path.</strong> As the penalty &lambda; grows, each coefficient is driven to <em>exactly</em> zero one at a time; the eight informative features (blue) survive deepest into the penalty while the spurious ones (gray) hug zero and are the first driven out, which is how the LASSO selects variables. This is the result the code below reproduces.</figcaption>
 </figure>
 ```
 
