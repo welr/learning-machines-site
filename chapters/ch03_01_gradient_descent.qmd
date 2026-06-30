@@ -79,7 +79,7 @@ Loss = np.array([[mse(a, b) for a in g0] for b in g1])
 fig, ax = plt.subplots(figsize=(7, 5.5))
 levels = np.logspace(np.log10(Loss.min() + 0.05), np.log10(Loss.max()), 18)
 ax.contour(B0, B1, Loss, levels=levels, colors="#666666", linewidths=0.6, alpha=0.7)
-cf = ax.contourf(B0, B1, Loss, levels=levels, cmap="Blues_r", alpha=0.30)
+cf = ax.contourf(B0, B1, Loss, levels=levels, cmap="Blues", alpha=0.30)
 fig.colorbar(cf, ax=ax, label="loss (MSE)")
 
 # Negative-gradient arrows: the downhill direction at each grid point
@@ -90,9 +90,10 @@ for a in np.linspace(-0.5, 2.5, 8):
         if nrm > 1e-6:
             step = gvec / nrm * 0.18            # fixed-length arrow
             ax.arrow(a, b, -step[0], -step[1], head_width=0.06,
-                     head_length=0.05, fc="#31417A", ec="#31417A", alpha=0.65)
+                     head_length=0.05, fc="#E3120B", ec="#E3120B", alpha=0.65)
 
-ax.scatter(*theta_ols, color="#E3120B", s=180, marker="*", zorder=5, label="OLS optimum")
+ax.scatter(*theta_ols, color="#666666", s=180, marker="*", zorder=5,
+           edgecolors="white", linewidths=1.4, label="OLS optimum")
 ax.set_xlabel(r"$\theta_0$ (intercept)")
 ax.set_ylabel(r"$\theta_1$ (slope)")
 ax.set_title("MSE loss surface; arrows point downhill")
@@ -127,10 +128,14 @@ g1 <- seq(-1.5, 3.0, length.out = 120)
 Loss <- outer(g0, g1, Vectorize(mse))
 
 levels <- exp(seq(log(min(Loss) + 0.05), log(max(Loss)), length.out = 18))
-contour(g0, g1, Loss, levels = levels, drawlabels = FALSE, col = "#666666",
-        xlab = expression(theta[0] ~ "(intercept)"),
-        ylab = expression(theta[1] ~ "(slope)"),
-        main = "MSE loss surface; arrows point downhill")
+blues <- colorRampPalette(c("#f7fbff", "#deebf7", "#c6dbef", "#9ecae1",
+                            "#6baed6", "#4292c6", "#2171b5", "#08519c", "#08306b"))
+image(g0, g1, log(Loss), col = blues(100),
+      xlab = expression(theta[0] ~ "(intercept)"),
+      ylab = expression(theta[1] ~ "(slope)"),
+      main = "MSE loss surface; arrows point downhill")
+contour(g0, g1, Loss, levels = levels, drawlabels = FALSE,
+        col = "white", lwd = 0.6, add = TRUE)
 
 # Negative-gradient arrows: the downhill direction at each grid point
 for (a in seq(-0.5, 2.5, length.out = 8)) {
@@ -140,12 +145,12 @@ for (a in seq(-0.5, 2.5, length.out = 8)) {
     if (nrm > 1e-6) {
       step <- gvec / nrm * 0.18                 # fixed-length arrow
       arrows(a, b, a - step[1], b - step[2], length = 0.04,
-             col = "#31417A", lwd = 1)
+             col = "#E3120B", lwd = 1)
     }
   }
 }
-points(theta_ols[1], theta_ols[2], col = "#E3120B", pch = 8, cex = 2, lwd = 2)
-legend("topright", "OLS optimum", pch = 8, col = "#E3120B", bty = "n")
+points(theta_ols[1], theta_ols[2], col = "#666666", pch = 8, cex = 2, lwd = 2)
+legend("topright", "OLS optimum", pch = 8, col = "#666666", bty = "n")
 ```
 
 :::
@@ -191,9 +196,9 @@ def descend(lr, n_iter, start):
     return np.array(path)
 
 start = [2.0, -1.0]
-rates = [(0.02, "#666666", "alpha = 0.02 (slow)"),
-         (0.10, "#076FA1", "alpha = 0.10 (good)"),
-         (0.25, "#E3120B", "alpha = 0.25 (oscillating)")]
+rates = [(0.02, "#31417A", "alpha = 0.02 (slow)"),
+         (0.10, "#E3120B", "alpha = 0.10 (good)"),
+         (0.25, "#9E4F00", "alpha = 0.25 (oscillating)")]
 
 g0 = np.linspace(-1.0, 3.0, 120)
 g1 = np.linspace(-1.5, 3.0, 120)
@@ -203,7 +208,7 @@ Loss = np.array([[mse(a, b) for a in g0] for b in g1])
 fig, (axL, axR) = plt.subplots(1, 2, figsize=(12, 5))
 levels = np.logspace(np.log10(Loss.min() + 0.05), np.log10(Loss.max()), 18)
 axL.contour(B0, B1, Loss, levels=levels, colors="#666666", linewidths=0.5, alpha=0.5)
-cfL = axL.contourf(B0, B1, Loss, levels=levels, cmap="Blues_r", alpha=0.20)
+cfL = axL.contourf(B0, B1, Loss, levels=levels, cmap="Blues", alpha=0.20)
 fig.colorbar(cfL, ax=axL, label="loss (MSE)")
 
 for lr, color, label in rates:
@@ -213,7 +218,8 @@ for lr, color, label in rates:
     print(f"{label:26s} -> final loss {mse(*path[-1]):.4f}")
 
 axL.scatter(*start, color="black", s=70, zorder=5, label="start")
-axL.scatter(*theta_ols, color="#31417A", s=170, marker="*", zorder=6, label="optimum")
+axL.scatter(*theta_ols, color="#666666", s=170, marker="*", zorder=6,
+            edgecolors="white", linewidths=1.4, label="optimum")
 axL.set_xlabel(r"$\theta_0$")
 axL.set_ylabel(r"$\theta_1$")
 axL.set_title("Trajectories on the loss surface")
@@ -258,9 +264,9 @@ descend <- function(lr, n_iter, start) {
 }
 
 start <- c(2.0, -1.0)
-rates <- list(list(0.02, "#666666", "alpha = 0.02 (slow)"),
-              list(0.10, "#076FA1", "alpha = 0.10 (good)"),
-              list(0.25, "#E3120B", "alpha = 0.25 (oscillating)"))
+rates <- list(list(0.02, "#31417A", "alpha = 0.02 (slow)"),
+              list(0.10, "#E3120B", "alpha = 0.10 (good)"),
+              list(0.25, "#9E4F00", "alpha = 0.25 (oscillating)"))
 
 g0 <- seq(-1.0, 3.0, length.out = 120)
 g1 <- seq(-1.5, 3.0, length.out = 120)
@@ -272,9 +278,13 @@ paths <- lapply(rates, function(r) descend(r[[1]], 40, start))
 op <- par(mfrow = c(1, 2))
 
 # Left: trajectories on the loss surface
-contour(g0, g1, Loss, levels = levels, drawlabels = FALSE, col = "#666666",
-        xlab = expression(theta[0]), ylab = expression(theta[1]),
-        main = "Trajectories on the loss surface")
+blues <- colorRampPalette(c("#f7fbff", "#deebf7", "#c6dbef", "#9ecae1",
+                            "#6baed6", "#4292c6", "#2171b5", "#08519c", "#08306b"))
+image(g0, g1, log(Loss), col = blues(100),
+      xlab = expression(theta[0]), ylab = expression(theta[1]),
+      main = "Trajectories on the loss surface")
+contour(g0, g1, Loss, levels = levels, drawlabels = FALSE,
+        col = "white", lwd = 0.6, add = TRUE)
 for (k in seq_along(rates)) {
   p <- paths[[k]]
   lines(p[, 1], p[, 2], type = "o", col = rates[[k]][[2]], pch = 19, cex = 0.5)
@@ -282,9 +292,9 @@ for (k in seq_along(rates)) {
               rates[[k]][[3]], mse(p[nrow(p), 1], p[nrow(p), 2])))
 }
 points(start[1], start[2], pch = 19, cex = 1.2)
-points(theta_ols[1], theta_ols[2], pch = 8, col = "#31417A", cex = 1.8, lwd = 2)
+points(theta_ols[1], theta_ols[2], pch = 8, col = "#666666", cex = 1.8, lwd = 2)
 legend("topright", c(sapply(rates, `[[`, 3), "start", "optimum"),
-       col = c(sapply(rates, `[[`, 2), "black", "#31417A"),
+       col = c(sapply(rates, `[[`, 2), "black", "#666666"),
        pch = c(19, 19, 19, 19, 8), bty = "n", cex = 0.8)
 
 # Right: convergence, loss vs iteration on a log scale
@@ -359,7 +369,7 @@ print(f"alpha = 0.30 (> {alpha_crit:.2f}): final loss {L_diverge[-1]:.3e}")
 
 fig, ax = plt.subplots(figsize=(7, 4.5))
 ax.plot(L_diverge, "o-", color="#E3120B", ms=4, label="alpha = 0.30 (diverges)")
-ax.plot(L_stable, "o-", color="#076FA1", ms=4, label="alpha = 0.25 (converges)")
+ax.plot(L_stable, "o-", color="#31417A", ms=4, label="alpha = 0.25 (converges)")
 ax.set_yscale("log")
 ax.set_xlabel("iteration")
 ax.set_ylabel("MSE loss")
@@ -411,9 +421,9 @@ plot(0:20, L_diverge, type = "o", col = "#E3120B", pch = 19, log = "y",
      main = sprintf("A step past 2/lambda_max = %.2f explodes", alpha_crit),
      bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-lines(0:20, L_stable, type = "o", col = "#076FA1", pch = 19)
+lines(0:20, L_stable, type = "o", col = "#31417A", pch = 19)
 legend("bottomright", c("alpha = 0.30 (diverges)", "alpha = 0.25 (converges)"),
-       col = c("#E3120B", "#076FA1"), lwd = 1.8, pch = 19, bty = "n")
+       col = c("#E3120B", "#31417A"), lwd = 1.8, pch = 19, bty = "n")
 ```
 
 :::
@@ -604,19 +614,20 @@ Loss = np.array([[mse(a, b) for a in g0] for b in g1])
 fig, (axL, axR) = plt.subplots(1, 2, figsize=(12, 5))
 levels = np.logspace(np.log10(Loss.min() + 0.05), np.log10(Loss.max()), 18)
 axL.contour(B0, B1, Loss, levels=levels, colors="#666666", linewidths=0.5, alpha=0.5)
-cfL = axL.contourf(B0, B1, Loss, levels=levels, cmap="Blues_r", alpha=0.20)
+cfL = axL.contourf(B0, B1, Loss, levels=levels, cmap="Blues", alpha=0.20)
 fig.colorbar(cfL, ax=axL, label="loss (MSE)")
-axL.plot(P0[:, 0], P0[:, 1], "o-", color="#666666", ms=3, lw=1.4, label="plain GD")
-axL.plot(P1[:, 0], P1[:, 1], "s-", color="#076FA1", ms=3, lw=1.4, label="momentum (gamma=0.8)")
+axL.plot(P0[:, 0], P0[:, 1], "o-", color="#31417A", ms=3, lw=1.4, label="plain GD")
+axL.plot(P1[:, 0], P1[:, 1], "s-", color="#E3120B", ms=3, lw=1.4, label="momentum (gamma=0.8)")
 axL.scatter(*start, color="black", s=70, zorder=5)
-axL.scatter(*theta_ols, color="#E3120B", s=170, marker="*", zorder=6, label="optimum")
+axL.scatter(*theta_ols, color="#666666", s=170, marker="*", zorder=6,
+            edgecolors="white", linewidths=1.4, label="optimum")
 axL.set_xlabel(r"$\theta_0$")
 axL.set_ylabel(r"$\theta_1$")
 axL.set_title(f"Same step size alpha = {lr}")
 axL.legend(loc="upper right", fontsize=8)
 
-axR.plot([mse(*p) for p in P0], color="#666666", lw=2, label="plain GD")
-axR.plot([mse(*p) for p in P1], color="#076FA1", lw=2, label="momentum (gamma=0.8)")
+axR.plot([mse(*p) for p in P0], color="#31417A", lw=2, label="plain GD")
+axR.plot([mse(*p) for p in P1], color="#E3120B", lw=2, label="momentum (gamma=0.8)")
 axR.axhline(opt_loss, color="#666666", ls="--", lw=1)
 axR.set_yscale("log")
 axR.set_xlabel("iteration")
@@ -680,27 +691,31 @@ Loss <- outer(g0, g1, Vectorize(mse))
 levels <- exp(seq(log(min(Loss) + 0.05), log(max(Loss)), length.out = 18))
 
 op <- par(mfrow = c(1, 2))
-contour(g0, g1, Loss, levels = levels, drawlabels = FALSE, col = "#666666",
-        xlab = expression(theta[0]), ylab = expression(theta[1]),
-        main = sprintf("Same step size alpha = %.2f", lr))
-lines(P0[, 1], P0[, 2], type = "o", col = "#666666", pch = 19, cex = 0.5)
-lines(P1[, 1], P1[, 2], type = "o", col = "#076FA1", pch = 15, cex = 0.5)
+blues <- colorRampPalette(c("#f7fbff", "#deebf7", "#c6dbef", "#9ecae1",
+                            "#6baed6", "#4292c6", "#2171b5", "#08519c", "#08306b"))
+image(g0, g1, log(Loss), col = blues(100),
+      xlab = expression(theta[0]), ylab = expression(theta[1]),
+      main = sprintf("Same step size alpha = %.2f", lr))
+contour(g0, g1, Loss, levels = levels, drawlabels = FALSE,
+        col = "white", lwd = 0.6, add = TRUE)
+lines(P0[, 1], P0[, 2], type = "o", col = "#31417A", pch = 19, cex = 0.5)
+lines(P1[, 1], P1[, 2], type = "o", col = "#E3120B", pch = 15, cex = 0.5)
 points(start[1], start[2], pch = 19, cex = 1.2)
-points(theta_ols[1], theta_ols[2], pch = 8, col = "#E3120B", cex = 1.8, lwd = 2)
+points(theta_ols[1], theta_ols[2], pch = 8, col = "#666666", cex = 1.8, lwd = 2)
 legend("topright", c("plain GD", "momentum (gamma=0.8)", "optimum"),
-       col = c("#666666", "#076FA1", "#E3120B"), pch = c(19, 15, 8), bty = "n", cex = 0.8)
+       col = c("#31417A", "#E3120B", "#666666"), pch = c(19, 15, 8), bty = "n", cex = 0.8)
 
 l0 <- apply(P0, 1, function(b) mse(b[1], b[2]))
 l1 <- apply(P1, 1, function(b) mse(b[1], b[2]))
-plot(0:n_iter, l0, type = "l", col = "#666666", lwd = 2, log = "y",
+plot(0:n_iter, l0, type = "l", col = "#31417A", lwd = 2, log = "y",
      ylim = range(l0, l1, opt_loss),
      xlab = "iteration", ylab = "MSE loss", main = "Momentum reaches the floor sooner",
      bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-lines(0:n_iter, l1, col = "#076FA1", lwd = 2)
+lines(0:n_iter, l1, col = "#E3120B", lwd = 2)
 abline(h = opt_loss, col = "#666666", lty = 2)
 legend("topright", c("plain GD", "momentum (gamma=0.8)"),
-       col = c("#666666", "#076FA1"), lwd = 2, bty = "n")
+       col = c("#31417A", "#E3120B"), lwd = 2, bty = "n")
 par(op)
 
 cat(sprintf("after %d steps: plain loss %.4f, momentum loss %.4f\n",

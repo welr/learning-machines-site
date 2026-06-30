@@ -340,7 +340,7 @@ moderate  = predict_tree(fit_tree(x_tr, y_tr, 0, best), grid)
 overgrown = predict_tree(fit_tree(x_tr, y_tr, 0, 10),   grid)
 
 fig, (axL, axR) = plt.subplots(1, 2, figsize=(11, 4.5))
-axL.plot(list(depths), train_mse, color="#076FA1", lw=2.5, marker="o", label="train")
+axL.plot(list(depths), train_mse, color="#31417A", lw=2.5, marker="o", label="train")
 axL.plot(list(depths), test_mse,  color="#E3120B", lw=2.5, marker="o", label="test")
 axL.axvline(best, color="#666666", ls=":", alpha=0.6)
 axL.set_xlabel("tree depth"); axL.set_ylabel("MSE")
@@ -419,15 +419,15 @@ moderate  <- predict_tree(fit_tree(x_tr, y_tr, 0, best), grid)
 overgrown <- predict_tree(fit_tree(x_tr, y_tr, 0, 10),   grid)
 
 par(mfrow = c(1, 2))
-plot(depths, train_mse, type = "b", col = "#076FA1", lwd = 2.5, pch = 19,
+plot(depths, train_mse, type = "b", col = "#31417A", lwd = 2.5, pch = 19,
      ylim = range(train_mse, test_mse), xlab = "tree depth", ylab = "MSE",
      main = "Train falls, test turns up", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-lines(depths, train_mse, type = "b", col = "#076FA1", lwd = 2.5, pch = 19)
+lines(depths, train_mse, type = "b", col = "#31417A", lwd = 2.5, pch = 19)
 lines(depths, test_mse, type = "b", col = "#E3120B", lwd = 2.5, pch = 19)
 abline(v = best, lty = 3, col = "#666666")
 legend("topright", legend = c("train", "test"),
-       col = c("#076FA1", "#E3120B"), lwd = 2.5, pch = 19, bty = "n")
+       col = c("#31417A", "#E3120B"), lwd = 2.5, pch = 19, bty = "n")
 
 plot(x_tr, y_tr, col = "#666666", pch = 19, cex = 0.6, xlab = "x", ylab = "y",
      main = "A deep tree chases noise", bty = "l")

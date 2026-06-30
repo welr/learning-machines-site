@@ -118,6 +118,7 @@ there.
 ```{pyodide}
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from sklearn.datasets import make_regression
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import Ridge, lasso_path
@@ -125,21 +126,41 @@ from sklearn.linear_model import Ridge, lasso_path
 X, y, coef_true = make_regression(n_samples=200, n_features=30, n_informative=8,
                                   noise=10.0, coef=True, random_state=0)
 X = StandardScaler().fit_transform(X)
+informative = coef_true != 0          # the 8 features we know carry signal
 
 # A grid of penalty strengths, log-spaced from weak to strong.
 alphas = np.logspace(-1, 2.5, 40)
-ridge_coefs = np.array([Ridge(alpha=a).fit(X, y).coef_ for a in alphas])
-lasso_alphas, lasso_coefs, _ = lasso_path(X, y, alphas=alphas[::-1])  # coefs: (p, n_alphas)
+ridge_coefs = np.array([Ridge(alpha=a).fit(X, y).coef_ for a in alphas])  # (n_alphas, p)
+lasso_alphas, lasso_coefs, _ = lasso_path(X, y, alphas=alphas[::-1])      # coefs: (p, n_alphas)
+
+# Color by truth, matching the hero figure: informative blue, spurious gray.
+INFO, SPUR = "#076FA1", "#666666"
 
 fig, (a1, a2) = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True)
-a1.plot(np.log10(alphas), ridge_coefs, color="#076FA1", lw=0.8, alpha=0.7)
+for ax in (a1, a2):
+    ax.axhline(0, color=SPUR, lw=0.9, zorder=1)   # gray zero line, as in the hero
+
+# ridge: spurious gray behind, informative blue on top
+for j in np.flatnonzero(~informative):
+    a1.plot(np.log10(alphas), ridge_coefs[:, j], color=SPUR, lw=0.9, alpha=0.55, zorder=2)
+for j in np.flatnonzero(informative):
+    a1.plot(np.log10(alphas), ridge_coefs[:, j], color=INFO, lw=1.6, alpha=0.9, zorder=3)
 a1.set_title("ridge"); a1.set_xlabel(r"$\log_{10}$ penalty"); a1.set_ylabel("coefficient")
-a2.plot(np.log10(lasso_alphas), lasso_coefs.T, color="#31417A", lw=0.8, alpha=0.7)
+
+# LASSO (the hero panel): informative blue survive deepest, spurious gray hug zero
+for j in np.flatnonzero(~informative):
+    a2.plot(np.log10(lasso_alphas), lasso_coefs[j], color=SPUR, lw=0.9, alpha=0.55, zorder=2)
+for j in np.flatnonzero(informative):
+    a2.plot(np.log10(lasso_alphas), lasso_coefs[j], color=INFO, lw=1.6, alpha=0.9, zorder=3)
 a2.set_title("LASSO"); a2.set_xlabel(r"$\log_{10}$ penalty")
+
 for ax in (a1, a2):
     for s in ["top", "right"]:
         ax.spines[s].set_visible(False)
     ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
+a2.legend(handles=[Line2D([0], [0], color=INFO, lw=1.6, label="informative features"),
+                   Line2D([0], [0], color=SPUR, lw=0.9, label="spurious features")],
+          loc="upper right", frameon=False, fontsize=9)
 fig.tight_layout()
 plt.show()
 
@@ -192,15 +213,30 @@ lasso_path <- t(sapply(lam_grid, function(l) lasso_cd(X, y, l)))   # 40 x p
 ridge_grid <- 10^seq(-1, 3.5, length.out = 40) * n
 ridge_path <- t(sapply(ridge_grid, function(l) ridge_fit(X, y, l)))
 
+# Color by truth, matching the hero figure: informative blue, spurious gray.
+info <- which(theta_true != 0)        # the 8 informative columns
+spur <- which(theta_true == 0)        # the 22 spurious columns
+INFO <- "#076FA1"; SPUR <- "#666666"
+
 par(mfrow = c(1, 2))
-matplot(log10(ridge_grid / n), ridge_path, type = "l", lty = 1, lwd = 1,
-        col = "#076FA1", main = "ridge", bty = "l",
-        xlab = "log10 penalty", ylab = "coefficient")
+
+# ridge: spurious gray behind, informative blue on top
+matplot(log10(ridge_grid / n), ridge_path, type = "n", bty = "l",
+        main = "ridge", xlab = "log10 penalty", ylab = "coefficient")
+abline(h = 0, col = SPUR, lwd = 0.9)                       # gray zero line, as in the hero
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-matplot(log10(lam_grid), lasso_path, type = "l", lty = 1, lwd = 1,
-        col = "#31417A", main = "LASSO", bty = "l",
-        xlab = "log10 penalty", ylab = "coefficient")
+matlines(log10(ridge_grid / n), ridge_path[, spur], lty = 1, lwd = 0.9, col = SPUR)
+matlines(log10(ridge_grid / n), ridge_path[, info], lty = 1, lwd = 1.8, col = INFO)
+
+# LASSO (the hero panel): informative blue survive deepest, spurious gray hug zero
+matplot(log10(lam_grid), lasso_path, type = "n", bty = "l",
+        main = "LASSO", xlab = "log10 penalty", ylab = "coefficient")
+abline(h = 0, col = SPUR, lwd = 0.9)
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+matlines(log10(lam_grid), lasso_path[, spur], lty = 1, lwd = 0.9, col = SPUR)
+matlines(log10(lam_grid), lasso_path[, info], lty = 1, lwd = 1.8, col = INFO)
+legend("topright", legend = c("informative features", "spurious features"),
+       col = c(INFO, SPUR), lwd = c(1.8, 0.9), bty = "n", cex = 0.8)
 
 # Features re-enter as the LASSO penalty shrinks (strong -> weak).
 counts <- rowSums(lasso_path != 0)

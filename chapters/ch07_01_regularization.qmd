@@ -205,10 +205,13 @@ nz_r = int(np.sum(np.abs(ridge(Xs, y, lam0)[1:]) > 1e-6))
 nz_l = int(np.sum(np.abs(lasso(Xs, y, lam0)[1:]) > 1e-6))
 print(f"at lambda={lam0}: ridge keeps {nz_r}/{degree} coefs, LASSO keeps {nz_l}/{degree}")
 
+# Cycle the book-blue family so each coefficient keeps one color across panels
+path_colors = ["#076FA1", "#31417A", "#2FC1D3", "#666666"]   # BLUE, FS_BLUE, CYAN, GRAY
 fig, axes = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True)
 for j in range(ridge_path.shape[1]):
-    axes[0].plot(lams, ridge_path[:, j], lw=1.6)
-    axes[1].plot(lams, lasso_path[:, j], lw=1.6)
+    c = path_colors[j % len(path_colors)]
+    axes[0].plot(lams, ridge_path[:, j], lw=1.6, color=c)
+    axes[1].plot(lams, lasso_path[:, j], lw=1.6, color=c)
 for ax, t in zip(axes, ["Ridge: shrink, never zero", "LASSO: snap to zero"]):
     ax.set_xscale("log"); ax.axhline(0, color="#666666", ls="--", lw=1)
     ax.set_xlabel("lambda"); ax.set_title(t, loc="left")
@@ -267,12 +270,14 @@ nz_l <- sum(abs(lasso_fit(Xs, y, lam0)[-1]) > 1e-6)
 cat(sprintf("at lambda=%.2f: ridge keeps %d/%d coefs, LASSO keeps %d/%d\n",
             lam0, nz_r, degree, nz_l, degree))
 
+# Cycle the book-blue family so each coefficient keeps one color across panels
+path_colors <- c("#076FA1", "#31417A", "#2FC1D3", "#666666")   # BLUE, FS_BLUE, CYAN, GRAY
 par(mfrow = c(1, 2))
-matplot(lams, ridge_path, type = "l", lty = 1, lwd = 1.6, log = "x", bty = "l",
+matplot(lams, ridge_path, type = "l", lty = 1, lwd = 1.6, col = path_colors, log = "x", bty = "l",
         xlab = "lambda", ylab = "coefficient", main = "Ridge: shrink, never zero")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 abline(h = 0, col = "#666666", lty = 2)
-matplot(lams, lasso_path, type = "l", lty = 1, lwd = 1.6, log = "x", bty = "l",
+matplot(lams, lasso_path, type = "l", lty = 1, lwd = 1.6, col = path_colors, log = "x", bty = "l",
         xlab = "lambda", ylab = "coefficient", main = "LASSO: snap to zero")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 abline(h = 0, col = "#666666", lty = 2)

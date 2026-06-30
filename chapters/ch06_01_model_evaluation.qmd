@@ -282,8 +282,8 @@ for t in thr:
     rec.append(TP / (TP + FN) if TP + FN > 0 else 0.0)
 
 fig, ax = plt.subplots(figsize=(7, 4.5))
-ax.plot(thr, prec, color="#076FA1", lw=2.5, label="precision")
-ax.plot(thr, rec, color="#31417A", lw=2.5, label="recall")
+ax.plot(thr, prec, color="#31417A", lw=2.5, label="precision")
+ax.plot(thr, rec, color="#2FC1D3", lw=2.5, label="recall")
 ax.axvline(0.5, color="#666666", ls="--", alpha=0.8, label="default threshold")
 ax.set_xlabel("classification threshold")
 ax.set_ylabel("score")
@@ -320,13 +320,13 @@ rec <- sapply(thr, function(t) {
   if (tp + fn > 0) tp / (tp + fn) else 0
 })
 
-plot(thr, prec, type = "l", col = "#076FA1", lwd = 2.5, ylim = c(0, 1.05),
+plot(thr, prec, type = "l", col = "#31417A", lwd = 2.5, ylim = c(0, 1.05),
      xlab = "classification threshold", ylab = "score", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-lines(thr, rec, col = "#31417A", lwd = 2.5)
+lines(thr, rec, col = "#2FC1D3", lwd = 2.5)
 abline(v = 0.5, col = "#666666", lty = 2)
 legend("left", c("precision", "recall", "default threshold"),
-       col = c("#076FA1", "#31417A", "#666666"),
+       col = c("#31417A", "#2FC1D3", "#666666"),
        lwd = c(2.5, 2.5, 1), lty = c(1, 1, 2), bty = "n")
 ```
 
@@ -391,7 +391,7 @@ fpr = np.concatenate([[0.0], fpr]); tpr = np.concatenate([[0.0], tpr])
 auc = np.trapezoid(tpr, fpr)   # area by the trapezoid rule
 
 fig, ax = plt.subplots(figsize=(6, 6))
-ax.plot(fpr, tpr, color="#076FA1", lw=3, label=f"ROC (AUC = {auc:.3f})")
+ax.plot(fpr, tpr, color="#31417A", lw=3, label=f"ROC (AUC = {auc:.3f})")
 ax.plot([0, 1], [0, 1], color="#666666", ls="--", label="random (AUC = 0.5)")
 ax.set_xlabel("false positive rate")
 ax.set_ylabel("true positive rate")
@@ -425,12 +425,12 @@ fpr <- sapply(thr, function(t) sum(p >= t & yt == 0)) / N
 fpr <- c(0, fpr); tpr <- c(0, tpr)
 auc <- sum(diff(fpr) * (tpr[-1] + tpr[-length(tpr)]) / 2)   # trapezoid rule
 
-plot(fpr, tpr, type = "l", col = "#076FA1", lwd = 3, asp = 1,
+plot(fpr, tpr, type = "l", col = "#31417A", lwd = 3, asp = 1,
      xlab = "false positive rate", ylab = "true positive rate", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 abline(0, 1, col = "#666666", lty = 2)
 legend("bottomright", sprintf("ROC (AUC = %.3f)", auc),
-       col = "#076FA1", lwd = 3, bty = "n")
+       col = "#31417A", lwd = 3, bty = "n")
 cat(sprintf("AUC = %.3f\n", auc))
 ```
 
@@ -489,7 +489,7 @@ mean_pred = np.array(mean_pred); frac_pos = np.array(frac_pos)
 
 fig, ax = plt.subplots(figsize=(6, 6))
 ax.plot([0, 1], [0, 1], color="#666666", ls="--", label="perfectly calibrated")
-ax.plot(mean_pred, frac_pos, "o-", color="#076FA1", lw=2.5, ms=8, label="logistic regression")
+ax.plot(mean_pred, frac_pos, "o-", color="#31417A", lw=2.5, ms=8, label="logistic regression")
 ax.set_xlabel("mean predicted probability")
 ax.set_ylabel("fraction positive")
 ax.set_aspect("equal")
@@ -519,13 +519,13 @@ b <- findInterval(p, bins, rightmost.closed = TRUE)
 mean_pred <- tapply(p, b, mean)
 frac_pos <- tapply(yt, b, mean)
 
-plot(mean_pred, frac_pos, type = "b", col = "#076FA1", lwd = 2.5, pch = 19,
+plot(mean_pred, frac_pos, type = "b", col = "#31417A", lwd = 2.5, pch = 19,
      xlim = c(0, 1), ylim = c(0, 1), asp = 1,
      xlab = "mean predicted probability", ylab = "fraction positive", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 abline(0, 1, col = "#666666", lty = 2)
 legend("topleft", c("logistic regression", "perfectly calibrated"),
-       col = c("#076FA1", "#666666"), lwd = c(2.5, 1),
+       col = c("#31417A", "#666666"), lwd = c(2.5, 1),
        lty = c(1, 2), pch = c(19, NA), bty = "n")
 ```
 

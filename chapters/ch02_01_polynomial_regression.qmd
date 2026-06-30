@@ -80,9 +80,9 @@ true = lambda a: 50 + 4.0 * a - 0.010 * a ** 2
 xs = np.linspace(45, 200, 300)
 
 fig, ax = plt.subplots(figsize=(8, 5))
-ax.scatter(x, y, s=70, color="black", edgecolor="white", zorder=4, label="training data")
+ax.scatter(x, y, s=70, color="#076FA1", edgecolor="white", zorder=4, label="training data")
 ax.plot(xs, true(xs), color="#666666", linestyle="--", linewidth=2, label="true relationship")
-for degree, color, name in [(1, "#076FA1", "degree 1 (underfit)"),
+for degree, color, name in [(1, "#9E4F00", "degree 1 (underfit)"),
                             (2, "#31417A", "degree 2 (good fit)"),
                             (10, "#E3120B", "degree 10 (overfit)")]:
     theta = poly_fit(degree)
@@ -118,12 +118,12 @@ mse <- function(a, b) mean((a - b)^2)
 true <- function(a) 50 + 4.0 * a - 0.010 * a^2
 xs <- seq(45, 200, length.out = 300)
 
-plot(x, y, pch = 21, bg = "black", col = "white", cex = 1.4,
+plot(x, y, pch = 21, bg = "#076FA1", col = "white", cex = 1.4,
      xlim = c(45, 200), ylim = c(100, 500),
      xlab = "Living area (m^2)", ylab = "Price (thousands)", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(xs, true(xs), col = "#666666", lty = 2, lwd = 2)
-specs <- list(c(1, "#076FA1"), c(2, "#31417A"), c(10, "#E3120B"))
+specs <- list(c(1, "#9E4F00"), c(2, "#31417A"), c(10, "#E3120B"))
 for (s in specs) {
   d <- as.integer(s[1]); theta <- poly_fit(d)
   lines(xs, poly_pred(theta, xs, d), col = s[2], lwd = 2.5)
@@ -132,7 +132,7 @@ for (s in specs) {
 legend("topleft", bty = "n",
        legend = c("training data", "true relationship",
                   "degree 1 (underfit)", "degree 2 (good fit)", "degree 10 (overfit)"),
-       col = c("black", "#666666", "#076FA1", "#31417A", "#E3120B"),
+       col = c("#076FA1", "#666666", "#9E4F00", "#31417A", "#E3120B"),
        pch = c(19, NA, NA, NA, NA), lty = c(NA, 2, 1, 1, 1), lwd = 2)
 ```
 
@@ -169,7 +169,7 @@ x_ext = np.linspace(30, 220, 300)         # a little beyond the data
 y_ext = design(x_ext, degree) @ theta
 
 fig, ax = plt.subplots(figsize=(9, 5))
-ax.scatter(x, y, s=70, color="black", edgecolor="white", zorder=4, label="training data")
+ax.scatter(x, y, s=70, color="#076FA1", edgecolor="white", zorder=4, label="training data")
 ax.plot(x_ext, y_ext, color="#E3120B", linewidth=2,
         label=f"degree {degree} (interpolates)")
 ax.axhline(0, color="black", linewidth=1)
@@ -204,7 +204,7 @@ theta  <- qr.solve(design(x, degree), y)
 x_ext <- seq(30, 220, length.out = 300)    # a little beyond the data
 y_ext <- as.vector(design(x_ext, degree) %*% theta)
 
-plot(x, y, pch = 21, bg = "black", col = "white", cex = 1.4,
+plot(x, y, pch = 21, bg = "#076FA1", col = "white", cex = 1.4,
      xlim = c(30, 220), ylim = c(-250, 850),
      xlab = "Living area (m^2)", ylab = "Price (thousands)", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
@@ -217,7 +217,7 @@ abline(h = 0, lwd = 1)
 legend("bottomright", bty = "n",
        legend = c("training data", paste0("degree ", degree, " (interpolates)"),
                   "negative prices"),
-       col = c("black", "#E3120B", "#E3120B"),
+       col = c("#076FA1", "#E3120B", "#E3120B"),
        pch = c(19, NA, 15), lty = c(NA, 1, NA), lwd = 2)
 
 cat(sprintf("Training MSE at degree %d: %.2e\n",

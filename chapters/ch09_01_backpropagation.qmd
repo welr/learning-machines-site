@@ -245,7 +245,7 @@ for step in range(n_steps):
     b2 -= alpha * delta2
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4))
-ax1.plot(losses, color="#076FA1", linewidth=2.5)
+ax1.plot(losses, color="#31417A", linewidth=2.5)
 ax1.set_xlabel("Iteration"); ax1.set_ylabel("Loss")
 ax1.set_title("Loss during training")
 ax2.plot(preds, color="#31417A", linewidth=2.5, label="prediction")
@@ -290,7 +290,7 @@ for (step in seq_len(n_steps)) {
 }
 
 par(mfrow = c(1, 2))
-plot(seq_len(n_steps), losses, type = "l", col = "#076FA1", lwd = 2.5, bty = "l",
+plot(seq_len(n_steps), losses, type = "l", col = "#31417A", lwd = 2.5, bty = "l",
      xlab = "Iteration", ylab = "Loss", main = "Loss during training")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 plot(seq_len(n_steps), preds, type = "l", col = "#31417A", lwd = 2.5, bty = "l",
@@ -326,15 +326,15 @@ relu = lambda z: np.maximum(0, z)
 relu_d = lambda z: (z > 0).astype(float)
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4))
-ax1.plot(z, sigmoid(z), color="#076FA1", linewidth=2, label="sigmoid")
+ax1.plot(z, sigmoid(z), color="#31417A", linewidth=2, label="sigmoid")
 ax1.plot(z, np.tanh(z), color="#666666", linewidth=2, label="tanh")
-ax1.plot(z, relu(z), color="#31417A", linewidth=2, label="ReLU")
+ax1.plot(z, relu(z), color="#076FA1", linewidth=2, label="ReLU")
 ax1.axhline(0, color="gray", linewidth=0.5); ax1.axvline(0, color="gray", linewidth=0.5)
 ax1.set_title("Activations"); ax1.set_xlabel("z"); ax1.set_ylim(-1.5, 4); ax1.legend(loc="upper left")
 
-ax2.plot(z, sig_d(z), color="#076FA1", linewidth=2, label="sigmoid'")
+ax2.plot(z, sig_d(z), color="#31417A", linewidth=2, label="sigmoid'")
 ax2.plot(z, 1 - np.tanh(z) ** 2, color="#666666", linewidth=2, label="tanh'")
-ax2.plot(z, relu_d(z), color="#31417A", linewidth=2, label="ReLU'")
+ax2.plot(z, relu_d(z), color="#076FA1", linewidth=2, label="ReLU'")
 ax2.axhline(0.25, color="#E3120B", linestyle="--", linewidth=1, label="sigmoid' max = 0.25")
 ax2.set_title("Derivatives (gradient flow)"); ax2.set_xlabel("z"); ax2.set_ylim(-0.1, 1.2)
 ax2.legend(loc="upper right")
@@ -358,23 +358,23 @@ relu <- function(z) pmax(0, z)
 relu_d <- function(z) as.numeric(z > 0)
 
 par(mfrow = c(1, 2))
-plot(z, sigmoid(z), type = "l", col = "#076FA1", lwd = 2, ylim = c(-1.5, 4), bty = "l",
+plot(z, sigmoid(z), type = "l", col = "#31417A", lwd = 2, ylim = c(-1.5, 4), bty = "l",
      xlab = "z", ylab = "", main = "Activations")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(z, tanh(z), col = "#666666", lwd = 2)
-lines(z, relu(z), col = "#31417A", lwd = 2)
+lines(z, relu(z), col = "#076FA1", lwd = 2)
 abline(h = 0, col = "gray", lwd = 0.5); abline(v = 0, col = "gray", lwd = 0.5)
 legend("topleft", legend = c("sigmoid", "tanh", "ReLU"),
-       col = c("#076FA1", "#666666", "#31417A"), lwd = 2)
+       col = c("#31417A", "#666666", "#076FA1"), lwd = 2)
 
-plot(z, sig_d(z), type = "l", col = "#076FA1", lwd = 2, ylim = c(-0.1, 1.2), bty = "l",
+plot(z, sig_d(z), type = "l", col = "#31417A", lwd = 2, ylim = c(-0.1, 1.2), bty = "l",
      xlab = "z", ylab = "", main = "Derivatives (gradient flow)")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(z, 1 - tanh(z)^2, col = "#666666", lwd = 2)
-lines(z, relu_d(z), col = "#31417A", lwd = 2)
+lines(z, relu_d(z), col = "#076FA1", lwd = 2)
 abline(h = 0.25, col = "#E3120B", lty = 2, lwd = 1)
 legend("topright", legend = c("sigmoid'", "tanh'", "ReLU'", "sigmoid' max = 0.25"),
-       col = c("#076FA1", "#666666", "#31417A", "#E3120B"),
+       col = c("#31417A", "#666666", "#076FA1", "#E3120B"),
        lty = c(1, 1, 1, 2), lwd = c(2, 2, 2, 1))
 
 cat(sprintf("After 10 sigmoid layers, gradient shrinks by up to %.2e\n", 0.25^10))
