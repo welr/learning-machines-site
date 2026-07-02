@@ -90,6 +90,10 @@ website:
         contents:
           - href: chapters/ch12_01_build_a_gpt.qmd
             text: "Capstone: Build a GPT"
+      - section: "13 · Unsupervised Learning"
+        contents:
+          - href: chapters/ch13_01_unsupervised.qmd
+            text: "Structure Without Labels"
   page-footer:
     border: true
     left: "Learning Machines · A Statistical Introduction"
