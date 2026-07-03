@@ -29,7 +29,7 @@ website:
           - href: chapters/ch02_02_linear_regression_ols.qmd
             text: "Ordinary Least Squares"
           - href: chapters/ch02_03_bayesian_regression.qmd
-            text: "Bayesian Regression"
+            text: "Bayesian Regression (optional)"
           - href: chapters/ch02_04_applied.qmd
             text: "Applied: Real Data"
       - section: "3 · Gradient Descent"

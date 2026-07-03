@@ -4,12 +4,14 @@ engine: markdown
 ---
 
 ::: {.lm-hero}
-[Chapter 2 · Regression Models]{.eyebrow}
+[Chapter 2 · Regression Models · Optional enrichment]{.eyebrow}
 
 # Bayesian Linear Regression
 
 [Give the coefficients a prior and the same data returns not one line but a distribution over lines, with a closed-form Gaussian posterior that sampling methods only approximate.]{.dek}
 :::
+
+*This page mirrors the book's starred Bayesian sections: optional enrichment for readers with a Bayesian background. Nothing later depends on it — skip freely.*
 
 Ordinary least squares returns a single coefficient vector, the one that minimizes
 squared error. Bayesian regression returns a [posterior]{.term}: a full distribution over

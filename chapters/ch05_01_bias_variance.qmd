@@ -205,7 +205,7 @@ for (k in 1:3) {
 
 Read the three panels left to right. The straight line (degree one) barely moves between
 samples, so its variance is tiny, but its average sits well away from the curve: that gap is
-bias. Degree four threads the signal with only modest spread. Degree twelve fits each sample
+bias. Degree three threads the signal with only modest spread. Degree twelve fits each sample
 almost perfectly yet flails between them; its average still tracks the truth (low bias) while
 the cloud is enormous (high variance). Complexity trades one error for the other.
 

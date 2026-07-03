@@ -343,8 +343,8 @@ a high-degree polynomial needs enormous coefficients of alternating sign that ne
 a delicate balance that shatters between the data. We track the size of the fitted
 coefficients with their L2 norm, $\lVert\boldsymbol\theta\rVert = \sqrt{\sum_j \theta_j^2}$
 (intercept excluded). It grows from about 76 at degree 1 to over two thousand by degree 10 and
-to more than a million at the interpolating degree 14. This explosion is exactly what the next
-chapter's ridge and LASSO penalties are built to prevent.
+to more than a million at the interpolating degree 14. This explosion is exactly what the ridge
+and LASSO penalties of Chapter 7 are built to prevent.
 
 ::: {.panel-tabset group="lang"}
 

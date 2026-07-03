@@ -1,14 +1,14 @@
 ---
-title: "Learning from Data"
+title: "A Statistical Introduction"
 engine: markdown
 ---
 
 ::: {.lm-hero}
-[Chapter 1 · Introduction]{.eyebrow}
+[The Interactive Companion]{.eyebrow}
 
-# Learning from Data
+# Learning Machines
 
-[Every model earns its keep by beating the simplest guess there is.]{.dek}
+[A statistical introduction — the book's code, running live in your browser in Python and R, with nothing to install.]{.dek}
 :::
 
 Welcome to the interactive companion to *Learning Machines: A Statistical Introduction*. Each chapter pairs the book's exposition with code you can **run in your browser** — Python via Pyodide, R via WebR — or **open in Colab** for the deep-learning chapters. Nothing to install; the code below runs on your own machine, in this page.
@@ -21,6 +21,8 @@ Welcome to the interactive companion to *Learning Machines: A Statistical Introd
 - **Same method, sometimes different digits.** When a cell uses fixed data the two languages agree to the last digit; when a cell draws a random sample they differ a little, and that difference is the lesson — what holds is the method, not the digits.
 - **Deep learning runs in Colab.** Chapters 9–12 use PyTorch, too heavy for the browser, so they open in Google Colab instead.
 :::
+
+## Chapter 1 · Learning from Data
 
 Machine learning is the art of turning data into predictions that hold up on cases you have not seen. Before reaching for anything elaborate, it pays to fix a [baseline]{.term}: the simplest model that ignores the inputs entirely and predicts the same number every time. For a numeric target, that number is the mean. Any model worth its complexity must do better than this.
 
