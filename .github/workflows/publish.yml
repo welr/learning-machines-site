@@ -25,9 +25,16 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
-      # No Python/R is executed at build time: the {pyodide} and {webr}
-      # cells run in the reader's browser. The quarto-live extension is
+      # No notebook Python/R runs at build time: the {pyodide} and {webr}
+      # cells execute in the reader's browser. The quarto-live extension is
       # committed under _extensions/, so the render is hermetic.
+      #
+      # The project's post-render step does run python3 (preinstalled on
+      # ubuntu-latest) to strip Quarto's cdnjs polyfill. It exits non-zero, and
+      # so fails this build, only if a cdnjs reference survives -- i.e. Quarto
+      # changed the tag and the site would otherwise start making a third-party
+      # request again. If Quarto simply stops emitting it, the step passes and
+      # says so. See tools/strip_polyfill.py.
       - name: Render site
         run: quarto render
 
