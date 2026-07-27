@@ -1,4 +1,8 @@
 project:
+  # Ship the font licences with the fonts: OFL-1.1 condition 2 requires the
+  # copyright notice and licence to travel with every copy of the font software.
+  resources:
+    - fonts/OFL-*.txt
   type: website
   output-dir: _site
   render:
@@ -102,11 +106,12 @@ website:
 format:
   live-html:
     theme: theme.scss
-    include-in-header:
-      text: |
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Inconsolata:wght@400;500;600&display=swap" rel="stylesheet">
+    # Fonts are self-hosted (fonts/ + fonts.css), not loaded from the Google Fonts
+    # CDN. All three are SIL OFL-1.1; the licences ship in fonts/OFL-*.txt. This
+    # keeps reader IP addresses off a third-party host and removes a runtime
+    # dependency; see README.md, "License".
+    css:
+      - fonts.css
     toc: true
     toc-title: "On this page"
     grid:
