@@ -3,6 +3,16 @@ project:
   # copyright notice and licence to travel with every copy of the font software.
   resources:
     - fonts/OFL-*.txt
+    # MathJax loads its fonts at run time, so Quarto cannot discover them by
+    # scanning the output; copy the whole directory explicitly.
+    - mathjax/**
+
+  # Quarto hardcodes a cdnjs ES6 polyfill into every MathJax page with no option to
+  # suppress it. This site needs WebAssembly to run Pyodide and WebR, so every
+  # browser that can use it already has ES6; the polyfill is a third-party request
+  # that can never help. See tools/strip_polyfill.py.
+  post-render:
+    - python3 tools/strip_polyfill.py
   type: website
   output-dir: _site
   render:
@@ -112,6 +122,14 @@ format:
     # dependency; see README.md, "License".
     css:
       - fonts.css
+    # Self-hosted MathJax 3.2.2 (Apache-2.0, licence in mathjax/LICENSE) rather
+    # than the jsDelivr CDN. Same version and same build Quarto loads by default,
+    # so rendering is unchanged. MathJax resolves its font directory relative to
+    # this script's own URL, which is why mathjax/output/... mirrors the upstream
+    # layout and must not be flattened.
+    html-math-method:
+      method: mathjax
+      url: mathjax/tex-chtml-full.js
     toc: true
     toc-title: "On this page"
     grid:

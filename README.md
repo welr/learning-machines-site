@@ -107,6 +107,26 @@ every push to `main`. To turn it on:
 Because nothing executes at build time, the Action only needs Quarto — it installs
 in seconds and the render is reproducible.
 
+## No third-party requests on page load
+
+Nothing is fetched from a third party when a page opens: the webfonts and MathJax
+are self-hosted, and Quarto's hardcoded cdnjs ES6 polyfill is removed after render
+by `tools/strip_polyfill.py` (that pass is deliberately loud if it ever stops
+matching, so it cannot rot into a silent no-op). Pyodide and WebR still load from
+their upstream CDNs, but only when a reader actually runs a code cell — which is
+also why they are left there: self-hosting Pyodide means tens of megabytes, and
+self-hosting WebR would mean redistributing GPL-3 binaries.
+
+To confirm after a change:
+
+```bash
+grep -rhoE 'https?://[a-z0-9.-]+' _site --include='*.html' --include='*.css' \
+  | sort -u | grep -vE 'w3\.org|schema\.org|pandoc\.org|quarto-dev|getbootstrap'
+```
+
+Only `colab.research.google.com` and `github.com` should appear, and both are
+links the reader clicks, not resources the page loads.
+
 ## A harmless build message
 
 `quarto render` prints one warning:
@@ -168,6 +188,8 @@ Pinned, reproducible build (verified versions):
 |------|---------|------|
 | Quarto | 1.9.38 | site generator |
 | `quarto-live` (vendored in `_extensions/`) | upstream `main` @ `12fb30a5dd5e` (2026-06-08) | the `{pyodide}`/`{webr}` live cells |
+| MathJax (self-hosted in `mathjax/`) | 3.2.2, Apache-2.0 | mathematics on the pages |
+| Fonts (self-hosted in `fonts/`) | OFL-1.1 | Fraunces / Source Serif 4 / Inconsolata |
 | Pyodide / WebR | loaded from CDN at runtime by `quarto-live` | the in-browser Python / R |
 
 The `quarto-live` extension is **committed**, so the build is reproducible and won't drift

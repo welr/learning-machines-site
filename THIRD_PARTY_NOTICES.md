@@ -49,6 +49,25 @@ one file covers a whole weight range.
 
 ---
 
+## MathJax (self-hosted)
+
+MathJax 3.2.2 is served from `mathjax/`, not from the jsDelivr CDN. This is the
+same version and the same `tex-chtml-full.js` build Quarto loads by default, so
+rendering is unchanged. **Apache-2.0**; the licence is at `mathjax/LICENSE` and is
+published with the site.
+
+> Copyright (c) 2009-2022 The MathJax Consortium
+
+`mathjax/output/chtml/fonts/woff-v2/` must keep its position relative to
+`tex-chtml-full.js`: MathJax resolves its font directory from its own script URL at
+run time, so flattening the layout silently breaks glyph loading.
+
+MathJax 4.1.3 is current upstream. Staying on 3.2.2 is deliberate — it matches what
+the site rendered with before, and v4 changes configuration and output enough to
+warrant its own visual check.
+
+---
+
 ## Quarto front-end libraries
 
 Emitted by Quarto into `_site/site_libs/` at build time:
@@ -73,10 +92,12 @@ Emitted by Quarto into `_site/site_libs/` at build time:
 |---|---|---|
 | R / webR distribution binaries | **GPL-3.0** | `webr.r-wasm.org` |
 | Pyodide | MPL-2.0 | `cdn.jsdelivr.net/pyodide` |
-| MathJax | Apache-2.0 | `cdn.jsdelivr.net` |
 
-These are executed in the reader's browser, served by their upstream publishers.
-Nothing under a copyleft license is conveyed by this repository. Self-hosting any
+These are executed in the reader's browser, served by their upstream publishers,
+and **only when a reader runs a code cell**. The site makes no third-party request
+on page load: fonts and MathJax are self-hosted, and Quarto's cdnjs ES6 polyfill is
+stripped after render (see `tools/strip_polyfill.py`). Nothing under a copyleft
+license is conveyed by this repository. Self-hosting any
 of them would change that analysis and should be reviewed before it is done.
 
 ## Build-time only
