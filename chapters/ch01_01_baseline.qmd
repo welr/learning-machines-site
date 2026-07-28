@@ -1,0 +1,248 @@
+---
+title: "The Baseline"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 1 · Introduction]{.eyebrow}
+
+# The Baseline
+
+[Before fitting anything, fix the number to beat. It turns out the mean is not a convention but a consequence, and the loss you pick is what chooses it.]{.dek}
+:::
+
+Machine learning turns data into predictions that hold up on cases you have not seen.
+Before reaching for anything elaborate it pays to fix a [baseline]{.term}: the simplest
+model, the one that ignores every input and predicts the same value every time. For a
+numeric target that value is the mean. Any model worth its complexity has to beat it,
+and the amount by which it does is the only honest measure of what the complexity
+bought.
+
+::: {.defbox}
+[Baseline model]{.lbl}
+[ h(x) = c &nbsp;&nbsp; for every x, &nbsp; with &nbsp; c = y&#772; ]{.math}
+:::
+
+Below we compute that baseline on twenty Frankfurt sales, show that the mean is forced
+on us by the choice of squared error rather than chosen by taste, and then measure
+exactly how much one feature buys. The last section does the same for a classification
+label, where the do-nothing model is a much more dangerous thing to overlook.
+
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch01_01_baseline.png" alt="Scatter of twenty Frankfurt house sales, price against living area, with a dashed red horizontal line at the mean price and a blue least-squares line rising through the points. Thin grey vertical segments connect each point to the flat baseline.">
+<figcaption><strong>The baseline, and what one feature buys.</strong> The dashed line predicts the same average for every house, ignoring living area; the grey segments are the error it leaves. Tilting that flat line to follow the data absorbs almost all of it. That is Chapter 2 in one picture.</figcaption>
+</figure>
+```
+
+## The baseline and the error it leaves
+
+Twenty sales: living area in square metres, price in thousands of euros. The baseline
+ignores the area entirely.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+
+area = np.array([52, 82, 120, 95, 140, 160, 180, 200, 210, 225,
+                 150, 110, 130, 170, 190, 205, 240, 60, 75, 100.])
+price = np.array([164, 384, 465, 420, 520, 610, 700, 760, 820, 900,
+                  560, 430, 500, 650, 720, 790, 980, 260, 330, 410.])
+
+baseline = price.mean()
+mse = ((price - baseline) ** 2).mean()
+
+print(f"baseline prediction = {baseline:7.1f}")
+print(f"baseline MSE        = {mse:9.1f}")
+print(f"typical miss (RMSE) = {np.sqrt(mse):7.1f} thousand euros")
+```
+
+## R
+```{webr}
+area <- c(52, 82, 120, 95, 140, 160, 180, 200, 210, 225,
+          150, 110, 130, 170, 190, 205, 240, 60, 75, 100)
+price <- c(164, 384, 465, 420, 520, 610, 700, 760, 820, 900,
+           560, 430, 500, 650, 720, 790, 980, 260, 330, 410)
+
+baseline <- mean(price)
+mse <- mean((price - baseline)^2)
+
+cat(sprintf("baseline prediction = %7.1f\n", baseline))
+cat(sprintf("baseline MSE        = %9.1f\n", mse))
+cat(sprintf("typical miss (RMSE) = %7.1f thousand euros\n", sqrt(mse)))
+```
+
+:::
+
+A typical miss of about €213,000 on houses averaging €569,000 is a poor prediction. It
+is also the number every later chapter is trying to shrink.
+
+## Why the mean, and not something else
+
+The mean is not a convention. Among all constant predictions $c$, it is the unique
+minimizer of mean squared error, $\frac{1}{m}\sum_i (y_i - c)^2$. You can see this
+without calculus by scanning $c$ across a range and watching the error.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+candidates = np.linspace(price.min(), price.max(), 400)
+
+errors = np.empty_like(candidates)
+for i, c in enumerate(candidates):
+    errors[i] = ((price - c) ** 2).mean()
+
+print(f"scanned minimum at c = {candidates[errors.argmin()]:.1f}")
+print(f"the mean is          {price.mean():.1f}")
+
+# absolute error instead of squared error picks a different summary
+abs_err = np.array([np.abs(price - c).mean() for c in candidates])
+best = candidates[np.isclose(abs_err, abs_err.min())]
+
+srt = np.sort(price)
+print(f"\nunder absolute error the minimum is FLAT,")
+print(f"  from {best.min():.1f} to {best.max():.1f}")
+print(f"  between the two middle observations, {srt[9]:.0f} and {srt[10]:.0f}")
+print(f"  the median, their midpoint, is {np.median(price):.1f}")
+```
+
+## R
+```{webr}
+candidates <- seq(min(price), max(price), length.out = 400)
+
+errors <- numeric(length(candidates))
+for (i in seq_along(candidates)) {
+  errors[i] <- mean((price - candidates[i])^2)
+}
+
+cat(sprintf("scanned minimum at c = %.1f\n", candidates[which.min(errors)]))
+cat(sprintf("the mean is          %.1f\n", mean(price)))
+
+# absolute error instead of squared error picks a different summary
+abs_err <- sapply(candidates, function(c) mean(abs(price - c)))
+best <- candidates[abs_err <= min(abs_err) + 1e-9]
+
+srt <- sort(price)
+cat(sprintf("\nunder absolute error the minimum is FLAT,\n"))
+cat(sprintf("  from %.1f to %.1f\n", min(best), max(best)))
+cat(sprintf("  between the two middle observations, %.0f and %.0f\n", srt[10], srt[11]))
+cat(sprintf("  the median, their midpoint, is %.1f\n", median(price)))
+```
+
+:::
+
+The squared-error curve is a parabola with its vertex at the mean, and the scan lands
+there to within the grid spacing. Swap in absolute error and the answer moves to the
+median — but notice the output is more interesting than that. With an even number of
+observations absolute error is *flat* across the whole interval between the two middle
+values, so there is not one minimizer but a range of them, and the median is simply the
+conventional representative of that range. (With an odd number of observations the
+minimizer is unique, and it is the middle observation exactly.)
+
+This is the first instance of a pattern that runs through the whole book: **choose a
+loss and the loss chooses the estimate.** Squared error picks the mean, absolute error
+picks the median, and the choice is yours to defend rather than a fact about the data.
+Chapter 5 makes the pattern explicit; Chapter 2 uses it to derive least squares.
+
+## What one feature buys
+
+Now let the prediction depend on the living area. Chapter 2 derives the least-squares
+line properly; here we just fit it and ask how much of the baseline's error it removes.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+area_c = area - area.mean()
+price_c = price - price.mean()
+
+slope = (area_c * price_c).sum() / (area_c ** 2).sum()
+intercept = price.mean() - slope * area.mean()
+
+fitted = intercept + slope * area
+mse_line = ((price - fitted) ** 2).mean()
+
+print(f"price = {intercept:.1f} + {slope:.2f} * area")
+print(f"line MSE      = {mse_line:9.1f}")
+print(f"baseline MSE  = {mse:9.1f}")
+print(f"error removed = {1 - mse_line / mse:8.1%}")
+```
+
+## R
+```{webr}
+area_c <- area - mean(area)
+price_c <- price - mean(price)
+
+slope <- sum(area_c * price_c) / sum(area_c^2)
+intercept <- mean(price) - slope * mean(area)
+
+fitted <- intercept + slope * area
+mse_line <- mean((price - fitted)^2)
+
+cat(sprintf("price = %.1f + %.2f * area\n", intercept, slope))
+cat(sprintf("line MSE      = %9.1f\n", mse_line))
+cat(sprintf("baseline MSE  = %9.1f\n", mse))
+cat(sprintf("error removed = %7.1f%%\n", 100 * (1 - mse_line / mse)))
+```
+
+:::
+
+That last number has a name you already know. It is $R^2$: the fraction of the
+baseline's squared error that the model removes. Read this way $R^2$ is not a
+mysterious goodness-of-fit index but a comparison against the do-nothing model, which
+is why a high $R^2$ on data with little variance to begin with is worth so much less
+than it looks.
+
+## The same discipline for labels
+
+When the target is a category, the do-nothing model predicts the majority class and its
+accuracy is the base rate. Overlook it and a useless model can look excellent.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+# 950 negatives, 50 positives: a deliberately imbalanced screening problem
+labels = np.concatenate([np.zeros(950), np.ones(50)])
+
+majority = 0.0 if (labels == 0).sum() > (labels == 1).sum() else 1.0
+baseline_accuracy = (labels == majority).mean()
+
+print(f"majority class     = {majority:.0f}")
+print(f"baseline accuracy  = {baseline_accuracy:.1%}")
+print(f"positives it finds = 0 of {int(labels.sum())}")
+```
+
+## R
+```{webr}
+# 950 negatives, 50 positives: a deliberately imbalanced screening problem
+labels <- c(rep(0, 950), rep(1, 50))
+
+majority <- if (sum(labels == 0) > sum(labels == 1)) 0 else 1
+baseline_accuracy <- mean(labels == majority)
+
+cat(sprintf("majority class     = %d\n", majority))
+cat(sprintf("baseline accuracy  = %.1f%%\n", 100 * baseline_accuracy))
+cat(sprintf("positives it finds = 0 of %d\n", sum(labels)))
+```
+
+:::
+
+A model reported at 95% accuracy on this problem has done exactly as well as saying
+"no" a thousand times in a row. Chapter 6 builds the vocabulary for saying what is
+wrong with that report — precision, recall, the confusion matrix. Chapter 1's
+contribution is the habit that comes first: ask what the baseline scores before you
+are impressed by anything.
+
+::: {.explore}
+[Try it]{.lbl}
+
+- Drop the largest sale from `area` and `price` and refit. Which moves more, the mean
+  or the least-squares slope? That difference is the beginning of Chapter 5's account
+  of variance.
+- Change the imbalance in the last cell from 950/50 to 500/500. What happens to the
+  baseline accuracy, and to how impressive 95% would be?
+:::

@@ -35,7 +35,11 @@ website:
     contents:
       - text: "Contents"
       - href: index.qmd
-        text: "1 · Introduction"
+        text: "Start here"
+      - section: "1 · Introduction"
+        contents:
+          - href: chapters/ch01_01_baseline.qmd
+            text: "The Baseline"
       - section: "2 · Regression Models"
         contents:
           - href: chapters/ch02_01_polynomial_regression.qmd

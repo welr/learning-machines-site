@@ -22,11 +22,11 @@ Welcome to the interactive companion to *Learning Machines: A Statistical Introd
 - **Deep learning runs in Colab.** Chapters 9–12 use PyTorch, too heavy for the browser, so they open in Google Colab instead.
 :::
 
-## Chapter 1 · Learning from Data
+## Try it now
 
-Machine learning is the art of turning data into predictions that hold up on cases you have not seen. Before reaching for anything elaborate, it pays to fix a [baseline]{.term}: the simplest model that ignores the inputs entirely and predicts the same number every time. For a numeric target, that number is the mean. Any model worth its complexity must do better than this.
+Here is the whole idea of Chapter 1 in six lines, and a demonstration that this page really does run code. Machine learning turns data into predictions that hold up on cases you have not seen, and before reaching for anything elaborate it pays to fix a [baseline]{.term}: the simplest model, the one that ignores every input and predicts the same number every time. For a numeric target that number is the mean. Every later chapter is a campaign to shrink the error it leaves.
 
-Compute the baseline on a set of Frankfurt sale prices, and the error it leaves behind. Every later chapter is a campaign to shrink that error.
+Pick a tab and click **Run Code**.
 
 ```{=html}
 <figure class="lm-chart">
@@ -84,10 +84,10 @@ cat(sprintf("baseline MSE        = %8.1f\n", mse))
 
 :::
 
-The mean is the maximum-likelihood prediction under a model with no inputs. It is also, in a sense the book makes precise, the place every regression starts: ordinary least squares (Chapter 2) is what you get when you let the prediction tilt with the features instead of staying flat.
+The mean is the maximum-likelihood prediction under a model with no inputs. It is also, in a sense the book makes precise, where every regression starts: ordinary least squares (Chapter 2) is what you get when you let the prediction tilt with the features instead of staying flat.
 
 ::: {.explore}
-[Try it]{.lbl}
+[Where to go next]{.lbl}
 
-What is the smallest model that beats this baseline? Try predicting from a single feature, the living area, and see how much of the variance a straight line can explain. That is exactly where Chapter 2 begins.
+**[Chapter 1 · The Baseline](chapters/ch01_01_baseline.qmd)** takes this further: why squared error forces the mean on you, what changes when you switch to absolute error, how much of the error a single feature removes, and why the same discipline matters even more for classification. From there the sidebar runs straight through to Chapter 13.
 :::
