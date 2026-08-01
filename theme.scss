@@ -128,7 +128,7 @@ div.sourceCode{ border:1px solid $rule; border-radius:6px; }
 
 /* The real quarto-live run button is .exercise-editor-btn-run-code (a Bootstrap
    btn-primary, so navy by default). Make the READY (non-disabled) button the
-   signature red; it stays grey-disabled while the runtime downloads, which reads
+   signature red; it stays gray-disabled while the runtime downloads, which reads
    as "loading", then turns red = "ready, click me". */
 .exercise-editor-btn-run-code:not(.disabled),
 .exercise-editor-btn-run-code:not(.disabled):focus{

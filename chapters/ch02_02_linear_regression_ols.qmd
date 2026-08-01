@@ -257,7 +257,7 @@ ax.annotate("", xy=(adj, opp), xytext=(0, 0),
 ax.plot([adj, adj], [0, opp], color="#666666", lw=2.0, ls="--")
 tick = adj * 0.045
 ax.plot([adj - tick, adj - tick, adj], [0, tick, tick], color="#666666", lw=1.2)
-ax.text(adj * 0.55, 12, "column space of X, seen edge-on", color="#076FA1", fontsize=10)
+ax.text(adj * 0.06, -34, "column space of X, seen edge-on", color="#076FA1", fontsize=10)
 ax.text(adj * 0.50, -30, r"$\hat{y} = Hy$", color="#31417A", fontsize=12)
 ax.text(adj * 0.40, opp * 0.62, r"$y$", color="#E3120B", fontsize=13)
 ax.text(adj * 1.02, opp * 0.45, r"$r$", color="#666666", fontsize=12)
@@ -301,7 +301,7 @@ arrows(0, 0, adj, opp, col = "#E3120B", lwd = 2.4, length = 0.12)
 segments(adj, 0, adj, opp, col = "#666666", lwd = 2.0, lty = 2)
 tick <- adj * 0.045
 lines(c(adj - tick, adj - tick, adj), c(0, tick, tick), col = "#666666", lwd = 1.2)
-text(adj * 0.55, 12, "column space of X, seen edge-on", col = "#076FA1", cex = 0.8, adj = 0)
+text(adj * 0.06, -34, "column space of X, seen edge-on", col = "#076FA1", cex = 0.8, adj = 0)
 text(adj * 0.50, -30, "y_hat = Hy", col = "#31417A", cex = 0.95)
 text(adj * 0.40, opp * 0.62, "y", col = "#E3120B", cex = 1.05)
 text(adj * 1.02, opp * 0.45, "r", col = "#666666", cex = 0.95, adj = 0)

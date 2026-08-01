@@ -16,7 +16,7 @@ This is the first rung toward the book's capstone. Here you build and train a sm
 ```{=html}
 <figure class="lm-figure">
 <img src="../figures/ch09_02_applied.png" alt="Two line charts side by side: the epoch-mean training cross-entropy falling smoothly from 1.02 to 0.32 over twelve epochs, and held-out test accuracy rising from 0.79 to 0.86 over the same epochs, with a dip at epoch nine.">
-<figcaption><strong>Training the feedforward network on Fashion-MNIST.</strong> Twelve epochs of the loop below, the run that code reproduces. The training loss is the mean cross-entropy over all of the epoch's minibatches, not the last one: 1.02 in the first epoch, 0.60 in the second, then a slow decline to 0.32. Test accuracy rises from 0.788 to 0.860, though not monotonically &mdash; it peaks at 0.863 in epoch 8 and slips to 0.853 in epoch 9 before recovering.</figcaption>
+<figcaption><strong>Training the feedforward network on Fashion-MNIST.</strong> Twelve epochs of the loop below, the run that code reproduces. The training loss is the mean cross-entropy over all of the epoch's minibatches, not the last one: 1.02 in the first epoch, 0.60 in the second, then a slow decline to 0.32. Test accuracy rises from 0.788 to 0.860, though not monotonically.863 in epoch 8 and slips to 0.853 in epoch 9 before recovering.</figcaption>
 </figure>
 ```
 
@@ -71,6 +71,7 @@ batch_size, epochs = 128, 12
 
 for epoch in range(epochs):
     order = torch.randperm(len(X_tr))            # reshuffle each epoch
+    running_loss, n_batches = 0.0, 0
     for i in range(0, len(X_tr), batch_size):
         batch = order[i : i + batch_size]
         logits = model(X_tr[batch])              # forward pass
@@ -78,6 +79,10 @@ for epoch in range(epochs):
         optimizer.zero_grad(set_to_none=True)
         loss.backward()                          # backpropagation
         optimizer.step()                         # theta <- theta - lr * grad
+        # average over the epoch: one minibatch's loss is far too noisy to read
+        running_loss += loss.item()
+        n_batches += 1
+    print(f"epoch {epoch + 1:2d} | train loss {running_loss / n_batches:.3f}")
 ```
 
 A couple of seconds of training reaches about 86% test accuracy. The mistakes are revealing: shirts, coats, and pullovers are genuinely hard to tell apart at 28&times;28. The network treats the 784 pixels as an unordered list, with no notion that two pixels are neighbors. Chapter 10 fixes exactly that with a convolutional model, on this same data and with this same loop; only the model changes.

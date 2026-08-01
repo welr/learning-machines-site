@@ -23,8 +23,8 @@ each, and looking at how the predictions scatter, we turn [bias]{.term} and
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch05_01_bias_variance.png" alt="Bias-squared, variance, and total error versus polynomial degree; total error traces a U and bottoms out at a moderate degree.">
-<figcaption><strong>The bias–variance trade-off.</strong> As complexity grows, bias falls while variance rises; their sum, the total error, traces a U and bottoms out at degree three. The fall to three is a cliff rather than a slope: $\sin(2\pi x)$ is odd about $x = 1/2$, so an even degree adds variance without buying any reach, and bias$^2$ edges back up at every even step. This is the result the code below reproduces.</figcaption>
+<img src="../figures/ch05_01_bias_variance.png" alt="Bias-squared, variance and total error against polynomial degree on a logarithmic scale. Variance climbs steadily, bias-squared falls in a zigzag, and the total error reaches its lowest point at degree three before rising by two orders of magnitude.">
+<figcaption><strong>The bias–variance trade-off.</strong> Variance climbs steadily with degree while bias falls, and their sum bottoms out at degree three before rising by two orders of magnitude — the vertical scale is logarithmic, because the right-hand tail will not otherwise share an axis with the rest. Bias falls in a zigzag rather than smoothly: $\sin(2\pi x)$ is odd about $x = 1/2$, so an even degree adds variance without buying any reach. This is the result the code below reproduces, and `tools/make_ch05_01_figure.py` runs the same computation.</figcaption>
 </figure>
 ```
 
@@ -221,7 +221,7 @@ between the mean fit and the truth (bias²), average the pointwise spread of the
 (variance), add the noise floor, and read off the total. Sweeping the degree traces the
 classic U-shaped error curve.
 
-Every prediction below is clipped to $[-10, 10]$ before the decomposition runs, so these
+Every prediction on this page is clipped to $[-10, 10]$ before the decomposition runs, so these
 plots decompose a clipped predictor rather than the raw polynomial. At low degree the clip
 never binds and the distinction is empty. At degree twelve on twenty points it binds hard:
 the variance the cell reports is about $11$, where the unclipped fit runs to the order of

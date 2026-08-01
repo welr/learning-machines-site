@@ -389,7 +389,7 @@ meter are percentages of different things.
 The largest sale is also the largest house, which puts it at the edge of the design: its
 leverage is $0.197$ against an average of $0.10$, the highest of the twenty, and its residual
 is the third largest. A point that is both far out in $x$ and off the line is one a slope
-cannot ignore. Chapter 2 gives the observation its vocabulary — leverage, influence, and the
+cannot ignore. Chapter 6 gives the observation its vocabulary — leverage, influence, and the
 deletion diagnostics that measure them.
 
 The second exercise returns to the imbalanced screening problem. Rebalance it and watch what

@@ -219,7 +219,7 @@ cat(sprintf("largest component: %s\n", ROLES[which.max(context[7, ])]))
 
 :::
 
-Four things in that output are worth reading off carefully.
+Five things in that output are worth reading off carefully.
 
 The pronoun finds its referent. The row for `it` puts 0.627 on `cat` — more than eight times the 0.075 it gives anything else. Its output inherits that: the context vector for `it` comes out 0.627 along the animate axis and no more than 0.075 along any other, so a position that arrived carrying only "pronoun" leaves carrying "cat."
 

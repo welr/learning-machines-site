@@ -240,7 +240,7 @@ cat("kernel ridge keeps every training point; an SVM would keep only its support
 
 ## The bandwidth knob γ
 
-One number controls how far the RBF boundary bends. Small $\gamma$ makes each point's influence broad, so the boundary stays smooth and may underfit. Large $\gamma$ makes influence local, so the boundary contracts around individual points and overfits, wrapping the data in islands. This is the bias-variance trade-off of Chapter 5, tuned now by a kernel width rather than a model order. For the SVM the symptom shows in the support-vector count, which climbs as $\gamma$ grows.
+One number controls how far the RBF boundary bends. Small $\gamma$ makes each point's influence broad, so the boundary stays smooth and may underfit. Large $\gamma$ makes influence local, so the boundary contracts around individual points and overfits, wrapping the data in islands. This is the bias-variance trade-off of Chapter 5, tuned now by a kernel width rather than a model order. For the SVM the symptom shows in the support-vector count, which is smallest for a middling $\gamma$ and climbs toward both extremes.
 
 Python sweeps $\gamma$ with `SVC`; R sweeps the same $\gamma$ through kernel ridge regression. The two solvers differ (hinge-margin versus least squares), but $\gamma$ plays the identical role, and both boundaries fracture into islands at the high end.
 
@@ -278,7 +278,8 @@ for ax, g in zip(axes, [0.3, 2.0, 10.0, 50.0]):
 axes[0].legend(loc="upper right", fontsize=8, framealpha=0.9)
 plt.tight_layout(); plt.show()
 
-print("Small gamma underfits (smooth); large gamma overfits (islands), and support vectors multiply.")
+print("Small gamma underfits (smooth); large gamma overfits (islands).")
+print("Support vectors are fewest in between -- see the slider below.")
 ```
 
 ## R
@@ -508,7 +509,7 @@ the bandwidth cell, build a held-out set from the same curves with the radii per
 score each $\gamma$ on it:
 
 ```python
-rng = np.random.default_rng(1)
+rng = np.random.default_rng()   # unseeded: rerun to see the winner move
 th = np.linspace(0, 2*np.pi, 240, endpoint=False) + np.pi/240
 ro = 1.00 + 0.08*np.cos(7*th) + rng.normal(0, 0.10, 240)
 ri = 0.40 + 0.08*np.sin(6*th) + rng.normal(0, 0.10, 240)
