@@ -55,6 +55,7 @@ Training error alone cannot tell you which model to trust; that is the job of he
 
 ## Python
 ```{pyodide}
+#| autorun: true
 import numpy as np
 import matplotlib.pyplot as plt
 

@@ -25,7 +25,7 @@ them, from scratch, in a few lines each.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch13_pca.png" alt="Left: a correlated point cloud with two principal axes drawn through it. Right: a scree plot with a visible elbow after the third component.">
+<img src="../figures/ch13_01_unsupervised.png" alt="Left: a correlated point cloud with two principal axes drawn through it. Right: a scree plot with a visible elbow after the third component.">
 <figcaption><strong>What PCA finds.</strong> The principal axes of a correlated cloud (left) and a scree plot of variance per component (right). The code below runs the same construction on a real data set.</figcaption>
 </figure>
 ```

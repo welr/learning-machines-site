@@ -86,6 +86,86 @@ cat(sprintf("baseline MSE        = %8.1f\n", mse))
 
 The mean is the maximum-likelihood prediction under a model with no inputs. It is also, in a sense the book makes precise, where every regression starts: ordinary least squares (Chapter 2) is what you get when you let the prediction tilt with the features instead of staying flat.
 
+## What the tilt buys
+
+The figure above draws the flat baseline. This cell draws what happens when the prediction is allowed to follow the living area instead — and measures how much of the baseline's error that removes. It runs on its own when the page opens, so the plot below is live output, not an image; edit any number and click **Run Code** to redraw it.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+
+```{pyodide}
+#| autorun: true
+import numpy as np
+import matplotlib.pyplot as plt
+
+area = np.array([52, 82, 120, 95, 140, 160, 180, 200, 210, 225,
+                 150, 110, 130, 170, 190, 205, 240, 60, 75, 100.])
+price = np.array([164, 384, 465, 420, 520, 610, 700, 760, 820, 900,
+                  560, 430, 500, 650, 720, 790, 980, 260, 330, 410.])
+
+baseline = price.mean()
+
+# the least-squares line, derived properly in Chapter 2
+slope = ((area - area.mean()) * (price - price.mean())).sum() / ((area - area.mean()) ** 2).sum()
+intercept = price.mean() - slope * area.mean()
+fitted = intercept + slope * area
+
+fig, ax = plt.subplots(figsize=(7, 4.4))
+# grey segments: the error the baseline leaves behind
+for a, p in zip(area, price):
+    ax.plot([a, a], [p, baseline], color="#666666", lw=0.8, alpha=0.55, zorder=1)
+ax.axhline(baseline, color="#E3120B", ls="--", lw=1.6, zorder=2,
+           label=f"baseline = {baseline:.0f}")
+order = np.argsort(area)
+ax.plot(area[order], fitted[order], color="#31417A", lw=2.2, zorder=3,
+        label="least-squares line")
+ax.scatter(area, price, color="#076FA1", s=44, zorder=4,
+           edgecolors="white", linewidths=0.8)
+ax.set_xlabel("Living area, m$^2$")
+ax.set_ylabel("Price, thousand euros")
+ax.set_title("The baseline, and what one feature buys")
+ax.legend(loc="upper left", frameon=False)
+plt.tight_layout()
+plt.show()
+
+removed = 1 - ((price - fitted) ** 2).mean() / ((price - baseline) ** 2).mean()
+print(f"the line removes {removed:.1%} of the baseline's squared error")
+```
+
+## R
+
+```{webr}
+area <- c(52, 82, 120, 95, 140, 160, 180, 200, 210, 225,
+          150, 110, 130, 170, 190, 205, 240, 60, 75, 100)
+price <- c(164, 384, 465, 420, 520, 610, 700, 760, 820, 900,
+           560, 430, 500, 650, 720, 790, 980, 260, 330, 410)
+
+baseline <- mean(price)
+
+# the least-squares line, derived properly in Chapter 2
+slope <- sum((area - mean(area)) * (price - mean(price))) / sum((area - mean(area))^2)
+intercept <- mean(price) - slope * mean(area)
+fitted <- intercept + slope * area
+
+plot(area, price, type = "n",
+     xlab = "Living area, m^2", ylab = "Price, thousand euros",
+     main = "The baseline, and what one feature buys")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+# grey segments: the error the baseline leaves behind
+segments(area, price, area, baseline, col = "#666666", lwd = 0.8)
+abline(h = baseline, col = "#E3120B", lty = 2, lwd = 1.6)
+abline(a = intercept, b = slope, col = "#31417A", lwd = 2.2)
+points(area, price, pch = 21, bg = "#076FA1", col = "white", cex = 1.3, lwd = 0.8)
+legend("topleft", c(sprintf("baseline = %.0f", baseline), "least-squares line"),
+       col = c("#E3120B", "#31417A"), lty = c(2, 1), lwd = c(1.6, 2.2), bty = "n")
+
+removed <- 1 - mean((price - fitted)^2) / mean((price - baseline)^2)
+cat(sprintf("the line removes %.1f%% of the baseline's squared error\n", 100 * removed))
+```
+
+:::
+
 ::: {.explore}
 [Where to go next]{.lbl}
 

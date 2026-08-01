@@ -142,6 +142,93 @@ values, so there is not one minimizer but a range of them, and the median is sim
 conventional representative of that range. (With an odd number of observations the
 minimizer is unique, and it is the middle observation exactly.)
 
+Both claims are easier to believe once you see them, so this plot draws itself when the page
+opens. It repeats the two scans rather than reusing the results above, which keeps it
+independent of what you have run so far.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+#| autorun: true
+import numpy as np
+import matplotlib.pyplot as plt
+
+price = np.array([164, 384, 465, 420, 520, 610, 700, 760, 820, 900,
+                  560, 430, 500, 650, 720, 790, 980, 260, 330, 410.])
+
+candidates = np.linspace(price.min(), price.max(), 400)
+errors = np.array([((price - c) ** 2).mean() for c in candidates])
+abs_err = np.array([np.abs(price - c).mean() for c in candidates])
+
+fig, (axL, axR) = plt.subplots(1, 2, figsize=(11, 4.2), sharex=True)
+
+axL.plot(candidates, errors, color="#076FA1", lw=2)
+axL.axvline(price.mean(), color="#E3120B", ls="--", lw=1.4,
+            label=f"mean = {price.mean():.1f}")
+axL.set_title("Squared error: one vertex, at the mean")
+axL.set_xlabel("constant prediction $c$")
+axL.set_ylabel("mean squared error")
+axL.legend(frameon=False)
+
+axR.plot(candidates, abs_err, color="#076FA1", lw=2)
+# the flat stretch: every c in it is a minimizer
+flat = candidates[np.isclose(abs_err, abs_err.min())]
+axR.axvspan(flat.min(), flat.max(), color="#9E4F00", alpha=0.25,
+            label="flat: all minimizers")
+axR.axvline(np.median(price), color="#E3120B", ls="--", lw=1.4,
+            label=f"median = {np.median(price):.1f}")
+axR.set_title("Absolute error: a flat floor, not a point")
+axR.set_xlabel("constant prediction $c$")
+axR.set_ylabel("mean absolute error")
+axR.legend(frameon=False)
+
+plt.tight_layout()
+plt.show()
+```
+
+## R
+```{webr}
+price <- c(164, 384, 465, 420, 520, 610, 700, 760, 820, 900,
+           560, 430, 500, 650, 720, 790, 980, 260, 330, 410)
+
+candidates <- seq(min(price), max(price), length.out = 400)
+errors  <- sapply(candidates, function(c) mean((price - c)^2))
+abs_err <- sapply(candidates, function(c) mean(abs(price - c)))
+best    <- candidates[abs_err <= min(abs_err) + 1e-9]
+
+op <- par(mfrow = c(1, 2))
+
+plot(candidates, errors, type = "l", col = "#076FA1", lwd = 2,
+     xlab = "constant prediction c", ylab = "mean squared error",
+     main = "Squared error: one vertex, at the mean")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+abline(v = mean(price), col = "#E3120B", lty = 2, lwd = 1.4)
+legend("topright", sprintf("mean = %.1f", mean(price)),
+       col = "#E3120B", lty = 2, lwd = 1.4, bty = "n")
+
+plot(candidates, abs_err, type = "n",
+     xlab = "constant prediction c", ylab = "mean absolute error",
+     main = "Absolute error: a flat floor, not a point")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+# the flat stretch: every c in it is a minimizer
+rect(min(best), par("usr")[3], max(best), par("usr")[4],
+     col = "#9E4F0040", border = NA)
+lines(candidates, abs_err, col = "#076FA1", lwd = 2)
+abline(v = median(price), col = "#E3120B", lty = 2, lwd = 1.4)
+legend("topright", c("flat: all minimizers", sprintf("median = %.1f", median(price))),
+       fill = c("#9E4F0040", NA), border = NA,
+       col = c(NA, "#E3120B"), lty = c(NA, 2), lwd = c(NA, 1.4), bty = "n")
+
+par(op)
+```
+
+:::
+
+The left panel is the parabola the text promised; the right one shows why the median is
+a convention rather than a consequence — the shaded stretch is flat, so every value in it
+minimizes absolute error equally well.
+
 This is the first instance of a pattern that runs through the whole book: **choose a
 loss and the loss chooses the estimate.** Squared error picks the mean, absolute error
 picks the median, and the choice is yours to defend rather than a fact about the data.

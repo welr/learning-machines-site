@@ -321,6 +321,96 @@ cat("Small gamma underfits (smooth); large gamma overfits (islands wrapping sing
 
 :::
 
+Four snapshots suggest the progression; the slider makes it continuous. Two things are worth
+watching, and only one of them is the picture.
+
+The first is that **training accuracy is 100% at every setting**, from the smoothest loop to
+the most fractured archipelago. It is printed below precisely so you can watch it fail to
+discriminate: the rings are separable, so fitting them perfectly says nothing about which
+$\gamma$ generalizes. A diagnostic that returns the same verdict for every model is not a
+diagnostic.
+
+The second is the support-vector count, which is far more informative — and which is not
+monotone in $\gamma$. It is high at *both* extremes and lowest in the middle. At small
+$\gamma$ each point's influence is so broad that the margin is wide and nearly every point
+ends up supporting it (all 240 at $\gamma = 0.1$). At large $\gamma$ influence is so local
+that the boundary shatters into islands, each needing its own points to prop it up (188 at
+$\gamma = 100$). Around $\gamma = 2$ the count bottoms out near 30: a boundary describable by
+a handful of points is one that has found the structure rather than memorized the sample.
+
+```{ojs}
+//| echo: false
+viewof gam = {
+  const wrap = document.createElement("div");
+  wrap.className = "lm-slider";
+  const label = document.createElement("label");
+  label.textContent = "bandwidth γ";
+  const range = document.createElement("input");
+  range.type = "range";
+  // log scale: gamma = 10^v, from 0.1 to 100
+  range.min = -1; range.max = 2; range.step = 0.1; range.value = 0.3;
+  const out = document.createElement("output");
+  const show = () => { out.textContent = Math.pow(10, Number(range.value)).toFixed(2); };
+  show();
+  range.addEventListener("input", show);
+  range.addEventListener("change", () => {
+    wrap.value = Math.pow(10, Number(range.value));
+    wrap.dispatchEvent(new CustomEvent("input"));
+  });
+  const hint = document.createElement("p");
+  hint.className = "hint";
+  hint.textContent = "Logarithmic, from 0.1 to 100. Release the slider to refit.";
+  wrap.append(label, range, out, hint);
+  wrap.value = Math.pow(10, Number(range.value));
+  return wrap;
+}
+```
+
+```{pyodide}
+#| input:
+#|   - gam
+#| autorun: true
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from sklearn.svm import SVC
+
+def rings(n=120):
+    theta = np.linspace(0, 2*np.pi, n, endpoint=False)
+    r_out = 1.00 + 0.08*np.cos(7*theta)
+    r_in  = 0.40 + 0.08*np.sin(6*theta)
+    P = np.vstack([np.column_stack([r_out*np.cos(theta), r_out*np.sin(theta)]),
+                   np.column_stack([r_in *np.cos(theta), r_in *np.sin(theta)])])
+    return P, np.r_[np.zeros(n), np.ones(n)].astype(int)
+
+g = float(gam)
+Xr, yr = rings()
+xx, yy = np.meshgrid(np.linspace(-1.4, 1.4, 160), np.linspace(-1.4, 1.4, 160))
+grid = np.c_[xx.ravel(), yy.ravel()]
+
+clf = SVC(kernel="rbf", gamma=g).fit(Xr, yr)
+Z = clf.predict(grid).reshape(xx.shape)
+n_sv = len(clf.support_vectors_)
+acc = clf.score(Xr, yr)
+
+fig, ax = plt.subplots(figsize=(5.4, 5.0))
+ax.contourf(xx, yy, Z, alpha=0.25, cmap=ListedColormap(["#076FA1", "#E3120B"]))
+ax.scatter(Xr[yr==0, 0], Xr[yr==0, 1], c="#076FA1", s=18,
+           edgecolor="white", linewidths=0.4, label="outer")
+ax.scatter(Xr[yr==1, 0], Xr[yr==1, 1], c="#E3120B", s=18,
+           edgecolor="white", linewidths=0.4, label="inner")
+ax.set_aspect("equal"); ax.set_xticks([]); ax.set_yticks([])
+ax.set_title(rf"$\gamma$ = {g:.2f}   ({n_sv} of {len(Xr)} points are support vectors)",
+             fontsize=11)
+ax.legend(loc="upper right", fontsize=8, framealpha=0.9)
+plt.tight_layout(); plt.show()
+
+print(f"gamma = {g:.2f}  ->  {n_sv} of {len(Xr)} points are support vectors "
+      f"({n_sv/len(Xr):.0%})")
+print(f"training accuracy {acc:.1%} — unchanged across the whole sweep, and so useless "
+      f"for choosing gamma")
+```
+
 ## Forward to attention
 
 The kernel weights have been doing something we never named outright: turning similarities into a prediction by averaging. Make that explicit with the simplest kernel estimator there is. The [Nadaraya-Watson smoother]{.term} weights every training label by its similarity to the query, normalizes the weights so they sum to one, and returns that weighted average.

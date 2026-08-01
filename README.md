@@ -83,6 +83,7 @@ Colab, everything else runs in the browser.
 
 | Pages | Stack | How it runs |
 |-------|-------|-------------|
+| `index`, `ch01_01_baseline` | NumPy, base R | `{pyodide}` / `{webr}` — in the browser |
 | ch02–ch08, `ch09_01_backpropagation` | NumPy / scikit-learn, base R | `{pyodide}` / `{webr}` — in the browser |
 | `ch09_02`–`ch12_01` | PyTorch | **Open in Colab** button (`.colab-btn`) |
 | `ch02_03_bayesian_regression`, `ch13_01_unsupervised` | mixed | live cells **and** a Colab link |
@@ -94,6 +95,42 @@ button for the PyMC and Fashion-MNIST work that does not.
 
 PyTorch is too heavy for a browser sandbox, so the PyTorch pages link out to Colab
 instead of running inline. See `chapters/ch10_01_convnets.qmd` for the pattern.
+
+## Cells that run themselves, and reader-driven sliders
+
+Most cells wait for the reader to click Run. Two kinds do not, and both carry a
+constraint worth knowing before you add more.
+
+**`#| autorun: true`** runs a cell as soon as the runtime is ready, so the page shows
+live output rather than inert code on arrival. It is set on one Python plot cell each on
+`index`, `ch01_01`, `ch02_01`, `ch03_01`, `ch05_01`, and `ch08_01` (plus the four slider
+cells below). Measured cold, the plot appears about four seconds after load. It costs no
+extra network traffic, because the runtimes download on page open regardless (see
+"Third-party requests"). Only the Python cell of a tabset autoruns: Python is the default
+tab, and autorunning the R twin as well would execute both runtimes on every load for
+output nobody is looking at.
+
+An autorun cell must not depend on cells above it — nothing guarantees they have run, and
+on `index` and `ch01_01` they have not. Both autorun cells there are written to stand
+alone, restating the few lines of data they need rather than inheriting them.
+
+**Sliders** are OJS `viewof` cells wired into a `{pyodide}` cell with `#| input:`. They
+are on `ch03_01` (step size), `ch05_01` (noise), `ch06_02` (threshold), and `ch08_02`
+(RBF bandwidth). Three rules, each learned the hard way:
+
+- **A slider cell must be self-contained.** A cell with `autorun: false` is *not* re-run
+  when its input changes — the reader would have to click Run for the slider to do
+  anything — so slider cells need `autorun: true`, which means they run before any cell
+  above them and cannot rely on variables those cells define. Where re-deriving the
+  inputs would just repeat the page (`ch06_02`), the upstream cell's output is inlined
+  instead, with a comment saying so.
+- **Re-run on release, not on drag.** The control updates its numeric readout on `input`
+  events but only assigns `wrap.value` and dispatches on `change`, so dragging is smooth
+  and the Python cell re-runs once, when the reader lets go. Without this, a drag queues
+  a redraw per pixel.
+- **No `Inputs.range`.** Observable's input library would be one line, but it pulls
+  `@observablehq/inputs` and `htl` from `cdn.jsdelivr.net` on page load. The hand-rolled
+  `<input type=range>` in `.lm-slider` adds nothing external.
 
 ## Publishing
 
@@ -107,17 +144,37 @@ every push to `main`. To turn it on:
 Because nothing executes at build time, the Action only needs Quarto — it installs
 in seconds and the render is reproducible.
 
-## No third-party requests on page load
+## Third-party requests
 
-Nothing is fetched from a third party when a page opens: the webfonts and MathJax
-are self-hosted, and Quarto's hardcoded cdnjs ES6 polyfill is removed after render
-by `tools/strip_polyfill.py` (that pass is deliberately loud if it ever stops
-matching, so it cannot rot into a silent no-op). Pyodide and WebR still load from
-their upstream CDNs, but only when a reader actually runs a code cell — which is
-also why they are left there: self-hosting Pyodide means tens of megabytes, and
-self-hosting WebR would mean redistributing GPL-3 binaries.
+No third party is named in the *markup*: the webfonts and MathJax are self-hosted, and
+Quarto's hardcoded cdnjs ES6 polyfill is removed after render by
+`tools/strip_polyfill.py` (that pass is deliberately loud if it ever stops matching, so
+it cannot rot into a silent no-op).
 
-To confirm after a change:
+The runtimes are a different matter, and an earlier version of this section overstated
+the position. **Pyodide and WebR begin downloading when the page opens, not when the
+reader clicks Run.** `quarto-live` starts its workers eagerly so the Run button can go
+from grey to red — which is exactly what the landing page's "How to read this site" box
+describes. Measured on an untouched chapter page with no clicks, a cold load makes about
+47 requests to three hosts:
+
+| host | what |
+|---|---|
+| `cdn.jsdelivr.net` | Pyodide runtime and wheels |
+| `webr.r-wasm.org` | WebR runtime |
+| `repo.r-wasm.org` | WebR package binaries |
+
+They are left on their CDNs because self-hosting Pyodide means tens of megabytes and
+self-hosting WebR would mean redistributing GPL-3 binaries (see "License" below). The
+practical consequence to keep in mind: opening any chapter page reveals the reader's IP
+to those three hosts, whether or not they run anything.
+
+What this section *can* still promise is that nothing else is added. Reader-facing
+controls are built to keep it that way — see the note above `.lm-slider` in `theme.scss`
+for why the parameter sliders are hand-rolled rather than built with Observable's
+`Inputs.range`, which would pull two more files from `cdn.jsdelivr.net` on load.
+
+To confirm after a change, grep the markup:
 
 ```bash
 grep -rhoE 'https?://[a-z0-9.-]+' _site --include='*.html' --include='*.css' \
@@ -126,6 +183,12 @@ grep -rhoE 'https?://[a-z0-9.-]+' _site --include='*.html' --include='*.css' \
 
 Only `colab.research.google.com` and `github.com` should appear, and both are
 links the reader clicks, not resources the page loads.
+
+That grep is necessary but not sufficient: it reads static markup only, so it cannot see
+a URL fetched at runtime by the OJS runtime or from inside a Web Worker — which is how
+all three hosts above are reached, and why they never show up in it. To see what a page
+actually requests, watch the network with workers attached (DevTools → Network with
+"Selected context only" off, or a CDP session using `Target.setAutoAttach`).
 
 ## A harmless build message
 

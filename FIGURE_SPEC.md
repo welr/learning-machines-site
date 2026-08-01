@@ -3,7 +3,7 @@
 The site moved from the editorial "direct label" look (treatment A) to **treatment B**:
 a legend instead of labels-on-the-lines, a light frame, and a faint grid. This makes
 the pre-rendered hero figures match the live cells (which already use legends). Gold-
-standard references already in B: `figures/ch05_bias_variance.png` (multi-line) and
+standard references already in B: `figures/ch05_01_bias_variance.png` (multi-line) and
 `figures/ch03_01_gradient_descent.png` (2-D contour).
 
 Goal per page: ONE hero figure, generated from the page's OWN computation, in treatment

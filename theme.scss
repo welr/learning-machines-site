@@ -152,6 +152,30 @@ div.sourceCode{ border:1px solid $rule; border-radius:6px; }
 /* Never let centered display math clip; scroll instead. */
 .defbox .math{ overflow-x:auto; }
 
+/* Reader-driven parameter sliders. The control is built by hand in an OJS cell
+   rather than with Observable's Inputs library: Inputs.range pulls
+   @observablehq/inputs and htl from cdn.jsdelivr.net on page load, which would
+   break the no-third-party-requests-on-open rule this site keeps (see README).
+   A plain <input type=range> in a wrapper div carries the same reactive value
+   with no external code. */
+.lm-slider{
+  display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;
+  background:#f3f6fb; border:1px solid $rule; border-left:4px solid $blue;
+  border-radius:6px; padding:12px 18px; margin:22px 0; max-width:42rem;
+}
+.lm-slider label{
+  font-family:"Inconsolata"; font-size:11px; letter-spacing:.16em;
+  text-transform:uppercase; color:$blue; font-weight:700;
+}
+.lm-slider input[type=range]{ flex:1 1 220px; min-width:160px; accent-color:$blue; }
+.lm-slider output{
+  font-family:"Inconsolata"; font-size:16px; color:$fs-blue; font-weight:700;
+  min-width:3.6rem; text-align:right;
+}
+.lm-slider .hint{
+  flex-basis:100%; font-size:13.5px; color:$gray; margin:0;
+}
+
 /* Mobile: scale the oversized fixed-px hero and tighten type. */
 @media (max-width: 600px){
   .lm-hero h1{ font-size:33px; line-height:1.08; }

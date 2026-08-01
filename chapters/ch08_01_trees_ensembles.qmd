@@ -49,6 +49,7 @@ leaves the majority class unchanged.
 
 ## Python
 ```{pyodide}
+#| autorun: true
 import numpy as np
 import matplotlib.pyplot as plt
 

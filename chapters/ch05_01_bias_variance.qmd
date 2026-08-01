@@ -23,7 +23,7 @@ each, and looking at how the predictions scatter, we turn [bias]{.term} and
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch05_bias_variance.png" alt="Bias-squared, variance, and total error versus polynomial degree; total error traces a U and bottoms out at a moderate degree.">
+<img src="../figures/ch05_01_bias_variance.png" alt="Bias-squared, variance, and total error versus polynomial degree; total error traces a U and bottoms out at a moderate degree.">
 <figcaption><strong>The bias–variance trade-off.</strong> As complexity grows, bias falls while variance rises; their sum, the total error, traces a U and bottoms out at a moderate degree. This is the result the code below reproduces.</figcaption>
 </figure>
 ```
@@ -52,6 +52,7 @@ floor every model is measured against. One noisy sample looks like this.
 
 ## Python
 ```{pyodide}
+#| autorun: true
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -340,6 +341,98 @@ Bias and variance are not spread evenly across the input. Near the edges of $[0,
 data is sparse and a high-degree polynomial has the least to anchor it, variance spikes
 sharply; in the well-sampled interior it stays small. This is why extrapolation is
 dangerous: the same fit that is trustworthy in the middle is wild at the boundary.
+
+The noise level $\sigma$ is fixed at 0.3 above. Move it, and the result is worth predicting
+before you look: the dashed irreducible line rises as $\sigma^2$, and the whole U lifts with
+it. What does *not* move is the winner. Degree three keeps taking the honors across almost the
+whole range; only at the quietest setting, $\sigma = 0.05$, is there enough signal to justify
+a more flexible degree five.
+
+That stability is the point. The noise level decides how well any model can do — the floor is
+$\sigma^2$ and nothing gets under it — but it barely touches which model does best, because
+that is a question about the shape of $\sin(2\pi x)$, not about the noise laid over it.
+
+```{ojs}
+//| echo: false
+viewof sigma = {
+  const wrap = document.createElement("div");
+  wrap.className = "lm-slider";
+  const label = document.createElement("label");
+  label.textContent = "noise σ";
+  const range = document.createElement("input");
+  range.type = "range";
+  range.min = 0.05; range.max = 0.80; range.step = 0.05; range.value = 0.30;
+  const out = document.createElement("output");
+  const show = () => { out.textContent = Number(range.value).toFixed(2); };
+  show();
+  range.addEventListener("input", show);
+  range.addEventListener("change", () => {
+    wrap.value = Number(range.value);
+    wrap.dispatchEvent(new CustomEvent("input"));
+  });
+  const hint = document.createElement("p");
+  hint.className = "hint";
+  hint.textContent = "Release the slider to re-run the decomposition (a few seconds).";
+  wrap.append(label, range, out, hint);
+  wrap.value = Number(range.value);
+  return wrap;
+}
+```
+
+```{pyodide}
+#| input:
+#|   - sigma
+#| autorun: true
+import numpy as np
+import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
+
+noise = float(sigma)
+
+def truth_f(x):
+    return np.sin(2 * np.pi * x)
+
+# Fewer datasets than the table above (40 rather than 100) so the redraw stays quick.
+def decompose_at(degree, n_datasets=40, n=20, noise=0.3):
+    grid = np.linspace(0, 1, 100)
+    truth = truth_f(grid)
+    preds = []
+    for s in range(n_datasets):
+        np.random.seed(s)
+        xt = np.random.uniform(0, 1, n)
+        yt = truth_f(xt) + np.random.normal(0, noise, n)
+        coef = np.polyfit(xt, yt, degree)
+        preds.append(np.clip(np.polyval(coef, grid), -10, 10))
+    preds = np.array(preds)
+    b2 = ((preds.mean(0) - truth) ** 2).mean()
+    v = preds.var(0).mean()
+    return b2, v, noise ** 2, b2 + v + noise ** 2
+
+degs = list(range(1, 13))
+rows = [decompose_at(d, noise=noise) for d in degs]
+b2 = [r[0] for r in rows]; v = [r[1] for r in rows]
+irr = rows[0][2]; total = [r[3] for r in rows]
+best = degs[int(np.argmin(total))]
+
+fig, ax = plt.subplots(figsize=(8, 4.6))
+ax.plot(degs, b2, "o-", color="#076FA1", lw=2, label="bias$^2$")
+ax.plot(degs, v, "s-", color="#31417A", lw=2, label="variance")
+ax.plot(degs, total, "^-", color="#E3120B", lw=2, label="total error")
+ax.axhline(irr, color="#666666", ls="--", label=f"irreducible ($\\sigma^2$={irr:.3f})")
+ax.axvline(best, color="#666666", ls=":", alpha=0.7)
+ax.set_xlabel("polynomial degree (model complexity)")
+ax.set_ylabel("error")
+ax.set_ylim(0, min(max(total) * 1.1, 12))
+ax.set_title(rf"Noise $\sigma$ = {noise:.2f}; total error bottoms out at degree {best}")
+ax.legend(loc="upper center")
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
+plt.tight_layout(); plt.show()
+
+print(f"sigma = {noise:.2f}  ->  irreducible {irr:.3f}, best degree {best}, "
+      f"total there {min(total):.3f}")
+```
 
 ## Learning curves
 

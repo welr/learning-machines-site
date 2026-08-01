@@ -48,6 +48,7 @@ negative gradients, normalized to a common length so direction reads clearly.
 
 ## Python
 ```{pyodide}
+#| autorun: true
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -316,6 +317,107 @@ cat(sprintf("optimal loss = %.4f\n", opt_loss))
 
 The slow run never reaches the floor in forty steps; the good and oscillating runs both land
 on the optimal loss, but the oscillating one earns it through visible zig-zags.
+
+Three fixed rates make the argument; a fourth of your own choosing makes it stick. Drag the
+slider and the descent path below is recomputed from scratch. The region worth exploring is
+just above $\alpha = 0.25$: step across it and the run stops merely zig-zagging and starts to
+blow up, the loss growing by a fixed factor every iteration. The boundary is sharp and it is
+not a matter of luck — the next section computes exactly where it lies.
+
+```{ojs}
+//| echo: false
+viewof lr = {
+  const wrap = document.createElement("div");
+  wrap.className = "lm-slider";
+  const label = document.createElement("label");
+  label.textContent = "step size α";
+  const range = document.createElement("input");
+  range.type = "range";
+  range.min = 0.02; range.max = 0.40; range.step = 0.01; range.value = 0.15;
+  const out = document.createElement("output");
+  const show = () => { out.textContent = Number(range.value).toFixed(2); };
+  show();
+  range.addEventListener("input", show);
+  range.addEventListener("change", () => {
+    wrap.value = Number(range.value);
+    wrap.dispatchEvent(new CustomEvent("input"));
+  });
+  const hint = document.createElement("p");
+  hint.className = "hint";
+  hint.textContent = "Release the slider to recompute the run.";
+  wrap.append(label, range, out, hint);
+  wrap.value = Number(range.value);
+  return wrap;
+}
+```
+
+```{pyodide}
+#| input:
+#|   - lr
+#| autorun: true
+import numpy as np
+import matplotlib.pyplot as plt
+
+alpha = float(lr)
+
+x = np.array([-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
+              1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18])
+y = np.array([0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
+              3.60, 4.09, 5.10, 6.25, 6.37, 6.47, 7.07])
+
+X = np.column_stack([np.ones(len(x)), x])
+opt = np.linalg.solve(X.T @ X, X.T @ y)
+
+def loss(t):
+    return np.mean((y - (t[0] + t[1] * x)) ** 2)
+
+def step(t):
+    r = (t[0] + t[1] * x) - y
+    return t - alpha * np.array([2 * np.mean(r), 2 * np.mean(r * x)])
+
+theta, path = np.array([2.0, -1.0]), [np.array([2.0, -1.0])]
+for _ in range(40):
+    theta = step(theta)
+    path.append(theta.copy())
+path = np.array(path)
+
+g0, g1 = np.linspace(-1.0, 3.0, 120), np.linspace(-1.5, 3.0, 120)
+Loss = np.array([[loss((a, b)) for a in g0] for b in g1])
+
+fig, (axL, axR) = plt.subplots(1, 2, figsize=(12, 4.6))
+levels = np.logspace(np.log10(Loss.min() + 0.05), np.log10(Loss.max()), 18)
+axL.contour(np.meshgrid(g0, g1)[0], np.meshgrid(g0, g1)[1], Loss,
+            levels=levels, colors="#666666", linewidths=0.5, alpha=0.5)
+axL.contourf(np.meshgrid(g0, g1)[0], np.meshgrid(g0, g1)[1], Loss,
+             levels=levels, cmap="Blues", alpha=0.20)
+axL.plot(path[:, 0], path[:, 1], "o-", color="#E3120B", ms=3, lw=1.4)
+axL.scatter(*path[0], color="black", s=70, zorder=5, label="start")
+axL.scatter(*opt, color="#666666", s=170, marker="*", zorder=6,
+            edgecolors="white", linewidths=1.4, label="optimum")
+axL.set_xlim(-1.0, 3.0); axL.set_ylim(-1.5, 3.0)
+axL.set_xlabel(r"$\theta_0$"); axL.set_ylabel(r"$\theta_1$")
+axL.set_title(rf"Path at $\alpha$ = {alpha:.2f}")
+axL.legend(loc="upper right", fontsize=8)
+
+axR.plot([loss(p) for p in path], color="#E3120B", lw=1.8)
+axR.axhline(loss(opt), color="#666666", ls="--", lw=1, label="optimal loss")
+axR.set_yscale("log"); axR.set_xlabel("iteration"); axR.set_ylabel("MSE loss")
+axR.set_title("Convergence")
+axR.legend(loc="upper right", fontsize=8)
+for s in ["top", "right"]: axR.spines[s].set_visible(False)
+axR.grid(axis="y", color="#e6e3da", lw=0.8); axR.set_axisbelow(True)
+plt.tight_layout()
+plt.show()
+
+final, best = loss(path[-1]), loss(opt)
+if not np.isfinite(final) or final > loss(path[0]):
+    verdict = "diverged"
+elif final > best + 1e-3:
+    verdict = "still moving after 40 steps"
+else:
+    verdict = "converged"
+print(f"alpha = {alpha:.2f}  ->  final loss {final:.4f}  ({verdict}; optimum {best:.4f})")
+```
 
 ## A hard threshold for stability
 
