@@ -27,7 +27,7 @@ Each input is projected three ways. The [query]{.term} asks what this position i
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch11_01_attention_transformers.png" alt="Nine-by-nine heatmap of attention weights over the tokens the, cat, drank, the, milk, because, it, was, thirsty. Rows are the attending token, columns the token attended to, shaded from near-white at 0.04 to dark blue at 0.63. The darkest cell in the figure is the pronoun row it against the column cat, 0.63. The rows cat and milk each put 0.46 on drank; the two the rows are identical, splitting 0.31 and 0.31 between cat and milk; because and was each put their largest weight, 0.29 and 0.35, on thirsty; thirsty puts 0.42 on cat. Every remaining cell sits near the floor between 0.04 and 0.07.">
+<img src="../figures/ch11_01_attention_transformers.png" alt="Nine-by-nine heatmap of attention weights over a nine-token sentence; rows are the attending token, columns the token attended to. Most of the grid is pale, with a scatter of darker cells marking the links. The darkest is the pronoun row it against the column cat.">
 <figcaption><strong>Where each token looks.</strong> One head of self-attention over a nine-token sentence, with the embeddings hand-built so the pattern is legible. Each row is a probability distribution across the columns. The pronoun <em>it</em> puts 0.63 on <em>cat</em>, its referent; the two <em>the</em> rows are identical, because nothing in the computation yet knows where a token sits. This is the result the code below reproduces.</figcaption>
 </figure>
 ```
@@ -127,6 +127,7 @@ for s in ax.spines.values():
     s.set_color("#cfccc2")
 ax.set_xlabel("key — token attended to", fontsize=11)
 ax.set_ylabel("query — token attending", fontsize=11)
+plt.tight_layout()
 plt.show()
 
 print("context vector for 'it':", np.round(context[6], 3))
@@ -218,13 +219,15 @@ cat(sprintf("largest component: %s\n", ROLES[which.max(context[7, ])]))
 
 :::
 
-Four things in that output are worth reading off carefully.
+Five things in that output are worth reading off carefully.
 
 The pronoun finds its referent. The row for `it` puts 0.627 on `cat` — more than eight times the 0.075 it gives anything else. Its output inherits that: the context vector for `it` comes out 0.627 along the animate axis and no more than 0.075 along any other, so a position that arrived carrying only "pronoun" leaves carrying "cat."
 
 Predicate and arguments find each other. `cat` and `milk` each place 0.458 on `drank`, and `drank` splits 0.292 and 0.292 back between them. The link is visible in both directions but not with equal strength: attention is not symmetric, because each row is normalized on its own.
 
-The floor is not zero. Every cell the query does not seek still holds between 0.037 and 0.072. A softmax cannot assign zero, which is why the causal mask below has to use $-\infty$ rather than a small number. Note also that no row's largest entry lies on the diagonal: attention is not obliged to be self-heavy, and here nothing was built to make it so.
+The floor is not zero. Every cell the query does not seek still holds between 0.037 and 0.072. A softmax cannot assign zero to a finite score, which is why the causal mask below sets future scores to $-\infty$ rather than to something merely small: only $-\infty$ exponentiates to exactly zero.
+
+Nor is any row self-heavy. Self-preference was built in for two roles — `W_Q[ANIMATE, ANIMATE]` and `W_Q[OBJECT, OBJECT]` are both 3.0, and `cat` and `milk` duly give themselves 0.158, nearly three times the floor — but 3.0 loses to the 6.0 that sends both of them to `drank` at 0.458. No row's largest entry lies on the diagonal. Attention is not obliged to be self-heavy; here the preference was written in and outbid.
 
 Position is missing. The two `the` rows are identical — the printed difference is exactly `0.0e+00`. That is not rounding; the two tokens have the same embedding, so the computation cannot tell them apart. Self-attention sees a set. Restoring the order is the job of the positional encoding described below.
 
@@ -236,7 +239,11 @@ Edit `sentence` and rerun. Change `("it", "PRON")` to `("it", "OBJECT")` and the
 
 ## Why divide by &radic;d<sub>k</sub>
 
-The division by &radic;d<sub>k</sub> is not cosmetic. Dot products grow with dimension, so their variance scales with d<sub>k</sub>; left unscaled, the scores push the softmax into a saturated region where gradients all but vanish. Dividing by &radic;d<sub>k</sub> holds the variance near one regardless of dimension and keeps the softmax in a useful range. The cell above prints the effect even on this very small example: the largest weight anywhere is 0.627 with the scaling and 0.993 without it. That second number is a hard argmax in all but name, and it costs the layer its gradient — the softmax's own slope, p(1&minus;p), falls from 0.234 to 0.0069, a factor of thirty-four. And this is d<sub>k</sub> = 8; the unscaled scores keep growing like &radic;d<sub>k</sub>, so the wider the head, the worse it gets.
+The division by &radic;d<sub>k</sub> is not cosmetic. Large scores push the softmax into a saturated region where its gradient all but vanishes, and the cell above prints what that costs on this very small example: the largest weight anywhere is 0.627 with the scaling and 0.993 without it. That second number is a hard argmax in all but name, and the softmax's own slope, p(1&minus;p), falls with it from 0.234 to 0.0069, a factor of thirty-four. Dividing by &radic;8 = 2.83 is the whole of the difference.
+
+Where the dimension enters is a separate argument, and it carries a condition. If the components of a query and a key are independent, mean zero, and unit variance, then q&middot;k is a sum of d<sub>k</sub> independent products, so its variance is d<sub>k</sub> and its typical size grows like &radic;d<sub>k</sub>: the wider the head, the deeper into saturation an unscaled softmax goes. Dividing by &radic;d<sub>k</sub> restores unit variance whatever the width.
+
+Our embeddings do not meet that condition, and it is worth being plain about it. The keys are one-hot and `W_Q` is a table we wrote down, so every score is a single entry of that table and does not vary with d<sub>k</sub> at all. Pad the roles out to d<sub>k</sub> = 512 and the unscaled maximum weight sits at 0.993 for every width, while the scaled one drifts down toward the uniform 1/9 — here the scaling over-corrects, because there was no growth to correct. So read the cell as a demonstration of the remedy rather than of the disease: it shows what saturation costs and that the division relieves it. Seeing the disease itself takes random projections, where the scores really do grow with the width.
 
 ## The same layer in PyTorch
 

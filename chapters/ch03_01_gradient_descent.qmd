@@ -384,12 +384,12 @@ path = np.array(path)
 g0, g1 = np.linspace(-1.0, 3.0, 120), np.linspace(-1.5, 3.0, 120)
 Loss = np.array([[loss((a, b)) for a in g0] for b in g1])
 
+B0, B1 = np.meshgrid(g0, g1)
+
 fig, (axL, axR) = plt.subplots(1, 2, figsize=(12, 4.6))
 levels = np.logspace(np.log10(Loss.min() + 0.05), np.log10(Loss.max()), 18)
-axL.contour(np.meshgrid(g0, g1)[0], np.meshgrid(g0, g1)[1], Loss,
-            levels=levels, colors="#666666", linewidths=0.5, alpha=0.5)
-axL.contourf(np.meshgrid(g0, g1)[0], np.meshgrid(g0, g1)[1], Loss,
-             levels=levels, cmap="Blues", alpha=0.20)
+axL.contour(B0, B1, Loss, levels=levels, colors="#666666", linewidths=0.5, alpha=0.5)
+axL.contourf(B0, B1, Loss, levels=levels, cmap="Blues", alpha=0.20)
 axL.plot(path[:, 0], path[:, 1], "o-", color="#E3120B", ms=3, lw=1.4)
 axL.scatter(*path[0], color="black", s=70, zorder=5, label="start")
 axL.scatter(*opt, color="#666666", s=170, marker="*", zorder=6,
@@ -834,14 +834,15 @@ the inertia of momentum become tools for escaping bad ones rather than mere acce
 
 ::: {.explore}
 [Try it]{.lbl}
-The slider above already walks you across $2/\lambda_{\max} = 0.2592$: step from $0.25$ to
-$0.26$ and a run that was merely zig-zagging turns into one whose loss grows by a fixed
-factor every iteration. The boundary really is that sharp.
+The slider showed you that the boundary is sharp. What it cannot show you is that the boundary
+*moves*. In the stability cell, multiply `x` by 5 and rerun. Nothing about the problem has
+changed — the same line still fits the same points, and the optimum is the same optimum — but
+the critical step size collapses from $0.2592$ to $0.0125$, twenty times smaller.
 
-What the slider cannot show you is that the boundary *moves*. In the stability cell, multiply
-`x` by 5 and rerun. Nothing about the problem has changed — the same line still fits the same
-points — but the critical step size collapses from $0.2592$ to about $0.0125$, twenty times
-smaller, because $\lambda_{\max}$ scales with the square of the feature. This is why features
-are standardized before gradient descent is turned loose on them: the safe step size is a
-property of the units you happened to measure in.
+The reason is that $\lambda_{\max}$ grows roughly with the square of the feature scale. Only
+roughly: squaring alone would predict a factor of 25, and the measured factor is 20.75,
+because $\mathbf{X}^\top\mathbf{X}$ contains an intercept column that does not rescale with
+$x$. This is why features are standardized before gradient descent is turned loose on them.
+The safe step size is not a property of the problem; it is a property of the units you
+happened to measure in.
 :::

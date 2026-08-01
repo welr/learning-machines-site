@@ -17,8 +17,8 @@ The MLP flattens each image to a vector of 784 numbers. A convolution needs the 
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch10_02_applied.png" alt="Left, a 4-by-4 grid of the sixteen learned 3-by-3 first-layer convolution filters, shown as small red-blue tiles. Right, a row of eight Fashion-MNIST test images with the trained model's predicted class and confidence printed above each, six labelled in blue for correct and two in red for wrong, including a T-shirt mistaken for a shirt and a coat mistaken for a pullover.">
-<figcaption><strong>What the convolution learned, and how it does on new images.</strong> The sixteen first-layer filters have specialized into edge- and texture-detectors rather than staying at their random initialization. On eight held-out images the trained network gets six right, confidently; the two misses, a T-shirt called a shirt and a coat called a pullover, are the near-misses the surrounding text describes.</figcaption>
+<img src="../figures/ch10_02_applied.png" alt="Left, a 4-by-4 grid of the sixteen 3-by-3 first-layer convolution filters after training, small red-blue tiles with no visible edge structure. Right, a row of eight Fashion-MNIST test images with the trained model's predicted class and confidence printed above each, six labeled in blue for correct and two in red for wrong: a T-shirt called a shirt at 69 percent and a coat called a pullover at 52 percent.">
+<figcaption><strong>What the first layer looks like, and how the network does on new images.</strong> The sixteen first-layer filters barely move during training: each stays within cosine similarity 0.94 of its own random initialization, median 0.99. The left panel therefore shows what a 3&times;3 first layer looks like, not what ten epochs taught it &mdash; at this filter size and this training budget, the useful work happens deeper in the stack. On the right, eight held-out images: six right, confidently, and two wrong &mdash; a T-shirt called a shirt at 69% and a coat called a pullover at 52%, the two lowest confidences in the row, and exactly the shirt/coat/pullover confusion Chapter 9 flagged.</figcaption>
 </figure>
 ```
 
@@ -93,13 +93,17 @@ batch_size, epochs = 128, 10
 
 for epoch in range(epochs):
     order = torch.randperm(len(X_tr))
+    running_loss, n_batches = 0.0, 0
     for i in range(0, len(X_tr), batch_size):
         batch = order[i : i + batch_size]
         loss = loss_fn(model(X_tr[batch]), y_tr[batch])
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()
-    print(f"epoch {epoch + 1:2d} | train loss {loss.item():.3f}")
+        # average over the epoch: one minibatch's loss is far too noisy to read
+        running_loss += loss.item()
+        n_batches += 1
+    print(f"epoch {epoch + 1:2d} | train loss {running_loss / n_batches:.3f}")
 ```
 
 The convolutional network beats the Chapter 9 MLP, and does it with a fraction of the parameters. Its [inductive bias]{.term}, locality and translation equivariance, matches the structure of images, so it spends its parameters where they help. The residual block let us add depth without making optimization harder.

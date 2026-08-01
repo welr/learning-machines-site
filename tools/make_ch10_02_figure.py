@@ -7,10 +7,10 @@ AdamW/cross-entropy loop (batch 128, 10 epochs). Shows the sixteen learned
 first-layer 3x3 filters as a grid, and a row of held-out test images with the
 trained model's predicted class and confidence.
 
-Requires network access on first run (fetch_openml caches ~30 MB locally). If the
-download fails, synthetic Gaussian-blob "image" data of the same shape (1x28x28,
-10 classes) is substituted so the figure still renders; this is noted in stdout
-if it happens.
+Requires network access on first run (fetch_openml caches ~30 MB locally). There is
+no synthetic fallback: if the download fails the script prints the error and exits
+non-zero without writing a PNG. Gaussian noise captioned with real Fashion-MNIST
+class names and confidences is worse than no figure at all.
 """
 
 import sys
@@ -51,18 +51,12 @@ try:
     X_tr_t, X_te_t = to_images(X_tr), to_images(X_te)
     y_tr_t, y_te_t = torch.tensor(y_tr), torch.tensor(y_te)
     print(f"Fashion-MNIST loaded: {len(X_tr_t)} train, {len(X_te_t)} test")
-except Exception as exc:  # pragma: no cover - network fallback
-    print(f"fetch_openml failed ({exc}); substituting synthetic data of the same shape")
-    rng = np.random.default_rng(0)
-    n_tr, n_te = 12000, 3000
-    centers = rng.normal(scale=1.5, size=(10, 784)).astype("float32")
-    y_tr_np = rng.integers(0, 10, n_tr)
-    y_te_np = rng.integers(0, 10, n_te)
-    X_tr_np = np.clip(centers[y_tr_np] + rng.normal(scale=1.0, size=(n_tr, 784)), 0, 1).astype("float32")
-    X_te_np = np.clip(centers[y_te_np] + rng.normal(scale=1.0, size=(n_te, 784)), 0, 1).astype("float32")
-    X_tr_t = torch.tensor(X_tr_np).reshape(-1, 1, 28, 28)
-    X_te_t = torch.tensor(X_te_np).reshape(-1, 1, 28, 28)
-    y_tr_t, y_te_t = torch.tensor(y_tr_np), torch.tensor(y_te_np)
+except Exception as exc:
+    print(f"ERROR: could not load Fashion-MNIST ({exc.__class__.__name__}: {exc})")
+    print("This figure labels each panel with real class names and confidences, so it "
+          "is only ever built from the real data. No PNG written; the committed "
+          "figure is unchanged.")
+    sys.exit(1)
 
 
 # ---- model: identical to the notebook ----
@@ -99,6 +93,10 @@ model = CNN()
 n_params = sum(p.numel() for p in model.parameters())
 print(f"{n_params / 1e3:.0f}k parameters")
 
+# Keep the initial first-layer filters so we can report, rather than assume, how far
+# training moves them. At 3x3 and this budget the answer is: barely.
+init_filters = model.features[0].weight.detach().clone().numpy()[:, 0, :, :]
+
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
 batch_size, epochs = 128, 10
@@ -129,10 +127,20 @@ for epoch in range(epochs):
 final_acc = accuracy(X_te_t, y_te_t)
 print(f"final test accuracy: {final_acc:.3f}")
 
-# ---- figure: learned first-layer filters + a row of labelled predictions ----
+# ---- figure: first-layer filters after training + a row of labeled predictions ----
 conv1 = model.features[0]
 filters = conv1.weight.detach().numpy()[:, 0, :, :]  # (16, 3, 3)
 vmax = np.abs(filters).max()
+
+# How far did each filter travel from its initialization? (1.00 = did not move)
+cos = [
+    float(np.dot(filters[k].ravel(), init_filters[k].ravel())
+          / (np.linalg.norm(filters[k]) * np.linalg.norm(init_filters[k])))
+    for k in range(16)
+]
+print("cosine(trained filter, its initialization), 16 filters:")
+print("  " + " ".join(f"{c:.2f}" for c in cos))
+print(f"  min {min(cos):.2f}  max {max(cos):.2f}  median {float(np.median(cos)):.2f}")
 
 model.eval()
 with torch.no_grad():
@@ -160,7 +168,7 @@ for k in range(16):
     for spine in ax.spines.values():
         spine.set_color(SPINE)
         spine.set_linewidth(0.6)
-fig.text(0.06, 0.94, "first-layer filters (3×3, learned)", fontsize=11.5, color=mt.FS_BLUE)
+fig.text(0.06, 0.94, "first-layer filters (3×3, after training)", fontsize=11.5, color=mt.FS_BLUE)
 
 # right: a row of test predictions with confidence
 pred_gs = gridspec.GridSpecFromSubplotSpec(1, n_show, subplot_spec=outer[1], wspace=0.15)

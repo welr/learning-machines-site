@@ -140,6 +140,11 @@ are on `ch03_01` (step size), `ch05_01` (noise), `ch06_02` (threshold), and `ch0
 - **No `Inputs.range`.** Observable's input library would be one line, but it pulls
   `@observablehq/inputs` and `htl` from `cdn.jsdelivr.net` on page load. The hand-rolled
   `<input type=range>` in `.lm-slider` adds nothing external.
+- **The sliders are Python-only.** Each `{ojs}` control and its `{pyodide}` cell sit outside
+  the surrounding `.panel-tabset`, so an R reader does not get them. `#| input:` does work
+  with `{webr}`, so R twins are possible; until they exist, the landing page says "every
+  *worked example* carries both" and names the sliders and the Chapter 1 exercises as the
+  exceptions. Keep that qualification true if you add or remove controls.
 
 ## Exercise cells
 
@@ -155,6 +160,9 @@ companion material — so exercises here reveal a solution rather than mark an a
 
 Exercise keys must be unique per page; the Lua filter raises a build error if two cells share
 one, which is the good kind of failure.
+
+Exercise cells are Python-only, like the sliders — the machinery has no second tab. The
+landing page and the page itself both say so; do not let that drift.
 
 ## Do not enable `persist`
 
@@ -198,8 +206,7 @@ it cannot rot into a silent no-op).
 The runtimes are a different matter, and an earlier version of this section overstated
 the position. **Pyodide and WebR begin downloading when the page opens, not when the
 reader clicks Run.** `quarto-live` starts its workers eagerly so the Run button can go
-from grey to red — which is exactly what the landing page's "How to read this site" box
-describes. Measured on an untouched chapter page with no clicks, a cold load makes about
+from grey to red. The landing page's "How to read this site" box says so. Measured on an untouched chapter page with no clicks, a cold load makes about
 47 requests to three hosts:
 
 | host | what |

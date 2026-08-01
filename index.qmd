@@ -16,10 +16,10 @@ Welcome to the interactive companion to *Learning Machines: A Statistical Introd
 ::: {.howto}
 [How to read this site]{.lbl}
 
-- **Run it yourself.** Code cells run live in your browser — click **Run Code**. The first run downloads the Python (Pyodide) or R (WebR) runtime once; that takes a few seconds, during which the Run button stays grey, then turns red when it is ready.
-- **Python or R, your choice.** Every example carries both. Pick a tab and the rest of the page follows; the two are genuine twins, not a translation of one into the other.
+- **Run it yourself.** Code cells run live in your browser — click **Run Code**. The Python (Pyodide) and R (WebR) runtimes start downloading as soon as a page opens, which takes a few seconds; the Run button stays grey until they are ready, then turns red. Some cells run themselves at that point and draw without a click.
+- **Python or R, your choice.** Every worked example carries both. Pick a tab and the rest of the page follows; the two are genuine twins, not a translation of one into the other. (The parameter sliders and the Chapter 1 exercises are the exceptions: those controls are Python-only.)
 - **Same method, sometimes different digits.** When a cell uses fixed data the two languages agree to the last digit; when a cell draws a random sample they differ a little, and that difference is the lesson — what holds is the method, not the digits.
-- **Deep learning runs in Colab.** Chapters 9–12 use PyTorch, too heavy for the browser, so they open in Google Colab instead.
+- **The heaviest work runs in Colab.** Chapters 9–12 train in PyTorch, too heavy for a browser sandbox, so those notebooks open in Google Colab. The idea at the core of each still runs here: backpropagation from NumPy, convolution by hand, scaled dot-product attention, and a bigram language model fitted by counting.
 :::
 
 ## Try it now
@@ -88,7 +88,7 @@ The mean is the maximum-likelihood prediction under a model with no inputs. It i
 
 ## What the tilt buys
 
-The figure above draws the flat baseline. This cell draws what happens when the prediction is allowed to follow the living area instead — and measures how much of the baseline's error that removes. It runs on its own when the page opens, so the plot below is live output, not an image; edit any number and click **Run Code** to redraw it.
+The figure above draws the flat baseline. This cell draws what happens when the prediction is allowed to follow the living area instead — and measures how much of the baseline's error that removes. It runs on its own when the page opens, so what you see below is live output; edit any number and click **Run Code** to redraw it.
 
 ::: {.panel-tabset group="lang"}
 
@@ -124,13 +124,14 @@ ax.scatter(area, price, color="#076FA1", s=44, zorder=4,
            edgecolors="white", linewidths=0.8)
 ax.set_xlabel("Living area, m$^2$")
 ax.set_ylabel("Price, thousand euros")
-ax.set_title("The baseline, and what one feature buys")
+ax.set_title("One feature, live")
 ax.legend(loc="upper left", frameon=False)
 plt.tight_layout()
 plt.show()
 
 removed = 1 - ((price - fitted) ** 2).mean() / ((price - baseline) ** 2).mean()
 print(f"the line removes {removed:.1%} of the baseline's squared error")
+print("that fraction has a name: it is R-squared, measured here in-sample")
 ```
 
 ## R
@@ -150,7 +151,7 @@ fitted <- intercept + slope * area
 
 plot(area, price, type = "n",
      xlab = "Living area, m^2", ylab = "Price, thousand euros",
-     main = "The baseline, and what one feature buys")
+     main = "One feature, live")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 # grey segments: the error the baseline leaves behind
 segments(area, price, area, baseline, col = "#666666", lwd = 0.8)
@@ -162,6 +163,7 @@ legend("topleft", c(sprintf("baseline = %.0f", baseline), "least-squares line"),
 
 removed <- 1 - mean((price - fitted)^2) / mean((price - baseline)^2)
 cat(sprintf("the line removes %.1f%% of the baseline's squared error\n", 100 * removed))
+cat("that fraction has a name: it is R-squared, measured here in-sample\n")
 ```
 
 :::

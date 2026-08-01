@@ -155,7 +155,8 @@ div.sourceCode{ border:1px solid $rule; border-radius:6px; }
 /* Reader-driven parameter sliders. The control is built by hand in an OJS cell
    rather than with Observable's Inputs library: Inputs.range pulls
    @observablehq/inputs and htl from cdn.jsdelivr.net on page load, which would
-   break the no-third-party-requests-on-open rule this site keeps (see README).
+   add two more third-party hosts to the ones the runtimes already reach on
+   page open (see README, "Third-party requests").
    A plain <input type=range> in a wrapper div carries the same reactive value
    with no external code. */
 .lm-slider{

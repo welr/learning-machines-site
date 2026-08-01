@@ -228,9 +228,10 @@ projection.
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Three observations, so the column space of X is a plane in R^3 we can actually draw.
+# Three observations, so the column space of X is a plane in R^3. y is chosen well off
+# that plane; with y nearly inside it the residual would be too short to see.
 x3 = np.array([8., 12., 16.])
-y3 = np.array([175., 255., 330.])
+y3 = np.array([100., 400., 250.])
 X3 = np.column_stack([np.ones(len(x3)), x3])
 
 H3 = X3 @ np.linalg.inv(X3.T @ X3) @ X3.T
@@ -242,31 +243,37 @@ print(f"|y|^2               = {y3 @ y3:.1f}")
 print(f"|y_hat|^2 + |r|^2   = {y_hat3 @ y_hat3 + r3 @ r3:.1f}   <- Pythagoras, exactly")
 print(f"trace(H) = {np.trace(H3):.1f} = number of parameters")
 
-# A patch of the plane spanned by the two columns of X, centered on y_hat
-u = np.linspace(-0.35, 0.35, 12)
-U, V = np.meshgrid(u, u)
-c0, c1 = X3[:, 0], X3[:, 1]
-P = y_hat3[None, None, :] + U[..., None] * c0 + V[..., None] * c1
+# y, y_hat and r all lie in one plane, so drawing that plane loses nothing: the picture
+# below is exact, not a projection of a 3-D scene. The column space appears edge-on.
+adj = np.linalg.norm(y_hat3)
+opp = np.linalg.norm(r3)
 
-fig = plt.figure(figsize=(7.0, 5.4))
-ax = fig.add_subplot(111, projection="3d")
-ax.plot_surface(P[..., 0], P[..., 1], P[..., 2], color="#076FA1", alpha=0.18,
-                edgecolor="#076FA1", linewidth=0.3)
-ax.plot(*zip([0, 0, 0], y3), color="#E3120B", lw=2.2, label=r"$y$")
-ax.plot(*zip([0, 0, 0], y_hat3), color="#31417A", lw=2.2, label=r"$\hat{y} = Hy$")
-ax.plot(*zip(y_hat3, y3), color="#666666", lw=1.8, ls="--", label="residual")
-ax.set_xlabel("obs 1"); ax.set_ylabel("obs 2"); ax.set_zlabel("obs 3")
+fig, ax = plt.subplots(figsize=(7, 4.6))
+ax.axhline(0, color="#076FA1", lw=2.5, zorder=1)
+ax.annotate("", xy=(adj, 0), xytext=(0, 0),
+            arrowprops=dict(arrowstyle="-|>", color="#31417A", lw=2.4))
+ax.annotate("", xy=(adj, opp), xytext=(0, 0),
+            arrowprops=dict(arrowstyle="-|>", color="#E3120B", lw=2.4))
+ax.plot([adj, adj], [0, opp], color="#666666", lw=2.0, ls="--")
+tick = adj * 0.045
+ax.plot([adj - tick, adj - tick, adj], [0, tick, tick], color="#666666", lw=1.2)
+ax.text(adj * 0.55, 12, "column space of X, seen edge-on", color="#076FA1", fontsize=10)
+ax.text(adj * 0.50, -30, r"$\hat{y} = Hy$", color="#31417A", fontsize=12)
+ax.text(adj * 0.40, opp * 0.62, r"$y$", color="#E3120B", fontsize=13)
+ax.text(adj * 1.02, opp * 0.45, r"$r$", color="#666666", fontsize=12)
+ax.set_xlim(-30, adj * 1.18); ax.set_ylim(-50, opp * 1.35)
+ax.set_aspect("equal"); ax.axis("off")
 ax.set_title("Least squares is a projection onto the column space")
-ax.legend(loc="upper left", frameon=False, fontsize=9)
 plt.tight_layout()
 plt.show()
 ```
 
 ## R
 ```{webr}
-# Three observations, so the column space of X is a plane in R^3 we can actually draw.
+# Three observations, so the column space of X is a plane in R^3. y is chosen well off
+# that plane; with y nearly inside it the residual would be too short to see.
 x3 <- c(8, 12, 16)
-y3 <- c(175, 255, 330)
+y3 <- c(100, 400, 250)
 X3 <- cbind(1, x3)
 
 H3 <- X3 %*% solve(t(X3) %*% X3) %*% t(X3)
@@ -280,32 +287,24 @@ cat(sprintf("|y_hat|^2 + |r|^2 = %.1f   <- Pythagoras, exactly\n",
             sum(y_hat3^2) + sum(r3^2)))
 cat(sprintf("trace(H) = %.1f = number of parameters\n", sum(diag(H3))))
 
-# Empty 3-D box, then place the vectors by hand with trans3d()
-lim <- c(0, 360)
-pm <- persp(x = lim, y = lim, z = matrix(lim[1], 2, 2),
-            xlim = lim, ylim = lim, zlim = lim,
-            theta = 35, phi = 22, expand = 0.9, border = NA, ticktype = "detailed",
-            nticks = 4, xlab = "obs 1", ylab = "obs 2", zlab = "obs 3",
-            main = "Least squares is a projection onto the column space",
-            col.axis = "#666666", cex.axis = 0.7)
+# y, y_hat and r all lie in one plane, so drawing that plane loses nothing: the picture
+# below is exact, not a projection of a 3-D scene. The column space appears edge-on.
+adj <- sqrt(sum(y_hat3^2))
+opp <- sqrt(sum(r3^2))
 
-c0 <- X3[, 1]; c1 <- X3[, 2]
-corners <- rbind(y_hat3 - 0.35 * c0 - 0.35 * c1, y_hat3 + 0.35 * c0 - 0.35 * c1,
-                 y_hat3 + 0.35 * c0 + 0.35 * c1, y_hat3 - 0.35 * c0 + 0.35 * c1)
-polygon(trans3d(corners[, 1], corners[, 2], corners[, 3], pm),
-        col = "#076FA133", border = "#076FA1", lwd = 1)
-
-seg <- function(a, b, col, lwd = 2.2, lty = 1) {
-  lines(trans3d(c(a[1], b[1]), c(a[2], b[2]), c(a[3], b[3]), pm),
-        col = col, lwd = lwd, lty = lty)
-}
-O <- c(0, 0, 0)
-seg(O, y3, "#E3120B")
-seg(O, y_hat3, "#31417A")
-seg(y_hat3, y3, "#666666", 1.8, 2)
-legend("topleft", c("y", "y_hat = Hy", "residual"),
-       col = c("#E3120B", "#31417A", "#666666"),
-       lwd = c(2.2, 2.2, 1.8), lty = c(1, 1, 2), bty = "n", cex = 0.85)
+plot(NA, xlim = c(-30, adj * 1.18), ylim = c(-50, opp * 1.35), asp = 1,
+     axes = FALSE, xlab = "", ylab = "",
+     main = "Least squares is a projection onto the column space")
+abline(h = 0, col = "#076FA1", lwd = 2.5)
+arrows(0, 0, adj, 0, col = "#31417A", lwd = 2.4, length = 0.12)
+arrows(0, 0, adj, opp, col = "#E3120B", lwd = 2.4, length = 0.12)
+segments(adj, 0, adj, opp, col = "#666666", lwd = 2.0, lty = 2)
+tick <- adj * 0.045
+lines(c(adj - tick, adj - tick, adj), c(0, tick, tick), col = "#666666", lwd = 1.2)
+text(adj * 0.55, 12, "column space of X, seen edge-on", col = "#076FA1", cex = 0.8, adj = 0)
+text(adj * 0.50, -30, "y_hat = Hy", col = "#31417A", cex = 0.95)
+text(adj * 0.40, opp * 0.62, "y", col = "#E3120B", cex = 1.05)
+text(adj * 1.02, opp * 0.45, "r", col = "#666666", cex = 0.95, adj = 0)
 ```
 
 :::

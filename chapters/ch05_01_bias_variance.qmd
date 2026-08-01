@@ -23,8 +23,8 @@ each, and looking at how the predictions scatter, we turn [bias]{.term} and
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch05_01_bias_variance.png" alt="Bias-squared, variance, and total error versus polynomial degree; total error traces a U and bottoms out at a moderate degree.">
-<figcaption><strong>The bias–variance trade-off.</strong> As complexity grows, bias falls while variance rises; their sum, the total error, traces a U and bottoms out at a moderate degree. This is the result the code below reproduces.</figcaption>
+<img src="../figures/ch05_01_bias_variance.png" alt="Bias-squared, variance, and total error versus polynomial degree; variance climbs steadily while bias falls in steps, and the total error reaches its lowest point at a moderate degree before climbing.">
+<figcaption><strong>The bias–variance trade-off.</strong> As complexity grows, variance climbs steadily while bias falls; their sum bottoms out at a moderate degree and rises after it. Bias falls in steps rather than smoothly, because $\sin(2\pi x)$ is odd about $x = 1/2$ and an even degree buys nothing over the odd degree below it — so the total error dips at each odd degree and edges back up at each even one. This is the result the code below reproduces.</figcaption>
 </figure>
 ```
 
@@ -136,6 +136,8 @@ def fit_many(degree, n_datasets=60, n=20):
     for s in range(n_datasets):
         xt, yt = make_data(n, seed=s)
         coef = np.polyfit(xt, yt, degree)
+        # Clipped: the decomposition below is of this clipped predictor, not the raw
+        # polynomial. At high degree the clip binds and shrinks the reported variance.
         preds.append(np.clip(np.polyval(coef, grid), -10, 10))
     return grid, np.array(preds)
 
@@ -221,6 +223,18 @@ between the mean fit and the truth (bias²), average the pointwise spread of the
 (variance), add the noise floor, and read off the total. Sweeping the degree traces the
 classic U-shaped error curve.
 
+One detail in the code below is not cosmetic and should be stated plainly, because it
+changes what the word "variance" refers to on this page. Every prediction is clipped to
+$[-10, 10]$ before the decomposition is computed, so what is being decomposed is a
+*clipped* predictor, not the raw polynomial. At low degree the clip never binds and the
+distinction is empty. At high degree it binds hard, and it is doing real work: at degree
+twelve with twenty points, the clipped variance is about $9.8$, while the same quantity
+without the clip is roughly $2.4 \times 10^5$. A handful of catastrophic extrapolations
+dominate that number, which is why the clip is there — an unclipped axis would be
+unreadable — but the honest reading of the plots below is that they show the trade-off for
+a predictor that has been told not to leave the room. The shape of the story is unchanged;
+the magnitude of the right-hand tail is drastically understated.
+
 ::: {.panel-tabset group="lang"}
 
 ## Python
@@ -246,6 +260,8 @@ def decompose(degree, n_datasets=100, n=20, noise=0.3):
     for s in range(n_datasets):
         xt, yt = make_data(n, noise, seed=s)
         coef = np.polyfit(xt, yt, degree)
+        # Clipped: the decomposition below is of this clipped predictor, not the raw
+        # polynomial. At high degree the clip binds and shrinks the reported variance.
         preds.append(np.clip(np.polyval(coef, grid), -10, 10))
     preds = np.array(preds)
     bias2 = ((preds.mean(0) - truth) ** 2).mean()
@@ -342,15 +358,8 @@ data is sparse and a high-degree polynomial has the least to anchor it, variance
 sharply; in the well-sampled interior it stays small. This is why extrapolation is
 dangerous: the same fit that is trustworthy in the middle is wild at the boundary.
 
-The noise level $\sigma$ is fixed at 0.3 above. Move it, and the result is worth predicting
-before you look: the dashed irreducible line rises as $\sigma^2$, and the whole U lifts with
-it. What does *not* move is the winner. Degree three keeps taking the honors across almost the
-whole range; only at the quietest setting, $\sigma = 0.05$, is there enough signal to justify
-a more flexible degree five.
-
-That stability is the point. The noise level decides how well any model can do — the floor is
-$\sigma^2$ and nothing gets under it — but it barely touches which model does best, because
-that is a question about the shape of $\sin(2\pi x)$, not about the noise laid over it.
+The noise level $\sigma$ is fixed at 0.3 above. Move it and watch two things separately:
+where the dashed irreducible line sits, and which degree wins.
 
 ```{ojs}
 //| echo: false
@@ -403,6 +412,8 @@ def decompose_at(degree, n_datasets=40, n=20, noise=0.3):
         xt = np.random.uniform(0, 1, n)
         yt = truth_f(xt) + np.random.normal(0, noise, n)
         coef = np.polyfit(xt, yt, degree)
+        # Clipped: the decomposition below is of this clipped predictor, not the raw
+        # polynomial. At high degree the clip binds and shrinks the reported variance.
         preds.append(np.clip(np.polyval(coef, grid), -10, 10))
     preds = np.array(preds)
     b2 = ((preds.mean(0) - truth) ** 2).mean()
@@ -581,14 +592,28 @@ let a flexible model thrash.
 
 ::: {.explore}
 [Try it]{.lbl}
-Take the noise slider down to $0.10$. The irreducible floor drops to $0.01$, as
-$\sigma^2$ must — but watch what does *not* happen: the winner is still degree three. Keep
-going to $0.05$ and only then does degree five take over. The lesson is worth more than the
-one you might have expected: cleaner data mostly buys you a lower floor, not a licence to
-fit a wigglier curve.
+Take the noise slider down to $0.10$. The irreducible floor drops to $0.01$, as $\sigma^2$
+must — but the winner does not move: degree three still takes it. Keep going to $0.05$ and
+degree five edges ahead, though only barely, and here you should distrust the result rather
+than learn from it. At forty datasets the two degrees are within Monte Carlo error of each
+other, and which one "wins" flips as you add replications: 5, 5, 5, 3, 5, 3 at 40, 60, 100,
+200, 400 and 800. The cell reports no uncertainty, so it cannot tell you that. A number that
+changes when you look at it harder is not yet a finding.
 
-For the sharper version of the same question, change `n=20` to `n=100` in the cell above and
-rerun. *That* moves the optimum: degree five wins, and the variance at degree twelve falls
-from about $9.8$ to $0.05$. More data, not quieter data, is what pays for complexity — noise
-sets the floor, but sample size decides how much flexibility you can afford above it.
+The reason the optimum is so reluctant to move is worth having. Lowering $\sigma$ shrinks
+variance at every degree, so in principle it should license a wigglier curve — and eventually
+it does. But the optimum sits where the bias gap between two degrees equals their variance
+gap, and for $\sin(2\pi x)$ the bias gaps are enormous. The function is odd about $x = 1/2$,
+so an even degree buys nothing at all over the odd degree below it: the best squared
+approximation error is $1.96 \times 10^{-1}$ at degrees 1 and 2 alike, $4.39 \times 10^{-3}$
+at 3 and 4, $1.85 \times 10^{-5}$ at 5 and 6. Each odd step buys a factor of 45, then 237,
+then 754. With that much bias available for the taking, the crossover where variance finally
+outweighs it is pushed down to very small $\sigma$.
+
+For the version that does move the optimum, change `n=20` to `n=100` in the cell above and
+rerun: degree five wins outright. Both effects reduce variance, but sample size reduces it
+far faster than noise does at the settings anyone would call realistic. (The variance the
+plot reports at degree twelve falls from about $9.8$ to $0.05$ — but read that against the
+clipping note above, since at $n=20$ the clip is binding hard and at $n=100$ it is not, so
+the drop in the *unclipped* variance is far larger still.)
 :::

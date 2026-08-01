@@ -17,8 +17,8 @@ The step-by-step structure follows Andrej Karpathy's *"Let's build GPT"* lecture
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch12_01_build_a_gpt.png" alt="Training and held-out cross-entropy plotted against training step for the capstone model. Both curves fall together from about 4.37 nats at step 0 to about 2.11 nats at step 600, with most of the drop in the first hundred steps. Three boxes quote text sampled from the model at steps 0, 300 and 600: an unreadable run of mixed letters, digits and punctuation at step 0; word-shaped fragments such as &quot;Orut you my fall theath atheny&quot; at step 300; and short real words, &quot;So you, a son is stir, theare&quot;, at step 600.">
-<figcaption><strong>The capstone's loss curve, with what the model was writing along the way.</strong> The notebook's model, 354k parameters, trained on <em>Tiny Shakespeare</em> from a fixed seed. Held-out cross-entropy falls from 4.370 to 2.112 nats over 600 steps &mdash; a perplexity of 79 down to 8 &mdash; and the samples go from noise to something with the shape of speech. The notebook runs 3000 steps and gets further.</figcaption>
+<img src="../figures/ch12_01_build_a_gpt.png" alt="Training and held-out cross-entropy plotted against training step for the capstone model. Both fall together from about 4.37 nats at step 0 to about 2.55 by step 100, then decline slowly and separate after step 300, ending at about 2.05 training and 2.11 held-out at step 600. Three boxes quote text sampled at steps 0, 300 and 600: an unreadable run of mixed letters, digits and punctuation; then word-shaped fragments, &quot;Orut you my fall theath atheny&quot;; then short real words, &quot;So you, a son is stir, theare&quot;.">
+<figcaption><strong>The capstone's loss curve, with what the model was writing along the way.</strong> The notebook's model, 354k parameters, trained on <em>Tiny Shakespeare</em> from a fixed seed. Held-out cross-entropy falls from 4.370 to 2.112 nats over 600 steps &mdash; a perplexity of 79 down to 8 &mdash; while training loss ends at 2.050, the gap between them opening after step 300. The quoted text is sampled at temperature 0.8, a little sharper than the distribution the curves score, and it goes from noise to something with the shape of speech. The notebook runs 3000 steps and gets further.</figcaption>
 </figure>
 ```
 
@@ -28,7 +28,7 @@ Production models tokenize text into sub-word pieces (Chapter 12). Here we keep 
 
 ## The same idea, with a context of one
 
-The capstone needs PyTorch and so runs in Colab. The idea it scales up needs nothing but numpy, and it runs here. A [bigram model]{.term} predicts the next character from the current one and nothing else: count how often each character follows each other character, then normalize each row of counts into a probability vector. That normalization *is* the maximum likelihood estimate of a categorical distribution, the estimator of Chapter 2 in its simplest form, and the row it hands back is sampled exactly as the GPT's softmax output is, one character at a time.
+The capstone needs PyTorch and so runs in Colab. The idea it scales up needs nothing but numpy, and it runs here. A [bigram model]{.term} predicts the next character from the current one and nothing else: count how often each character follows each other character, then normalize each row of counts into a probability vector. That normalization *is* the maximum likelihood estimate of a categorical distribution, the estimator behind Chapter 4's softmax regression in its simplest form, and the row it hands back is sampled exactly as the GPT's softmax output is, one character at a time.
 
 This is not a metaphor for a language model. It is a language model, fitted by the same principle and generating by the same procedure. The structural difference is the length of the context: the capstone conditions on sixty-four characters and learns, through attention, what to make of them; the bigram conditions on one and holds nothing but a table of counts.
 
@@ -98,15 +98,18 @@ for a, b in zip(clean, clean[1:]):
 
 # Maximum likelihood: each row of counts, normalized. A character the passage
 # never uses has an empty row, so give it the uniform rather than divide by zero.
-row_total = counts.sum(axis=1, keepdims=True)
-P = np.where(row_total > 0, counts / np.where(row_total > 0, row_total, 1), 1.0 / K)
+row_total = counts.sum(axis=1)
+empty = row_total == 0
+P = counts / np.where(empty, 1.0, row_total)[:, None]   # 1.0 dodges the 0/0
+P[empty] = 1.0 / K                                      # unseen context: uniform
 assert np.allclose(P.sum(axis=1), 1.0), "every row must be a probability vector"
-never = [alphabet[i] for i in range(K) if row_total[i, 0] == 0]
-print("contexts never seen (given the uniform):", never)
+print("contexts never seen (given the uniform):", [alphabet[i] for i in np.flatnonzero(empty)])
 
-# What the counts say about a few contexts
+# What the counts say about a few contexts. Only successors the passage actually
+# supplies: a zero-probability "top" entry is an artifact of sorting, not a fact.
 for c in "qth":
-    top = np.argsort(-P[pos[c]])[:3]
+    ranked = np.argsort(-P[pos[c]])[:3]
+    top = [j for j in ranked if P[pos[c], j] > 0]
     print(f"  after '{c}':  " + "   ".join(
         f"'{alphabet[j]}' {P[pos[c], j]:.2f}" for j in top))
 
@@ -211,10 +214,12 @@ stopifnot(all(abs(rowSums(P) - 1) < 1e-12))
 cat("contexts never seen (given the uniform):",
     paste(alphabet[row_total == 0], collapse = " "), "\n")
 
-# What the counts say about a few contexts
+# What the counts say about a few contexts. Only successors the passage actually
+# supplies: a zero-probability "top" entry is an artifact of sorting, not a fact.
 for (c in c("q", "t", "h")) {
   r <- match(c, alphabet)
-  top <- order(P[r, ], decreasing = TRUE)[1:3]
+  ranked <- order(P[r, ], decreasing = TRUE)[1:3]
+  top <- ranked[P[r, ranked] > 0]
   cat(sprintf("  after '%s': ", c),
       paste(sprintf("'%s' %.2f", alphabet[top], P[r, top]), collapse = "   "), "\n")
 }

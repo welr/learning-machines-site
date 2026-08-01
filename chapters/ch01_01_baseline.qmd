@@ -142,9 +142,8 @@ values, so there is not one minimizer but a range of them, and the median is sim
 conventional representative of that range. (With an odd number of observations the
 minimizer is unique, and it is the middle observation exactly.)
 
-Both claims are easier to believe once you see them, so this plot draws itself when the page
-opens. It repeats the two scans rather than reusing the results above, which keeps it
-independent of what you have run so far.
+Both claims are easier to believe once you see them. The plot below draws itself when the
+page opens.
 
 ::: {.panel-tabset group="lang"}
 
@@ -328,10 +327,11 @@ are impressed by anything.
 
 The two cells below are exercises rather than demonstrations: each has a blank to fill in.
 Use **Show Hint** if you want a nudge, **Show Solution** to see one answer, and **Start
-Over** to clear your attempt.
+Over** to clear your attempt. They are Python only — the exercise machinery does not carry a
+second tab — so R readers should treat them as worked problems.
 
 The first asks what happens when a single observation is removed. Drop the largest sale, refit,
-and compare how far the mean moves against how far the slope moves. Guess before you run it.
+and see what moves.
 
 ```{pyodide}
 #| exercise: drop_largest
@@ -370,12 +370,20 @@ keep = np.arange(len(price)) != np.argmax(______)
 keep = np.arange(len(price)) != np.argmax(price)
 ```
 
-The result is not the one most people guess. The mean moves by about $3.8\%$ and the slope by
-about $2.4\%$ — the *simpler* summary is the less stable one here. The reason is that the
-largest sale is also the largest house: it sits squarely on the trend, so it tells the line
-very little it did not already know, while for an average that ignores area it is simply a big
-number being removed. Sensitivity to a single point depends on where the point sits, not only
-on how flexible the model is. Chapter 5 makes that dependence precise.
+The cell prints a percentage change for each, and the percentages invite a conclusion they
+cannot support: the mean shifts about $3.8\%$ and the slope about $2.4\%$, but a percentage
+of a price level and a percentage of a price-per-square-metre are not on the same scale, and
+nothing follows from comparing them. Put both on the scale that does mean something — how far
+each moved relative to its own standard error — and the ordering reverses: the slope moves
+$0.81$ standard errors against the mean's $0.44$.
+
+That is the answer the geometry predicts. The largest sale is also the largest house, which
+makes it the highest-leverage point in this data set: its leverage is $0.197$ against an
+average of $2/20 = 0.10$, the largest of the twenty. High-leverage points are exactly the ones
+a fitted line cannot ignore, and this one sits well off the line as well — its residual is the
+third largest of the twenty. A point with that combination moves a slope. Chapter 5 makes the
+dependence precise; the vocabulary for it — leverage, influence, and the deletion diagnostics
+that measure both — belongs to the regression chapter that follows this one.
 
 The second exercise returns to the imbalanced screening problem. Rebalance it and watch what
 happens to the number that looked so impressive.

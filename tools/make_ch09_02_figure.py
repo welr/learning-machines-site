@@ -6,9 +6,14 @@ architecture (784-256-128-10, ReLU, dropout 0.2), same AdamW/cross-entropy loop
 (batch 128, 12 epochs). Plots the per-epoch training loss and held-out test accuracy
 that the notebook's own cell 10 produces.
 
-Requires network access on first run (fetch_openml caches ~30 MB locally). If the
-download fails, synthetic Gaussian-blob data of the same shape (784-d, 10 classes)
-is substituted so the figure still renders; this is noted in stdout if it happens.
+The training loss plotted is the mean cross-entropy over every minibatch in the
+epoch, not the last minibatch's loss: a single batch of 128 under active dropout
+is far too noisy to read as a learning curve.
+
+Requires network access on first run (fetch_openml caches ~30 MB locally). There is
+no synthetic fallback: if the download fails the script prints the error and exits
+non-zero without writing a PNG, so the committed figure is never overwritten with
+data the caption does not describe.
 """
 
 import sys
@@ -41,16 +46,11 @@ try:
         X, y, test_size=0.2, random_state=0, stratify=y
     )
     print(f"Fashion-MNIST loaded: {len(X_tr)} train, {len(X_te)} test")
-except Exception as exc:  # pragma: no cover - network fallback
-    print(f"fetch_openml failed ({exc}); substituting synthetic data of the same shape")
-    rng = np.random.default_rng(0)
-    n_tr, n_te = 12000, 3000
-    centers = rng.normal(scale=1.5, size=(10, 784)).astype("float32")
-    y_tr = rng.integers(0, 10, n_tr)
-    y_te = rng.integers(0, 10, n_te)
-    X_tr = (centers[y_tr] + rng.normal(scale=1.0, size=(n_tr, 784))).astype("float32")
-    X_te = (centers[y_te] + rng.normal(scale=1.0, size=(n_te, 784))).astype("float32")
-    X_tr, X_te = np.clip(X_tr, 0, 1), np.clip(X_te, 0, 1)
+except Exception as exc:
+    print(f"ERROR: could not load Fashion-MNIST ({exc.__class__.__name__}: {exc})")
+    print("This figure reports numbers quoted in the caption, so it is only ever "
+          "built from the real data. No PNG written; the committed figure is unchanged.")
+    sys.exit(1)
 
 X_tr_t, y_tr_t = torch.tensor(X_tr), torch.tensor(y_tr)
 X_te_t, y_te_t = torch.tensor(X_te), torch.tensor(y_te)
@@ -91,6 +91,7 @@ def accuracy(X, Y):
 history = []
 for epoch in range(epochs):
     order = torch.randperm(len(X_tr_t))
+    running_loss, n_batches = 0.0, 0
     for i in range(0, len(X_tr_t), batch_size):
         batch = order[i : i + batch_size]
         logits = model(X_tr_t[batch])
@@ -98,9 +99,12 @@ for epoch in range(epochs):
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()
+        running_loss += loss.item()      # every batch, not just the last one
+        n_batches += 1
+    epoch_loss = running_loss / n_batches
     acc = accuracy(X_te_t, y_te_t)
-    history.append((epoch + 1, loss.item(), acc))
-    print(f"epoch {epoch + 1:2d} | train loss {loss.item():.3f} | test accuracy {acc:.3f}")
+    history.append((epoch + 1, epoch_loss, acc))
+    print(f"epoch {epoch + 1:2d} | train loss {epoch_loss:.3f} | test accuracy {acc:.3f}")
 
 ep, tr_loss, te_acc = zip(*history)
 print(f"final test accuracy: {te_acc[-1]:.3f}")
@@ -112,7 +116,7 @@ axL.plot(ep, tr_loss, color=mt.BLUE, lw=2.2, marker="o", ms=4)
 axR.plot(ep, te_acc, color=mt.CYAN, lw=2.2, marker="o", ms=4)
 
 for ax, title, ylabel in (
-    (axL, "training loss", "cross-entropy loss"),
+    (axL, "training loss (epoch mean)", "mean cross-entropy over the epoch"),
     (axR, "test accuracy", "accuracy on held-out images"),
 ):
     for s in ["top", "right"]:
