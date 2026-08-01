@@ -206,7 +206,7 @@ it cannot rot into a silent no-op).
 The runtimes are a different matter, and an earlier version of this section overstated
 the position. **Pyodide and WebR begin downloading when the page opens, not when the
 reader clicks Run.** `quarto-live` starts its workers eagerly so the Run button can go
-from grey to red. The landing page's "How to read this site" box says so. Measured on an untouched chapter page with no clicks, a cold load makes about
+from gray to red. The landing page's "How to read this site" box says so. Measured on an untouched chapter page with no clicks, a cold load makes about
 47 requests to three hosts:
 
 | host | what |

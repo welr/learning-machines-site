@@ -30,14 +30,14 @@ label, where the do-nothing model is a much more dangerous thing to overlook.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch01_01_baseline.png" alt="Scatter of twenty Frankfurt house sales, price against living area, with a dashed red horizontal line at the mean price and a blue least-squares line rising through the points. Thin grey vertical segments connect each point to the flat baseline.">
-<figcaption><strong>The baseline, and what one feature buys.</strong> The dashed line predicts the same average for every house, ignoring living area; the grey segments are the error it leaves. Tilting that flat line to follow the data absorbs almost all of it. That is Chapter 2 in one picture.</figcaption>
+<img src="../figures/ch01_01_baseline.png" alt="Scatter of twenty Frankfurt house sales, price against living area, with a dashed red horizontal line at the mean price and a blue least-squares line rising through the points. Thin gray vertical segments connect each point to the flat baseline.">
+<figcaption><strong>The baseline, and what one feature buys.</strong> The dashed line predicts the same average for every house, ignoring living area; the gray segments are the error it leaves. Tilting that flat line to follow the data absorbs almost all of it. That is Chapter 2 in one picture.</figcaption>
 </figure>
 ```
 
 ## The baseline and the error it leaves
 
-Twenty sales: living area in square metres, price in thousands of euros. The baseline
+Twenty sales: living area in square meters, price in thousands of euros. The baseline
 ignores the area entirely.
 
 ::: {.panel-tabset group="lang"}
@@ -331,7 +331,7 @@ Over** to clear your attempt. They are Python only — the exercise machinery do
 second tab — so R readers should treat them as worked problems.
 
 The first asks what happens when a single observation is removed. Drop the largest sale, refit,
-and see what moves.
+and compare how far each summary moves in units of its own standard error. Guess first.
 
 ```{pyodide}
 #| exercise: drop_largest
@@ -346,14 +346,26 @@ def fit(a, p):
     slope = ((a - a.mean()) * (p - p.mean())).sum() / ((a - a.mean()) ** 2).sum()
     return p.mean(), slope
 
+def standard_errors(a, p):
+    """SE of the mean, and SE of the least-squares slope."""
+    n = len(a)
+    _, slope = fit(a, p)
+    intercept = p.mean() - slope * a.mean()
+    resid = p - (intercept + slope * a)
+    s2 = (resid ** 2).sum() / (n - 2)
+    return p.std(ddof=1) / np.sqrt(n), np.sqrt(s2 / ((a - a.mean()) ** 2).sum())
+
 mean_all, slope_all = fit(area, price)
+se_mean, se_slope = standard_errors(area, price)
 
 # Remove the single largest sale, then refit. Which index is the largest price?
 keep = ______
 mean_cut, slope_cut = fit(area[keep], price[keep])
 
-print(f"mean : {mean_all:7.2f} -> {mean_cut:7.2f}   ({100*abs(mean_cut/mean_all - 1):.2f}% change)")
-print(f"slope: {slope_all:7.3f} -> {slope_cut:7.3f}   ({100*abs(slope_cut/slope_all - 1):.2f}% change)")
+# Report each shift in units of its own standard error: percentages of a price level and
+# of a price per square meter are percentages of different things, and cannot be compared.
+print(f"mean : {mean_all:7.2f} -> {mean_cut:7.2f}   moved {abs(mean_cut - mean_all)/se_mean:.2f} standard errors")
+print(f"slope: {slope_all:7.3f} -> {slope_cut:7.3f}   moved {abs(slope_cut - slope_all)/se_slope:.2f} standard errors")
 ```
 
 ```{pyodide}
@@ -370,20 +382,15 @@ keep = np.arange(len(price)) != np.argmax(______)
 keep = np.arange(len(price)) != np.argmax(price)
 ```
 
-The cell prints a percentage change for each, and the percentages invite a conclusion they
-cannot support: the mean shifts about $3.8\%$ and the slope about $2.4\%$, but a percentage
-of a price level and a percentage of a price-per-square-metre are not on the same scale, and
-nothing follows from comparing them. Put both on the scale that does mean something — how far
-each moved relative to its own standard error — and the ordering reverses: the slope moves
-$0.81$ standard errors against the mean's $0.44$.
+The slope moves $0.81$ standard errors; the mean moves $0.44$. Raw percentages would have told
+you the opposite, but a percentage of a price level and a percentage of a price per square
+meter are percentages of different things.
 
-That is the answer the geometry predicts. The largest sale is also the largest house, which
-makes it the highest-leverage point in this data set: its leverage is $0.197$ against an
-average of $2/20 = 0.10$, the largest of the twenty. High-leverage points are exactly the ones
-a fitted line cannot ignore, and this one sits well off the line as well — its residual is the
-third largest of the twenty. A point with that combination moves a slope. Chapter 5 makes the
-dependence precise; the vocabulary for it — leverage, influence, and the deletion diagnostics
-that measure both — belongs to the regression chapter that follows this one.
+The largest sale is also the largest house, which puts it at the edge of the design: its
+leverage is $0.197$ against an average of $0.10$, the highest of the twenty, and its residual
+is the third largest. A point that is both far out in $x$ and off the line is one a slope
+cannot ignore. Chapter 2 gives the observation its vocabulary — leverage, influence, and the
+deletion diagnostics that measure them.
 
 The second exercise returns to the imbalanced screening problem. Rebalance it and watch what
 happens to the number that looked so impressive.

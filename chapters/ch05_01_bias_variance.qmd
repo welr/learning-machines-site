@@ -23,8 +23,8 @@ each, and looking at how the predictions scatter, we turn [bias]{.term} and
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch05_01_bias_variance.png" alt="Bias-squared, variance, and total error versus polynomial degree; variance climbs steadily while bias falls in steps, and the total error reaches its lowest point at a moderate degree before climbing.">
-<figcaption><strong>The bias–variance trade-off.</strong> As complexity grows, variance climbs steadily while bias falls; their sum bottoms out at a moderate degree and rises after it. Bias falls in steps rather than smoothly, because $\sin(2\pi x)$ is odd about $x = 1/2$ and an even degree buys nothing over the odd degree below it — so the total error dips at each odd degree and edges back up at each even one. This is the result the code below reproduces.</figcaption>
+<img src="../figures/ch05_01_bias_variance.png" alt="Bias-squared, variance, and total error versus polynomial degree; total error traces a U and bottoms out at a moderate degree.">
+<figcaption><strong>The bias–variance trade-off.</strong> As complexity grows, bias falls while variance rises; their sum, the total error, traces a U and bottoms out at degree three. The fall to three is a cliff rather than a slope: $\sin(2\pi x)$ is odd about $x = 1/2$, so an even degree adds variance without buying any reach, and bias$^2$ edges back up at every even step. This is the result the code below reproduces.</figcaption>
 </figure>
 ```
 
@@ -136,8 +136,6 @@ def fit_many(degree, n_datasets=60, n=20):
     for s in range(n_datasets):
         xt, yt = make_data(n, seed=s)
         coef = np.polyfit(xt, yt, degree)
-        # Clipped: the decomposition below is of this clipped predictor, not the raw
-        # polynomial. At high degree the clip binds and shrinks the reported variance.
         preds.append(np.clip(np.polyval(coef, grid), -10, 10))
     return grid, np.array(preds)
 
@@ -223,17 +221,14 @@ between the mean fit and the truth (bias²), average the pointwise spread of the
 (variance), add the noise floor, and read off the total. Sweeping the degree traces the
 classic U-shaped error curve.
 
-One detail in the code below is not cosmetic and should be stated plainly, because it
-changes what the word "variance" refers to on this page. Every prediction is clipped to
-$[-10, 10]$ before the decomposition is computed, so what is being decomposed is a
-*clipped* predictor, not the raw polynomial. At low degree the clip never binds and the
-distinction is empty. At high degree it binds hard, and it is doing real work: at degree
-twelve with twenty points, the clipped variance is about $9.8$, while the same quantity
-without the clip is roughly $2.4 \times 10^5$. A handful of catastrophic extrapolations
-dominate that number, which is why the clip is there — an unclipped axis would be
-unreadable — but the honest reading of the plots below is that they show the trade-off for
-a predictor that has been told not to leave the room. The shape of the story is unchanged;
-the magnitude of the right-hand tail is drastically understated.
+Every prediction below is clipped to $[-10, 10]$ before the decomposition runs, so these
+plots decompose a clipped predictor rather than the raw polynomial. At low degree the clip
+never binds and the distinction is empty. At degree twelve on twenty points it binds hard:
+the variance the cell reports is about $11$, where the unclipped fit runs to the order of
+$10^8$ — and that unclipped figure is not even stable, moving by three orders of magnitude
+with the number of samples averaged, because a few catastrophic extrapolations set the scale.
+Without the clip the right-hand tail could not share an axis with anything else. Read the
+reported variance as evidence that the tail is bad, not as a measurement of how bad.
 
 ::: {.panel-tabset group="lang"}
 
@@ -260,8 +255,6 @@ def decompose(degree, n_datasets=100, n=20, noise=0.3):
     for s in range(n_datasets):
         xt, yt = make_data(n, noise, seed=s)
         coef = np.polyfit(xt, yt, degree)
-        # Clipped: the decomposition below is of this clipped predictor, not the raw
-        # polynomial. At high degree the clip binds and shrinks the reported variance.
         preds.append(np.clip(np.polyval(coef, grid), -10, 10))
     preds = np.array(preds)
     bias2 = ((preds.mean(0) - truth) ** 2).mean()
@@ -412,8 +405,6 @@ def decompose_at(degree, n_datasets=40, n=20, noise=0.3):
         xt = np.random.uniform(0, 1, n)
         yt = truth_f(xt) + np.random.normal(0, noise, n)
         coef = np.polyfit(xt, yt, degree)
-        # Clipped: the decomposition below is of this clipped predictor, not the raw
-        # polynomial. At high degree the clip binds and shrinks the reported variance.
         preds.append(np.clip(np.polyval(coef, grid), -10, 10))
     preds = np.array(preds)
     b2 = ((preds.mean(0) - truth) ** 2).mean()
@@ -592,7 +583,7 @@ let a flexible model thrash.
 
 ::: {.explore}
 [Try it]{.lbl}
-Take the noise slider down to $0.10$. The irreducible floor drops to $0.01$, as $\sigma^2$
+Take the noise slider down to $0.10$. The irreducible error drops to $0.01$, as $\sigma^2$
 must — but the winner does not move: degree three still takes it. Keep going to $0.05$ and
 degree five edges ahead, though only barely, and here you should distrust the result rather
 than learn from it. At forty datasets the two degrees are within Monte Carlo error of each
@@ -612,8 +603,6 @@ outweighs it is pushed down to very small $\sigma$.
 
 For the version that does move the optimum, change `n=20` to `n=100` in the cell above and
 rerun: degree five wins outright. Both effects reduce variance, but sample size reduces it
-far faster than noise does at the settings anyone would call realistic. (The variance the
-plot reports at degree twelve falls from about $9.8$ to $0.05$ — but read that against the
-clipping note above, since at $n=20$ the clip is binding hard and at $n=100$ it is not, so
-the drop in the *unclipped* variance is far larger still.)
+far faster than noise does at the settings anyone would call realistic. The variance the plot reports at degree
+twelve falls from about $9.8$ to $0.05$; without the clip the fall would be steeper still.
 :::

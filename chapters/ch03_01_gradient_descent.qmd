@@ -839,10 +839,10 @@ The slider showed you that the boundary is sharp. What it cannot show you is tha
 changed — the same line still fits the same points, and the optimum is the same optimum — but
 the critical step size collapses from $0.2592$ to $0.0125$, twenty times smaller.
 
-The reason is that $\lambda_{\max}$ grows roughly with the square of the feature scale. Only
-roughly: squaring alone would predict a factor of 25, and the measured factor is 20.75,
-because $\mathbf{X}^\top\mathbf{X}$ contains an intercept column that does not rescale with
-$x$. This is why features are standardized before gradient descent is turned loose on them.
+The reason is that $\lambda_{\max}$ grows with the square of the feature scale — not quite
+exactly, because the intercept column does not rescale, so the measured factor is 21 rather
+than 25. This is why features are standardized before gradient descent is turned loose on
+them.
 The safe step size is not a property of the problem; it is a property of the units you
 happened to measure in.
 :::

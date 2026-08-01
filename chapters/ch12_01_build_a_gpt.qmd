@@ -365,5 +365,5 @@ A third of a million parameters, trained for a couple of minutes on a megabyte o
 ::: {.explore}
 [Try it]{.lbl}
 
-In Colab, train for a few hundred steps and watch the loss fall, then sample at temperatures 0.5, 0.8, and 1.2 and compare. Low temperature is cautious and repetitive; high temperature is adventurous and error-prone. Then swap *Tiny Shakespeare* for a different corpus, a public-domain economics text, say, and re-run from the data step: the same estimator of Chapter 2 learns an entirely different voice.
+In Colab, train for a few hundred steps and watch the loss fall, then sample at temperatures 0.5, 0.8, and 1.2 and compare. Low temperature is cautious and repetitive; high temperature is adventurous and error-prone. Then swap *Tiny Shakespeare* for a different corpus, a public-domain economics text, say, and re-run from the data step: the same estimator of Chapter 4 learns an entirely different voice.
 :::

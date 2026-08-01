@@ -16,10 +16,10 @@ Welcome to the interactive companion to *Learning Machines: A Statistical Introd
 ::: {.howto}
 [How to read this site]{.lbl}
 
-- **Run it yourself.** Code cells run live in your browser — click **Run Code**. The Python (Pyodide) and R (WebR) runtimes start downloading as soon as a page opens, which takes a few seconds; the Run button stays grey until they are ready, then turns red. Some cells run themselves at that point and draw without a click.
-- **Python or R, your choice.** Every worked example carries both. Pick a tab and the rest of the page follows; the two are genuine twins, not a translation of one into the other. (The parameter sliders and the Chapter 1 exercises are the exceptions: those controls are Python-only.)
+- **Run it yourself.** Code cells run live in your browser — click **Run Code**. The Python (Pyodide) and R (WebR) runtimes start downloading as soon as a page opens, which takes a few seconds; the Run button stays gray until they are ready, then turns red. Some cells run themselves at that point and draw without a click.
+- **Python or R, your choice.** The worked code carries both. Pick a tab and the rest of the page follows; the two are genuine twins, not a translation of one into the other. The four parameter sliders, the Chapter 1 exercises, and the PyTorch listings are Python only.
 - **Same method, sometimes different digits.** When a cell uses fixed data the two languages agree to the last digit; when a cell draws a random sample they differ a little, and that difference is the lesson — what holds is the method, not the digits.
-- **The heaviest work runs in Colab.** Chapters 9–12 train in PyTorch, too heavy for a browser sandbox, so those notebooks open in Google Colab. The idea at the core of each still runs here: backpropagation from NumPy, convolution by hand, scaled dot-product attention, and a bigram language model fitted by counting.
+- **The heaviest work runs in Colab.** Chapters 9–12 train in PyTorch, too heavy for a browser sandbox, so those notebooks open in Google Colab. What each of those chapters rests on still runs here: convolution by hand, scaled dot-product attention, and a bigram language model fitted by counting.
 :::
 
 ## Try it now
@@ -112,7 +112,7 @@ intercept = price.mean() - slope * area.mean()
 fitted = intercept + slope * area
 
 fig, ax = plt.subplots(figsize=(7, 4.4))
-# grey segments: the error the baseline leaves behind
+# gray segments: the error the baseline leaves behind
 for a, p in zip(area, price):
     ax.plot([a, a], [p, baseline], color="#666666", lw=0.8, alpha=0.55, zorder=1)
 ax.axhline(baseline, color="#E3120B", ls="--", lw=1.6, zorder=2,
@@ -124,14 +124,13 @@ ax.scatter(area, price, color="#076FA1", s=44, zorder=4,
            edgecolors="white", linewidths=0.8)
 ax.set_xlabel("Living area, m$^2$")
 ax.set_ylabel("Price, thousand euros")
-ax.set_title("One feature, live")
+ax.set_title("What one feature buys")
 ax.legend(loc="upper left", frameon=False)
 plt.tight_layout()
 plt.show()
 
 removed = 1 - ((price - fitted) ** 2).mean() / ((price - baseline) ** 2).mean()
 print(f"the line removes {removed:.1%} of the baseline's squared error")
-print("that fraction has a name: it is R-squared, measured here in-sample")
 ```
 
 ## R
@@ -151,9 +150,9 @@ fitted <- intercept + slope * area
 
 plot(area, price, type = "n",
      xlab = "Living area, m^2", ylab = "Price, thousand euros",
-     main = "One feature, live")
+     main = "What one feature buys")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-# grey segments: the error the baseline leaves behind
+# gray segments: the error the baseline leaves behind
 segments(area, price, area, baseline, col = "#666666", lwd = 0.8)
 abline(h = baseline, col = "#E3120B", lty = 2, lwd = 1.6)
 abline(a = intercept, b = slope, col = "#31417A", lwd = 2.2)
@@ -163,7 +162,6 @@ legend("topleft", c(sprintf("baseline = %.0f", baseline), "least-squares line"),
 
 removed <- 1 - mean((price - fitted)^2) / mean((price - baseline)^2)
 cat(sprintf("the line removes %.1f%% of the baseline's squared error\n", 100 * removed))
-cat("that fraction has a name: it is R-squared, measured here in-sample\n")
 ```
 
 :::
