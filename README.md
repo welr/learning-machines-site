@@ -85,8 +85,16 @@ Colab, everything else runs in the browser.
 |-------|-------|-------------|
 | `index`, `ch01_01_baseline` | NumPy, base R | `{pyodide}` / `{webr}` — in the browser |
 | ch02–ch08, `ch09_01_backpropagation` | NumPy / scikit-learn, base R | `{pyodide}` / `{webr}` — in the browser |
-| `ch09_02`–`ch12_01` | PyTorch | **Open in Colab** button (`.colab-btn`) |
+| `ch09_02`, `ch10_02`, `ch11_02` | PyTorch | **Open in Colab** button (`.colab-btn`) |
+| `ch10_01`, `ch11_01`, `ch12_01` | PyTorch, plus one NumPy idea | live cell **and** a Colab link |
 | `ch02_03_bayesian_regression`, `ch13_01_unsupervised` | mixed | live cells **and** a Colab link |
+
+Every one of the six deep-learning pages carries a pre-rendered hero figure generated from
+that page's own notebook (`tools/make_ch*_figure.py`); before 2026-08-01 they had no images
+at all. Three of them also carry one live cell, because the idea at their core does not
+actually need PyTorch: convolution by hand (`ch10_01`), scaled dot-product attention
+(`ch11_01`), and a character bigram language model (`ch12_01`). The PyTorch work on those
+pages still goes to Colab.
 
 Two pages do not follow the chapter number. `ch09_01_backpropagation` is browser-run
 because it builds backpropagation from NumPy, not PyTorch. `ch02_03` and `ch13_01`
@@ -103,8 +111,9 @@ constraint worth knowing before you add more.
 
 **`#| autorun: true`** runs a cell as soon as the runtime is ready, so the page shows
 live output rather than inert code on arrival. It is set on one Python plot cell each on
-`index`, `ch01_01`, `ch02_01`, `ch03_01`, `ch05_01`, and `ch08_01` (plus the four slider
-cells below). Measured cold, the plot appears about four seconds after load. It costs no
+`index`, `ch01_01`, `ch02_01`, `ch03_01`, `ch05_01`, `ch08_01`, `ch10_01`, `ch11_01` and
+`ch12_01` (plus the four slider cells below). Measured cold, the plot appears about four
+seconds after load. It costs no
 extra network traffic, because the runtimes download on page open regardless (see
 "Third-party requests"). Only the Python cell of a tabset autoruns: Python is the default
 tab, and autorunning the R twin as well would execute both runtimes on every load for
@@ -131,6 +140,41 @@ are on `ch03_01` (step size), `ch05_01` (noise), `ch06_02` (threshold), and `ch0
 - **No `Inputs.range`.** Observable's input library would be one line, but it pulls
   `@observablehq/inputs` and `htl` from `cdn.jsdelivr.net` on page load. The hand-rolled
   `<input type=range>` in `.lm-slider` adds nothing external.
+
+## Exercise cells
+
+`ch01_01` converts its "Try it" prose into real exercise cells: a cell with
+`#| exercise: <key>` renders with blanks (`______`) the reader fills in, plus **Start Over**,
+**Show Hint** and **Show Solution** buttons. Hints and solutions are sibling cells carrying
+the same key and `#| hint: true` / `#| solution: true`. The machinery ships in the vendored
+extension and works; nothing needs enabling.
+
+Grading is deliberately not used. `gradethis`-style `#| check:` cells exist in the extension,
+but the companion is expository — the book's own guidelines keep assessment out of the
+companion material — so exercises here reveal a solution rather than mark an answer.
+
+Exercise keys must be unique per page; the Lua filter raises a build error if two cells share
+one, which is the good kind of failure.
+
+## Do not enable `persist`
+
+`#| persist: true` makes an editor remember the reader's edits in `localStorage`. It works,
+and it should stay off. Tested 2026-08-01:
+
+1. Load a page with `persist: true` and edit a cell. The edit is saved under the key
+   `editor-<full page URL>#pyodide-<N>-contents`.
+2. Fix the cell in the `.qmd`, re-render, redeploy.
+3. Reload as that returning reader: **the editor still shows the old edit, and the corrected
+   source is nowhere on the page.** Verified directly — the restored text was the stale reader
+   edit, and the new source string was absent from the editor.
+
+There is a **Start Over** button that would recover the new source, but the reader has no
+reason to press it: nothing signals that the page changed. Worse, the storage key is the
+block's *sequential index*, so inserting any cell earlier on a page shifts every later block's
+identity and restores saved edits into the wrong cells.
+
+The upside — a reader's experiments surviving a reload — is not worth shipping a site that can
+silently serve corrected code to nobody.
 
 ## Publishing
 

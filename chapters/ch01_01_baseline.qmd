@@ -324,12 +324,90 @@ wrong with that report — precision, recall, the confusion matrix. Chapter 1's
 contribution is the habit that comes first: ask what the baseline scores before you
 are impressed by anything.
 
-::: {.explore}
-[Try it]{.lbl}
+## Try it yourself
 
-- Drop the largest sale from `area` and `price` and refit. Which moves more, the mean
-  or the least-squares slope? That difference is the beginning of Chapter 5's account
-  of variance.
-- Change the imbalance in the last cell from 950/50 to 500/500. What happens to the
-  baseline accuracy, and to how impressive 95% would be?
-:::
+The two cells below are exercises rather than demonstrations: each has a blank to fill in.
+Use **Show Hint** if you want a nudge, **Show Solution** to see one answer, and **Start
+Over** to clear your attempt.
+
+The first asks what happens when a single observation is removed. Drop the largest sale, refit,
+and compare how far the mean moves against how far the slope moves. Guess before you run it.
+
+```{pyodide}
+#| exercise: drop_largest
+import numpy as np
+
+area = np.array([52, 82, 120, 95, 140, 160, 180, 200, 210, 225,
+                 150, 110, 130, 170, 190, 205, 240, 60, 75, 100.])
+price = np.array([164, 384, 465, 420, 520, 610, 700, 760, 820, 900,
+                  560, 430, 500, 650, 720, 790, 980, 260, 330, 410.])
+
+def fit(a, p):
+    slope = ((a - a.mean()) * (p - p.mean())).sum() / ((a - a.mean()) ** 2).sum()
+    return p.mean(), slope
+
+mean_all, slope_all = fit(area, price)
+
+# Remove the single largest sale, then refit. Which index is the largest price?
+keep = ______
+mean_cut, slope_cut = fit(area[keep], price[keep])
+
+print(f"mean : {mean_all:7.2f} -> {mean_cut:7.2f}   ({100*abs(mean_cut/mean_all - 1):.2f}% change)")
+print(f"slope: {slope_all:7.3f} -> {slope_cut:7.3f}   ({100*abs(slope_cut/slope_all - 1):.2f}% change)")
+```
+
+```{pyodide}
+#| exercise: drop_largest
+#| hint: true
+# np.argmax(price) is the index of the largest sale.
+# You want every index EXCEPT that one — a boolean mask is the tidiest way.
+keep = np.arange(len(price)) != np.argmax(______)
+```
+
+```{pyodide}
+#| exercise: drop_largest
+#| solution: true
+keep = np.arange(len(price)) != np.argmax(price)
+```
+
+The result is not the one most people guess. The mean moves by about $3.8\%$ and the slope by
+about $2.4\%$ — the *simpler* summary is the less stable one here. The reason is that the
+largest sale is also the largest house: it sits squarely on the trend, so it tells the line
+very little it did not already know, while for an average that ignores area it is simply a big
+number being removed. Sensitivity to a single point depends on where the point sits, not only
+on how flexible the model is. Chapter 5 makes that dependence precise.
+
+The second exercise returns to the imbalanced screening problem. Rebalance it and watch what
+happens to the number that looked so impressive.
+
+```{pyodide}
+#| exercise: rebalance
+import numpy as np
+
+# The original screen: 950 negatives, 50 positives.
+labels = np.concatenate([np.zeros(950), np.ones(50)])
+majority = 0.0 if (labels == 0).sum() > (labels == 1).sum() else 1.0
+print(f"imbalanced 950/50 -> baseline accuracy {(labels == majority).mean():.1%}")
+
+# Now make it balanced: 500 negatives and 500 positives.
+balanced = ______
+majority_b = 0.0 if (balanced == 0).sum() > (balanced == 1).sum() else 1.0
+print(f"balanced   500/500 -> baseline accuracy {(balanced == majority_b).mean():.1%}")
+```
+
+```{pyodide}
+#| exercise: rebalance
+#| hint: true
+# Same construction as above, with different counts.
+balanced = np.concatenate([np.zeros(____), np.ones(____)])
+```
+
+```{pyodide}
+#| exercise: rebalance
+#| solution: true
+balanced = np.concatenate([np.zeros(500), np.ones(500)])
+```
+
+A model reported at 95% accuracy is doing nothing at all on the first problem and beating the
+do-nothing model by a wide margin on the second. The number did not change; what it is worth
+did.

@@ -25,7 +25,220 @@ Each input is projected three ways. The [query]{.term} asks what this position i
 [ Attention(Q, K, V) = softmax( QK<sup>&#8868;</sup> / &radic;d<sub>k</sub> ) V ]{.math}
 :::
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch11_01_attention_transformers.png" alt="Nine-by-nine heatmap of attention weights over the tokens the, cat, drank, the, milk, because, it, was, thirsty. Rows are the attending token, columns the token attended to, shaded from near-white at 0.04 to dark blue at 0.63. The darkest cell in the figure is the pronoun row it against the column cat, 0.63. The rows cat and milk each put 0.46 on drank; the two the rows are identical, splitting 0.31 and 0.31 between cat and milk; because and was each put their largest weight, 0.29 and 0.35, on thirsty; thirsty puts 0.42 on cat. Every remaining cell sits near the floor between 0.04 and 0.07.">
+<figcaption><strong>Where each token looks.</strong> One head of self-attention over a nine-token sentence, with the embeddings hand-built so the pattern is legible. Each row is a probability distribution across the columns. The pronoun <em>it</em> puts 0.63 on <em>cat</em>, its referent; the two <em>the</em> rows are identical, because nothing in the computation yet knows where a token sits. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 Read this beside the Nadaraya–Watson estimator and the kinship is unmistakable. The softmax term is exactly a vector of kernel weights, and multiplying by V is the weighted average those weights define. The only thing learned is the set of projections that produce Q, K, and V, which is to say the similarity metric itself.
+
+## Attention by hand
+
+Once Q, K, and V are in hand the mechanism is four lines of arithmetic, so it runs here rather than in Colab. The difficulty in a toy example is not the code but the embeddings. Random ones do not give a flat heatmap — the softmax finds peaks in noise readily enough — but the peaks correspond to nothing you can name, which teaches nothing. So we build the embeddings by hand. Each token is a one-hot vector over eight semantic roles — determiner, animate noun, object noun, verb, connective, property, pronoun, copula — and the query projection `W_Q` is a table saying what each role goes looking for: a pronoun hunts an animate noun, a verb its arguments, a determiner a noun. Keys and values are left raw, so a score is read straight off that table. A trained model learns all of this; we are only writing down the answer in order to see the shape of it.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+#| autorun: true
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Eight semantic roles. A real model learns its embeddings; we hand-build them so
+# every number below can be read off the sentence.
+ROLES = ["ANIMATE", "OBJECT", "DET", "VERB", "CONN", "PROP", "PRON", "COP"]
+ROLE = {r: i for i, r in enumerate(ROLES)}
+d_k = len(ROLES)
+
+sentence = [("the", "DET"), ("cat", "ANIMATE"), ("drank", "VERB"),
+            ("the", "DET"), ("milk", "OBJECT"), ("because", "CONN"),
+            ("it", "PRON"), ("was", "COP"), ("thirsty", "PROP")]
+tokens = [tok for tok, _ in sentence]
+X = np.eye(d_k)[[ROLE[r] for _, r in sentence]]   # one-hot role embeddings
+
+# The query projection is the only thing we shape: row r says what a token of
+# role r goes looking for. Keys and values stay raw, so a score is read straight
+# off this table.
+W_Q = np.zeros((d_k, d_k))
+W_Q[ROLE["ANIMATE"], ROLE["VERB"]] = 6.0      # a subject looks for its verb
+W_Q[ROLE["ANIMATE"], ROLE["ANIMATE"]] = 3.0
+W_Q[ROLE["OBJECT"], ROLE["VERB"]] = 6.0       # so does an object
+W_Q[ROLE["OBJECT"], ROLE["OBJECT"]] = 3.0
+W_Q[ROLE["DET"], ROLE["ANIMATE"]] = 5.0       # a determiner looks for a noun
+W_Q[ROLE["DET"], ROLE["OBJECT"]] = 5.0
+W_Q[ROLE["VERB"], ROLE["ANIMATE"]] = 4.5      # a verb looks for its arguments
+W_Q[ROLE["VERB"], ROLE["OBJECT"]] = 4.5
+W_Q[ROLE["CONN"], ROLE["VERB"]] = 3.0         # a connective joins clause to clause
+W_Q[ROLE["CONN"], ROLE["PROP"]] = 4.0
+W_Q[ROLE["PROP"], ROLE["ANIMATE"]] = 5.0      # a property looks for what it describes
+W_Q[ROLE["PRON"], ROLE["ANIMATE"]] = 8.0      # a pronoun hunts its referent
+W_Q[ROLE["PRON"], ROLE["OBJECT"]] = 2.0
+W_Q[ROLE["PRON"], ROLE["PROP"]] = 2.0
+W_Q[ROLE["COP"], ROLE["PROP"]] = 5.0          # a copula links subject to property
+W_Q[ROLE["COP"], ROLE["ANIMATE"]] = 4.0
+W_K = np.eye(d_k)
+W_V = np.eye(d_k)
+
+def softmax_rows(S):
+    """Row-wise softmax. Subtracting the row max first keeps exp() from overflowing."""
+    E = np.exp(S - S.max(axis=1, keepdims=True))
+    return E / E.sum(axis=1, keepdims=True)
+
+Q, K, V = X @ W_Q, X @ W_K, X @ W_V
+scores = Q @ K.T / np.sqrt(d_k)               # scaled query-key similarity
+A = softmax_rows(scores)                      # the kernel weights of Chapter 8
+context = A @ V                               # weighted average of the values
+
+assert np.allclose(A.sum(axis=1), 1.0), "each row must be a distribution"
+n = len(tokens)
+print("attention weights (row attends to column)")
+print(f"{'':>8} " + " ".join(f"{t:>7}" for t in tokens))
+for i, t in enumerate(tokens):
+    print(f"{t:>8} " + " ".join(f"{v:7.3f}" for v in A[i]))
+print(f"\nrow sums: {np.round(A.sum(axis=1), 12)}")
+print(f"'it' -> 'cat' {A[6, 1]:.3f}; next largest in that row {np.sort(A[6])[-2]:.3f}")
+print(f"the two 'the' rows differ by at most {np.abs(A[0] - A[3]).max():.1e}")
+unscaled = softmax_rows(Q @ K.T)
+p, p_u = A.max(), unscaled.max()
+print(f"largest weight anywhere: scaled {p:.3f}, unscaled {p_u:.3f}")
+print(f"softmax slope p(1-p) there: scaled {p * (1 - p):.3f}, unscaled {p_u * (1 - p_u):.4f}")
+
+fig, ax = plt.subplots(figsize=(7.0, 5.0))
+im = ax.imshow(A, cmap="Blues", vmin=0.0, vmax=A.max())
+cb = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03)
+cb.set_label("attention weight", fontsize=11)
+cb.ax.tick_params(labelsize=9)
+cb.outline.set_edgecolor("#cfccc2")
+for i in range(n):
+    for j in range(n):
+        if A[i, j] >= 0.10:
+            ax.text(j, i, f"{A[i, j]:.2f}", ha="center", va="center", fontsize=8,
+                    color="white" if A[i, j] > 0.45 else "#31417A")
+ax.set_xticks(range(n)); ax.set_xticklabels(tokens, rotation=45, ha="right")
+ax.set_yticks(range(n)); ax.set_yticklabels(tokens)
+ax.set_xticks(np.arange(-0.5, n, 1), minor=True)
+ax.set_yticks(np.arange(-0.5, n, 1), minor=True)
+ax.grid(which="minor", color="#e6e3da", lw=0.8)
+ax.tick_params(which="minor", length=0)
+ax.tick_params(colors="#666666", labelsize=10)
+for s in ax.spines.values():
+    s.set_color("#cfccc2")
+ax.set_xlabel("key — token attended to", fontsize=11)
+ax.set_ylabel("query — token attending", fontsize=11)
+plt.show()
+
+print("context vector for 'it':", np.round(context[6], 3))
+print("largest component:", ROLES[int(np.argmax(context[6]))])
+```
+
+## R
+```{webr}
+ROLES <- c("ANIMATE", "OBJECT", "DET", "VERB", "CONN", "PROP", "PRON", "COP")
+ROLE <- setNames(seq_along(ROLES), ROLES)
+d_k <- length(ROLES)
+
+tokens <- c("the", "cat", "drank", "the", "milk", "because", "it", "was", "thirsty")
+roles  <- c("DET", "ANIMATE", "VERB", "DET", "OBJECT", "CONN", "PRON", "COP", "PROP")
+X <- diag(d_k)[ROLE[roles], ]                 # one-hot role embeddings
+
+# The query projection is the only thing we shape: row r says what a token of
+# role r goes looking for. Keys and values stay raw, so a score is read straight
+# off this table.
+W_Q <- matrix(0, d_k, d_k)
+W_Q[ROLE["ANIMATE"], ROLE["VERB"]]    <- 6.0   # a subject looks for its verb
+W_Q[ROLE["ANIMATE"], ROLE["ANIMATE"]] <- 3.0
+W_Q[ROLE["OBJECT"],  ROLE["VERB"]]    <- 6.0   # so does an object
+W_Q[ROLE["OBJECT"],  ROLE["OBJECT"]]  <- 3.0
+W_Q[ROLE["DET"],     ROLE["ANIMATE"]] <- 5.0   # a determiner looks for a noun
+W_Q[ROLE["DET"],     ROLE["OBJECT"]]  <- 5.0
+W_Q[ROLE["VERB"],    ROLE["ANIMATE"]] <- 4.5   # a verb looks for its arguments
+W_Q[ROLE["VERB"],    ROLE["OBJECT"]]  <- 4.5
+W_Q[ROLE["CONN"],    ROLE["VERB"]]    <- 3.0   # a connective joins clause to clause
+W_Q[ROLE["CONN"],    ROLE["PROP"]]    <- 4.0
+W_Q[ROLE["PROP"],    ROLE["ANIMATE"]] <- 5.0   # a property looks for what it describes
+W_Q[ROLE["PRON"],    ROLE["ANIMATE"]] <- 8.0   # a pronoun hunts its referent
+W_Q[ROLE["PRON"],    ROLE["OBJECT"]]  <- 2.0
+W_Q[ROLE["PRON"],    ROLE["PROP"]]    <- 2.0
+W_Q[ROLE["COP"],     ROLE["PROP"]]    <- 5.0   # a copula links subject to property
+W_Q[ROLE["COP"],     ROLE["ANIMATE"]] <- 4.0
+W_K <- diag(d_k)
+W_V <- diag(d_k)
+
+# Row-wise softmax. Subtracting the row max first keeps exp() from overflowing.
+softmax_rows <- function(S) {
+  E <- exp(S - apply(S, 1, max))
+  E / rowSums(E)
+}
+
+Q <- X %*% W_Q; K <- X %*% W_K; V <- X %*% W_V
+scores <- Q %*% t(K) / sqrt(d_k)              # scaled query-key similarity
+A <- softmax_rows(scores)                     # the kernel weights of Chapter 8
+context <- A %*% V                            # weighted average of the values
+
+stopifnot(all(abs(rowSums(A) - 1) < 1e-12))
+n <- length(tokens)
+cat("attention weights (row attends to column)\n")
+cat(sprintf("%8s ", ""), sprintf("%7s", tokens), "\n")
+for (i in seq_len(n))
+  cat(sprintf("%8s ", tokens[i]), sprintf("%7.3f", A[i, ]), "\n")
+cat(sprintf("\nrow sums: %s\n", paste(sprintf("%.12f", rowSums(A)), collapse = " ")))
+cat(sprintf("'it' -> 'cat' %.3f; next largest in that row %.3f\n",
+            A[7, 2], sort(A[7, ], decreasing = TRUE)[2]))
+cat(sprintf("the two 'the' rows differ by at most %.1e\n", max(abs(A[1, ] - A[4, ]))))
+unscaled <- softmax_rows(Q %*% t(K))
+p <- max(A); p_u <- max(unscaled)
+cat(sprintf("largest weight anywhere: scaled %.3f, unscaled %.3f\n", p, p_u))
+cat(sprintf("softmax slope p(1-p) there: scaled %.3f, unscaled %.4f\n",
+            p * (1 - p), p_u * (1 - p_u)))
+
+# image() lays z out column-by-column from the bottom left, so flip the rows to
+# put token 1 at the top and match the Python panel.
+blues <- colorRampPalette(c("#f7fbff", "#deebf7", "#c6dbef", "#9ecae1",
+                            "#6baed6", "#4292c6", "#2171b5", "#08519c", "#08306b"))
+op <- par(mar = c(6.5, 6.5, 1.5, 1.5))
+image(1:n, 1:n, t(A[n:1, ]), col = blues(100), zlim = c(0, max(A)),
+      axes = FALSE, xlab = "", ylab = "")
+axis(1, at = 1:n, labels = tokens, las = 2, col = "#cfccc2", col.axis = "#666666")
+axis(2, at = 1:n, labels = rev(tokens), las = 1, col = "#cfccc2", col.axis = "#666666")
+box(col = "#cfccc2")
+abline(v = seq(0.5, n + 0.5, 1), h = seq(0.5, n + 0.5, 1), col = "#e6e3da", lwd = 0.8)
+mtext("key - token attended to", side = 1, line = 5)
+mtext("query - token attending", side = 2, line = 5)
+for (i in seq_len(n)) for (j in seq_len(n)) if (A[i, j] >= 0.10)
+  text(j, n + 1 - i, sprintf("%.2f", A[i, j]), cex = 0.7,
+       col = if (A[i, j] > 0.45) "white" else "#31417A")
+par(op)
+
+cat(sprintf("context vector for 'it': %s\n",
+            paste(sprintf("%.3f", context[7, ]), collapse = " ")))
+cat(sprintf("largest component: %s\n", ROLES[which.max(context[7, ])]))
+```
+
+:::
+
+Four things in that output are worth reading off carefully.
+
+The pronoun finds its referent. The row for `it` puts 0.627 on `cat` — more than eight times the 0.075 it gives anything else. Its output inherits that: the context vector for `it` comes out 0.627 along the animate axis and no more than 0.075 along any other, so a position that arrived carrying only "pronoun" leaves carrying "cat."
+
+Predicate and arguments find each other. `cat` and `milk` each place 0.458 on `drank`, and `drank` splits 0.292 and 0.292 back between them. The link is visible in both directions but not with equal strength: attention is not symmetric, because each row is normalized on its own.
+
+The floor is not zero. Every cell the query does not seek still holds between 0.037 and 0.072. A softmax cannot assign zero, which is why the causal mask below has to use $-\infty$ rather than a small number. Note also that no row's largest entry lies on the diagonal: attention is not obliged to be self-heavy, and here nothing was built to make it so.
+
+Position is missing. The two `the` rows are identical — the printed difference is exactly `0.0e+00`. That is not rounding; the two tokens have the same embedding, so the computation cannot tell them apart. Self-attention sees a set. Restoring the order is the job of the positional encoding described below.
+
+::: {.explore}
+[Try it]{.lbl}
+
+Edit `sentence` and rerun. Change `("it", "PRON")` to `("it", "OBJECT")` and the pronoun's row swings off `cat` onto `drank` at 0.415, because object nouns are wired to seek verbs. Put a second animate noun in the sentence — insert `("and", "CONN"), ("dog", "ANIMATE")` after `("milk", "OBJECT")` — and `it` splits 0.377 and 0.377 between `cat` and `dog`, which is exactly the ambiguity a real coreference model has to resolve. Then scale the whole table down, `W_Q = 0.25 * W_Q`: every weight collapses into the band 0.096 to 0.195 around the uniform 1/9 = 0.111. The pattern was never in the softmax; it was in the size of the scores.
+:::
+
+## Why divide by &radic;d<sub>k</sub>
+
+The division by &radic;d<sub>k</sub> is not cosmetic. Dot products grow with dimension, so their variance scales with d<sub>k</sub>; left unscaled, the scores push the softmax into a saturated region where gradients all but vanish. Dividing by &radic;d<sub>k</sub> holds the variance near one regardless of dimension and keeps the softmax in a useful range. The cell above prints the effect even on this very small example: the largest weight anywhere is 0.627 with the scaling and 0.993 without it. That second number is a hard argmax in all but name, and it costs the layer its gradient — the softmax's own slope, p(1&minus;p), falls from 0.234 to 0.0069, a factor of thirty-four. And this is d<sub>k</sub> = 8; the unscaled scores keep growing like &radic;d<sub>k</sub>, so the wider the head, the worse it gets.
+
+## The same layer in PyTorch
 
 From this chapter onward the models are built in PyTorch, which wants a numerical stack and ideally a GPU, more than a browser sandbox can carry; one click opens the full notebook on Google's free hardware with no local install.
 
@@ -48,7 +261,7 @@ def scaled_dot_product_attention(Q, K, V, mask=None):
     return context, weights
 ```
 
-The division by &radic;d<sub>k</sub> is not cosmetic. Dot products grow with dimension, so their variance scales with d<sub>k</sub>; left unscaled, the scores push the softmax into a saturated region where gradients all but vanish. Dividing by &radic;d<sub>k</sub> holds the variance near one regardless of dimension and keeps the softmax in a useful range.
+This is the cell above with the projections learned rather than written down, batching added, and the mask made available. The arithmetic is unchanged.
 
 ## Multi-head attention
 
@@ -56,7 +269,7 @@ A single head captures one kind of relationship. [Multi-head attention]{.term} r
 
 ## Position and causality
 
-Self-attention is permutation-equivariant: it treats its input as a set, not a sequence, so on its own it cannot tell "dog bites man" from "man bites dog." Position is restored by adding a [positional encoding]{.term} to each embedding. The original transformer uses sinusoids of geometrically spaced frequencies, where low dimensions oscillate quickly to mark local position and high dimensions slowly to mark global position, and relative offsets become linear combinations of the encodings.
+Self-attention is permutation-equivariant: it treats its input as a set, not a sequence, so on its own it cannot tell "dog bites man" from "man bites dog." The two identical `the` rows in the heatmap above are that fact in miniature. Position is restored by adding a [positional encoding]{.term} to each embedding. The original transformer uses sinusoids of geometrically spaced frequencies, where low dimensions oscillate quickly to mark local position and high dimensions slowly to mark global position, and relative offsets become linear combinations of the encodings.
 
 Autoregressive models such as GPT carry one more constraint. When predicting the next token, a position must attend only to those before it, never ahead. A [causal mask]{.term}, the lower-triangular pattern passed to `masked_fill` above, sets every future score to negative infinity before the softmax, so position t draws on positions 1 through t alone. This is what lets the model be trained on all positions at once without leaking the answer.
 

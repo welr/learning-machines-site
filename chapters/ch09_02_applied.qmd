@@ -13,6 +13,13 @@ engine: markdown
 
 This is the first rung toward the book's capstone. Here you build and train a small feedforward network in PyTorch on a real image dataset, [Fashion-MNIST]{.term}, with a complete training loop. That loop is the whole point. Draw a minibatch, compute the loss, backpropagate, step the optimizer: the same loop, unchanged in shape, trains the convolutional network of Chapter 10 and the GPT of Chapter 12. Learn it once, here.
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch09_02_applied.png" alt="Two line charts side by side: training cross-entropy loss falling unevenly from about 0.8 toward 0.3 over twelve epochs, and held-out test accuracy climbing from 0.79 to 0.86 over the same epochs.">
+<figcaption><strong>Training the feedforward network on Fashion-MNIST.</strong> Twelve epochs of the loop above: the training loss drops fast in the first two epochs and keeps falling in fits after that, while test accuracy climbs steadily to 0.86. This is the run the code below reproduces.</figcaption>
+</figure>
+```
+
 ## The data
 
 Fashion-MNIST is 70,000 grayscale images, 28&times;28 pixels, each a garment in one of ten classes. We flatten every image to a 784-vector, scale the pixels to [0,1], and work with a random subsample so training finishes in seconds on a CPU. An 80/20 split, stratified by class, gives held-out test images to judge generalization.

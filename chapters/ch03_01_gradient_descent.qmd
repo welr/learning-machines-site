@@ -834,8 +834,14 @@ the inertia of momentum become tools for escaping bad ones rather than mere acce
 
 ::: {.explore}
 [Try it]{.lbl}
-In the stability cell, nudge the diverging step from `0.30` toward `0.26` and rerun. Watch the
-explosion soften into a slow climb and then into convergence as you cross $2/\lambda_{\max}$.
-Then make the feature larger (multiply `x` by 5) and see the critical step size shrink, because
-steeper curvature means smaller safe steps.
+The slider above already walks you across $2/\lambda_{\max} = 0.2592$: step from $0.25$ to
+$0.26$ and a run that was merely zig-zagging turns into one whose loss grows by a fixed
+factor every iteration. The boundary really is that sharp.
+
+What the slider cannot show you is that the boundary *moves*. In the stability cell, multiply
+`x` by 5 and rerun. Nothing about the problem has changed — the same line still fits the same
+points — but the critical step size collapses from $0.2592$ to about $0.0125$, twenty times
+smaller, because $\lambda_{\max}$ scales with the square of the feature. This is why features
+are standardized before gradient descent is turned loose on them: the safe step size is a
+property of the units you happened to measure in.
 :::

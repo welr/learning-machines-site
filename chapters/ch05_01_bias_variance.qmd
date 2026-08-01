@@ -581,7 +581,14 @@ let a flexible model thrash.
 
 ::: {.explore}
 [Try it]{.lbl}
-Lower the noise from `0.3` to `0.1` and rerun the trade-off sweep. The irreducible floor
-drops to $0.01$, and with cleaner data the variance penalty for high degree shrinks, so the
-optimal degree shifts higher. Quiet problems can afford more complex models.
+Take the noise slider down to $0.10$. The irreducible floor drops to $0.01$, as
+$\sigma^2$ must — but watch what does *not* happen: the winner is still degree three. Keep
+going to $0.05$ and only then does degree five take over. The lesson is worth more than the
+one you might have expected: cleaner data mostly buys you a lower floor, not a licence to
+fit a wigglier curve.
+
+For the sharper version of the same question, change `n=20` to `n=100` in the cell above and
+rerun. *That* moves the optimum: degree five wins, and the variance at degree twelve falls
+from about $9.8$ to $0.05$. More data, not quieter data, is what pays for complexity — noise
+sets the floor, but sample size decides how much flexibility you can afford above it.
 :::

@@ -211,6 +211,105 @@ cat("\ntrace(H) =", round(sum(diag(H)), 3), "= number of parameters\n")
 
 :::
 
+The hat matrix prints, but the geometry it performs does not. Drop to three observations and
+the picture becomes drawable: with two parameters the column space of $\mathbf{X}$ is a plane
+inside $\mathbb{R}^3$, $\mathbf{y}$ is a point off that plane, and $\hat{\mathbf{y}}$ is the
+spot on it that $\mathbf{y}$ is closest to. The dashed residual meets the plane at a right
+angle, and that right angle *is* the least-squares condition — it is what $\mathbf{X}^\top
+\mathbf{r} = \mathbf{0}$ says. The cell checks it two ways before drawing: the residual is
+orthogonal to both columns, and $\lVert\mathbf{y}\rVert^2 = \lVert\hat{\mathbf{y}}\rVert^2 +
+\lVert\mathbf{r}\rVert^2$ exactly, which is Pythagoras with the right angle supplied by the
+projection.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Three observations, so the column space of X is a plane in R^3 we can actually draw.
+x3 = np.array([8., 12., 16.])
+y3 = np.array([175., 255., 330.])
+X3 = np.column_stack([np.ones(len(x3)), x3])
+
+H3 = X3 @ np.linalg.inv(X3.T @ X3) @ X3.T
+y_hat3 = H3 @ y3
+r3 = y3 - y_hat3
+
+print("X^T r =", (X3.T @ r3).round(9), " <- zero: the residual is perpendicular to the plane")
+print(f"|y|^2               = {y3 @ y3:.1f}")
+print(f"|y_hat|^2 + |r|^2   = {y_hat3 @ y_hat3 + r3 @ r3:.1f}   <- Pythagoras, exactly")
+print(f"trace(H) = {np.trace(H3):.1f} = number of parameters")
+
+# A patch of the plane spanned by the two columns of X, centered on y_hat
+u = np.linspace(-0.35, 0.35, 12)
+U, V = np.meshgrid(u, u)
+c0, c1 = X3[:, 0], X3[:, 1]
+P = y_hat3[None, None, :] + U[..., None] * c0 + V[..., None] * c1
+
+fig = plt.figure(figsize=(7.0, 5.4))
+ax = fig.add_subplot(111, projection="3d")
+ax.plot_surface(P[..., 0], P[..., 1], P[..., 2], color="#076FA1", alpha=0.18,
+                edgecolor="#076FA1", linewidth=0.3)
+ax.plot(*zip([0, 0, 0], y3), color="#E3120B", lw=2.2, label=r"$y$")
+ax.plot(*zip([0, 0, 0], y_hat3), color="#31417A", lw=2.2, label=r"$\hat{y} = Hy$")
+ax.plot(*zip(y_hat3, y3), color="#666666", lw=1.8, ls="--", label="residual")
+ax.set_xlabel("obs 1"); ax.set_ylabel("obs 2"); ax.set_zlabel("obs 3")
+ax.set_title("Least squares is a projection onto the column space")
+ax.legend(loc="upper left", frameon=False, fontsize=9)
+plt.tight_layout()
+plt.show()
+```
+
+## R
+```{webr}
+# Three observations, so the column space of X is a plane in R^3 we can actually draw.
+x3 <- c(8, 12, 16)
+y3 <- c(175, 255, 330)
+X3 <- cbind(1, x3)
+
+H3 <- X3 %*% solve(t(X3) %*% X3) %*% t(X3)
+y_hat3 <- as.vector(H3 %*% y3)
+r3 <- y3 - y_hat3
+
+cat("t(X) %*% r =", round(as.vector(t(X3) %*% r3), 9),
+    " <- zero: the residual is perpendicular to the plane\n")
+cat(sprintf("|y|^2             = %.1f\n", sum(y3^2)))
+cat(sprintf("|y_hat|^2 + |r|^2 = %.1f   <- Pythagoras, exactly\n",
+            sum(y_hat3^2) + sum(r3^2)))
+cat(sprintf("trace(H) = %.1f = number of parameters\n", sum(diag(H3))))
+
+# Empty 3-D box, then place the vectors by hand with trans3d()
+lim <- c(0, 360)
+pm <- persp(x = lim, y = lim, z = matrix(lim[1], 2, 2),
+            xlim = lim, ylim = lim, zlim = lim,
+            theta = 35, phi = 22, expand = 0.9, border = NA, ticktype = "detailed",
+            nticks = 4, xlab = "obs 1", ylab = "obs 2", zlab = "obs 3",
+            main = "Least squares is a projection onto the column space",
+            col.axis = "#666666", cex.axis = 0.7)
+
+c0 <- X3[, 1]; c1 <- X3[, 2]
+corners <- rbind(y_hat3 - 0.35 * c0 - 0.35 * c1, y_hat3 + 0.35 * c0 - 0.35 * c1,
+                 y_hat3 + 0.35 * c0 + 0.35 * c1, y_hat3 - 0.35 * c0 + 0.35 * c1)
+polygon(trans3d(corners[, 1], corners[, 2], corners[, 3], pm),
+        col = "#076FA133", border = "#076FA1", lwd = 1)
+
+seg <- function(a, b, col, lwd = 2.2, lty = 1) {
+  lines(trans3d(c(a[1], b[1]), c(a[2], b[2]), c(a[3], b[3]), pm),
+        col = col, lwd = lwd, lty = lty)
+}
+O <- c(0, 0, 0)
+seg(O, y3, "#E3120B")
+seg(O, y_hat3, "#31417A")
+seg(y_hat3, y3, "#666666", 1.8, 2)
+legend("topleft", c("y", "y_hat = Hy", "residual"),
+       col = c("#E3120B", "#31417A", "#666666"),
+       lwd = c(2.2, 2.2, 1.8), lty = c(1, 1, 2), bty = "n", cex = 0.85)
+```
+
+:::
+
 ## More than one feature
 
 Nothing in the formula cares how many columns $\mathbf{X}$ has. We simulate fifty houses

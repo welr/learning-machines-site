@@ -13,6 +13,13 @@ engine: markdown
 
 This is the keystone rung toward the book's capstone. Here you build the two pieces a GPT assembles: a self-attention [Head]{.term} and a transformer [Block]{.term}. First you watch attention compute on a concrete input, seeing the causal mask make each position look only backward; then you train a one-head model on a tiny task and watch it learn where to look. The head you write here is the exact code the Chapter 12 capstone drops into its GPT.
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch11_02_applied.png" alt="Two 8-by-8 attention-weight heatmaps side by side. Left, an untrained head: a lower-triangular pattern, with the weight scattered unevenly across each row's allowed positions and no consistent focus, the shape the causal mask imposes before any learning. Right, the same head after training on the recall task: every row is almost solid dark blue in column 0 and near white elsewhere, showing every query position attending almost entirely to position 0.">
+<figcaption><strong>What the causal mask allows, and what training does with it.</strong> Before training (left), the mask already forces each row to look only at itself and earlier positions, but which of those positions gets the weight is arbitrary, an accident of the random initialization. After 600 steps on the recall task (right), the head has concentrated nearly all of its weight on position 0, the one position that holds the answer, reaching accuracy 1.00 on held-out batches. This is the pair of heatmaps the code below reproduces.</figcaption>
+</figure>
+```
+
 ## The attention head
 
 A single [head]{.term} of self-attention projects each position to a [query]{.term}, a [key]{.term}, and a [value]{.term}. It scores every query against every key, scales by &radic;d&#8342; to keep the scores well-conditioned, masks the future so a position sees only itself and the past, softmaxes the scores into weights, and returns the weighted sum of the values. The [causal mask]{.term} is what makes the model autoregressive: position $t$ may attend to positions $0$ through $t$, never ahead.

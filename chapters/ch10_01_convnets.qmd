@@ -21,22 +21,25 @@ The operation itself is concrete. A 2D convolution slides the filter across the 
 [ (I &lowast; K)[i, j] = &Sigma;<sub>m, n</sub> &thinsp; I[i+m, j+n] &middot; K[m, n] ]{.math}
 :::
 
-A hand-designed vertical-edge filter responds positively to dark-to-light transitions and negatively to light-to-dark ones; a horizontal one does the same top to bottom. The point of the chapter is that we will not design these by hand for long. A trained network discovers its own filters, and the first-layer filters it learns turn out to resemble exactly these edge detectors, recovered from data rather than supplied.
-
-[Pooling]{.term} follows convolution to shrink the feature maps. Max pooling keeps the strongest activation in each small window, which both reduces computation and buys a measure of [translation invariance]{.term}: the network cares that an edge is present, less about its exact pixel. Convolution gives equivariance (shift the input, shift the feature map); pooling converts some of that into invariance.
-
-A working architecture stacks these into blocks. Each block is convolution, then a ReLU nonlinearity, then pooling; a few blocks build a hierarchy where early layers detect edges and strokes and later layers assemble them into shapes. The stack ends by flattening the final feature maps and passing them to a fully connected head, which is the same affine-plus-softmax classifier from Chapter 4, now a generalized linear model on *learned* features instead of raw pixels.
-
-This page runs in **Google Colab** because the model is built and trained in PyTorch with `torchvision` for the MNIST data, and a GPU turns minutes of training into seconds. The code below is for reference; open it in Colab to run and change it.
-
 ```{=html}
-<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch10_01_convnets.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+<figure class="lm-figure">
+<img src="../figures/ch10_01_convnets.png" alt="Three panels. Left: a 10 by 10 input image, a dark blue square of ones on a pale field of zeros, with a red 3 by 3 square outlining the filter window at row 2, column 1. Center: the 3 by 3 vertical-edge kernel drawn as a heatmap, a blue column of minus ones, a white column of zeros, and a red column of plus ones, each cell labelled with its weight. Right: the resulting 8 by 8 feature map, deep red in the two columns straddling the square's left edge, deep blue in the two columns straddling its right edge, and flat white in between, with a red circle marking the output pixel produced by the highlighted window.">
+<figcaption><strong>One filter, one pass.</strong> The window outlined in red sits over a patch of the input; multiplying that patch by the kernel and summing gives a single number, the circled pixel of the feature map. Sliding the window over every valid position produces the whole map: strong positive response along the square's left edge, equally strong negative along its right, and nothing at all where the image is flat. This is the result the code below reproduces.</figcaption>
+</figure>
 ```
 
-The convolution is worth seeing stripped down once, before handing it to an optimized layer. We design an edge filter, slide it manually, and read the feature map.
+## The convolution, by hand
 
-```python
+The operation needs no deep-learning framework, so this part runs here in the browser. We build a square of ones on a field of zeros, design a vertical-edge kernel, slide it by hand, and read the feature map. The cell is pure NumPy on the Python side and base R on the other; both compute the same eight-by-eight array.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+#| autorun: true
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 
 def conv2d(image, kernel):
     """2D convolution, no padding, stride 1."""
@@ -45,19 +48,157 @@ def conv2d(image, kernel):
     out = np.zeros((H - kH + 1, W - kW + 1))
     for i in range(out.shape[0]):
         for j in range(out.shape[1]):
-            patch = image[i:i+kH, j:j+kW]
-            out[i, j] = np.sum(patch * kernel)   # dot product at this position
+            patch = image[i:i+kH, j:j+kW]          # the window under the filter
+            out[i, j] = np.sum(patch * kernel)     # dot product at this position
     return out
 
-vertical_edge = np.array([[-1, 0, 1],
-                          [-1, 0, 1],
-                          [-1, 0, 1]])           # +ve on dark -> light
+image = np.zeros((10, 10))
+image[2:8, 2:8] = 1.0                              # a square of ones on a field of zeros
 
-image = np.zeros((10, 10)); image[2:8, 2:8] = 1  # white square on black
-feature_map = conv2d(image, vertical_edge)       # lights up at the square's edges
+kernel = np.array([[-1., 0., 1.],
+                   [-1., 0., 1.],
+                   [-1., 0., 1.]])                 # +ve on dark -> light, left to right
+
+feature_map = conv2d(image, kernel)
+
+si, sj = 2, 1                                      # one window, written out in full
+patch = image[si:si+3, sj:sj+3]
+print(f"input {image.shape} * kernel {kernel.shape} -> feature map {feature_map.shape}")
+print(f"patch . kernel = {np.sum(patch * kernel):+.0f}  (= feature_map[{si}, {sj}])")
+print(f"response runs {feature_map.min():+.0f} to {feature_map.max():+.0f}; "
+      f"{int((feature_map == 0).sum())} of {feature_map.size} entries are exactly 0")
+print(f"left edge, top to bottom: {feature_map[:, 0].astype(int)}")
+
+SPINE, RED = "#cfccc2", "#E3120B"
+fig, (axI, axK, axF) = plt.subplots(1, 3, figsize=(10.6, 3.7))
+
+axI.imshow(image, cmap="Blues", vmin=0, vmax=1)
+axI.add_patch(Rectangle((sj - 0.5, si - 0.5), 3, 3, fill=False, edgecolor=RED,
+                        lw=2.0, label=f"filter window at ({si}, {sj})"))
+axI.set_title("input image  (10 x 10)", fontsize=11)
+axI.set_xticks(range(0, 10, 3)); axI.set_yticks(range(0, 10, 3))
+axI.legend(loc="lower center", frameon=True, facecolor="white", framealpha=0.92,
+           edgecolor=SPINE, fontsize=9, handlelength=1.2)
+
+axK.imshow(kernel, cmap="RdBu_r", vmin=-1.6, vmax=1.6)
+for i in range(3):
+    for j in range(3):
+        axK.text(j, i, f"{kernel[i, j]:+.0f}", ha="center", va="center", fontsize=13)
+axK.set_title("vertical-edge kernel  (3 x 3)", fontsize=11)
+axK.set_xticks([]); axK.set_yticks([])
+
+im = axF.imshow(feature_map, cmap="RdBu_r", vmin=-3, vmax=3)
+axF.scatter([sj], [si], s=70, facecolors="none", edgecolors=RED, linewidths=2.0,
+            label=f"response = {feature_map[si, sj]:+.0f}")
+axF.set_title("feature map  (8 x 8)", fontsize=11)
+axF.set_xticks(range(0, 8, 2)); axF.set_yticks(range(0, 8, 2))
+axF.legend(loc="center", frameon=True, facecolor="white", framealpha=0.92,
+           edgecolor=SPINE, fontsize=9, handlelength=1.2)
+cb = fig.colorbar(im, ax=axF, fraction=0.046, pad=0.03)
+cb.set_label("response", fontsize=10); cb.set_ticks([-3, 0, 3])
+
+for ax in (axI, axK, axF):
+    for s in ax.spines.values():
+        s.set_color(SPINE)
+    ax.tick_params(colors="#666666", labelsize=9, length=3)
+
+plt.tight_layout()
+plt.show()
 ```
 
-In practice `nn.Conv2d` handles batches, multiple channels, and the GPU. Two parameters shape the output: `stride` (how far the filter moves each step) and `padding` (zeros around the border; `padding=1` with a 3&times;3 filter keeps the output the same size as the input). The network below stacks two convolutional blocks and a linear head.
+## R
+```{webr}
+conv2d <- function(img, ker) {          # 2D convolution, no padding, stride 1
+  kH <- nrow(ker); kW <- ncol(ker)
+  out <- matrix(0, nrow(img) - kH + 1, ncol(img) - kW + 1)
+  for (i in seq_len(nrow(out))) {
+    for (j in seq_len(ncol(out))) {
+      patch <- img[i:(i + kH - 1), j:(j + kW - 1)]   # the window under the filter
+      out[i, j] <- sum(patch * ker)                  # dot product at this position
+    }
+  }
+  out
+}
+
+img <- matrix(0, 10, 10)
+img[3:8, 3:8] <- 1                      # a square of ones on a field of zeros (1-based)
+
+ker <- matrix(c(-1, 0, 1,
+                -1, 0, 1,
+                -1, 0, 1), nrow = 3, byrow = TRUE)   # +ve on dark -> light
+
+feature_map <- conv2d(img, ker)
+
+si <- 2; sj <- 1                        # one window, written out in full (0-based)
+patch <- img[(si + 1):(si + 3), (sj + 1):(sj + 3)]
+cat(sprintf("input (%d, %d) * kernel (%d, %d) -> feature map (%d, %d)\n",
+            nrow(img), ncol(img), nrow(ker), ncol(ker),
+            nrow(feature_map), ncol(feature_map)))
+cat(sprintf("patch . kernel = %+d  (= feature_map[%d, %d])\n",
+            as.integer(sum(patch * ker)), si, sj))
+cat(sprintf("response runs %+d to %+d; %d of %d entries are exactly 0\n",
+            as.integer(min(feature_map)), as.integer(max(feature_map)),
+            sum(feature_map == 0), length(feature_map)))
+cat("left edge, top to bottom:", feature_map[, 1], "\n")
+
+SPINE <- "#cfccc2"; RED <- "#E3120B"
+blues <- colorRampPalette(c("#f7fbff", "#08306b"))(64)
+divg  <- colorRampPalette(c("#08306b", "#4292c6", "#f7f7f7", "#d6604d", "#67000d"))(64)
+
+# image() wants z[x, y] with y running upward, so transpose and flip the rows
+as_picture <- function(m) t(m)[, nrow(m):1]
+
+panel <- function(m, col, zlim, main, ticks) {
+  image(x = 0:(ncol(m) - 1), y = 0:(nrow(m) - 1), z = as_picture(m),
+        col = col, zlim = zlim, axes = FALSE, xlab = "", ylab = "",
+        main = main, asp = 1)
+  if (!is.null(ticks)) {
+    axis(1, at = ticks, labels = ticks, col = SPINE, col.axis = "#666666", cex.axis = 0.8)
+    axis(2, at = nrow(m) - 1 - ticks, labels = ticks, col = SPINE,
+         col.axis = "#666666", cex.axis = 0.8, las = 1)
+  }
+  box(col = SPINE)
+}
+
+op <- par(mfrow = c(1, 3), mar = c(3, 3, 3, 1))
+
+panel(img, blues, c(0, 1), "input image  (10 x 10)", seq(0, 9, by = 3))
+rect(sj - 0.5, nrow(img) - 1 - (si + 2) - 0.5, sj + 2.5, nrow(img) - 1 - si + 0.5,
+     border = RED, lwd = 2)
+legend("bottom", sprintf("filter window at (%d, %d)", si, sj),
+       pch = 0, col = RED, pt.lwd = 2, bg = "white", box.col = SPINE, cex = 0.8)
+
+panel(ker, divg, c(-1.6, 1.6), "vertical-edge kernel  (3 x 3)", NULL)
+for (i in 1:3) for (j in 1:3)
+  text(j - 1, 3 - i, sprintf("%+d", ker[i, j]), cex = 1.1)
+
+panel(feature_map, divg, c(-3, 3), "feature map  (8 x 8)", seq(0, 6, by = 2))
+points(sj, nrow(feature_map) - 1 - si, pch = 1, col = RED, cex = 2, lwd = 2)
+legend("center", sprintf("response = %+d", as.integer(feature_map[si + 1, sj + 1])),
+       pch = 1, col = RED, pt.lwd = 2, bg = "white", box.col = SPINE, cex = 0.8)
+
+par(op)
+```
+
+:::
+
+Four things in that output are worth pausing on. The map is 8&times;8, two pixels narrower and shorter than the 10&times;10 input, because a 3&times;3 window has only eight valid positions along a side; this is what `padding` exists to undo. Half of it &mdash; 32 of 64 entries &mdash; is exactly zero, and the zeros are precisely the flat places: the response is the window's right column minus its left, so it vanishes wherever those two carry the same total. The nonzero response is confined to the two column bands that straddle the square's vertical edges: positive on the left, where the image goes dark to light, negative on the right, where it goes light to dark. And the largest magnitude is 3, the sum of the kernel's positive weights, reached only where all three rows of the window sit on the edge &mdash; the printed left-edge column, `1 2 3 3 3 3 2 1`, shows the response weakening at the top and bottom, where the window overhangs the square and only one or two of its rows overlap.
+
+Swapping the kernel for `[[-1,-1,-1],[0,0,0],[1,1,1]]` rotates the whole story a quarter turn: the response is positive along the square's top edge, peaking at +3, negative along its bottom, and zero on the vertical edges the first kernel found &mdash; those are now invisible. Each filter sees one kind of structure and is blind to the rest, which is why a layer holds a bank of them rather than one. The point of the chapter is that we will not design these by hand for long. A trained network discovers its own filters, and the first-layer filters it learns turn out to resemble exactly these edge detectors, recovered from data rather than supplied.
+
+## Stacking it into a network
+
+[Pooling]{.term} follows convolution to shrink the feature maps. Max pooling keeps the strongest activation in each small window, which both reduces computation and buys a measure of [translation invariance]{.term}: the network cares that an edge is present, less about its exact pixel. Convolution gives equivariance (shift the input, shift the feature map); pooling converts some of that into invariance.
+
+A working architecture stacks these into blocks. Each block is convolution, then a ReLU nonlinearity, then pooling; a few blocks build a hierarchy where early layers detect edges and strokes and later layers assemble them into shapes. The stack ends by flattening the final feature maps and passing them to a fully connected head, which is the same affine-plus-softmax classifier from Chapter 4, now a generalized linear model on *learned* features instead of raw pixels.
+
+The rest of this page runs in **Google Colab**, not in the browser: the model is built and trained in PyTorch with `torchvision` for the MNIST data, which is far too heavy for a browser sandbox, and a GPU turns minutes of training into seconds. The code below is for reference; open it in Colab to run and change it.
+
+```{=html}
+<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch10_01_convnets.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+```
+
+`nn.Conv2d` is the loop above, with batches, multiple channels, and the GPU handled for you. Two parameters shape the output: `stride` (how far the filter moves each step) and `padding` (zeros around the border; `padding=1` with a 3&times;3 filter keeps the output the same size as the input). The network below stacks two convolutional blocks and a linear head.
 
 ```python
 import torch.nn as nn
@@ -118,5 +259,7 @@ That is the chapter's claim, made operational. The network is not handed a featu
 ::: {.explore}
 [Try it]{.lbl}
 
-Count the parameters in the two `Conv2d` layers, then count what a single dense layer over all 784 pixels would need to produce the same number of feature maps. The ratio is the prior expressed in arithmetic. Then, in Colab, add an `nn.Dropout` after `fc1` or swap MNIST for Fashion-MNIST (same shape, harder classes) and watch how the learned filters change.
+In the live cell, rotate the kernel to `[[-1,-1,-1],[0,0,0],[1,1,1]]` and rerun: the same square, the same code, a feature map that answers to the horizontal edges instead. Then narrow the square to two pixels wide (`image[2:8, 3:5] = 1`): the positive and negative bands close up flush against each other, with no flat ground left in between.
+
+Away from the keyboard, count the parameters in the two `Conv2d` layers, then count what a single dense layer over all 784 pixels would need to produce the same number of feature maps. The ratio is the prior expressed in arithmetic. In Colab, add an `nn.Dropout` after `fc1` or swap MNIST for Fashion-MNIST (same shape, harder classes) and watch how the learned filters change.
 :::

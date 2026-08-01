@@ -15,6 +15,13 @@ Rung two. The data is the same subsample of Fashion-MNIST you met in Chapter 9, 
 
 The MLP flattens each image to a vector of 784 numbers. A convolution needs the grid, so we keep every image as a $1 \times 28 \times 28$ tensor: one channel, twenty-eight rows, twenty-eight columns. Nothing else about the data changes.
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch10_02_applied.png" alt="Left, a 4-by-4 grid of the sixteen learned 3-by-3 first-layer convolution filters, shown as small red-blue tiles. Right, a row of eight Fashion-MNIST test images with the trained model's predicted class and confidence printed above each, six labelled in blue for correct and two in red for wrong, including a T-shirt mistaken for a shirt and a coat mistaken for a pullover.">
+<figcaption><strong>What the convolution learned, and how it does on new images.</strong> The sixteen first-layer filters have specialized into edge- and texture-detectors rather than staying at their random initialization. On eight held-out images the trained network gets six right, confidently; the two misses, a T-shirt called a shirt and a coat called a pullover, are the near-misses the surrounding text describes.</figcaption>
+</figure>
+```
+
 ## A residual block
 
 Stacking many convolutions makes optimization hard, because the gradient has a long way to travel back through the stack. A residual block fixes this by adding the block's input back to its output, so each block only has to learn a *correction* to the identity rather than the whole mapping. That added `+ x` is a gradient highway: it gives the gradient a short path home.
