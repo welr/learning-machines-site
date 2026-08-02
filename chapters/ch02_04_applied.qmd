@@ -13,7 +13,13 @@ engine: markdown
 
 The chapter develops ordinary least squares and the normal equations on a tidy table of house prices. Here we point those same tools at a real data set and watch what the chapter only described. Three things become visible: two features that measure nearly the same thing make their individual coefficients unstable, [standardization]{.term} changes what a coefficient *means*, and a polynomial begins to chase noise as its degree grows.
 
-Because the browser sandbox cannot fetch data over the network, we substitute R's built-in `mtcars` (the fuel economy of 32 cars from a 1974 *Motor Trend* road test) for the chapter's California-housing and auto-mpg sets; the regression workflow is identical. The response is `mpg`; the features are weight, horsepower, and engine displacement.
+Because the browser sandbox cannot fetch data over the network, the cells on this page substitute R's built-in `mtcars` (the fuel economy of 32 cars from a 1974 *Motor Trend* road test); the regression workflow is identical. The response is `mpg`; the features are weight, horsepower, and engine displacement.
+
+The chapter's Applied exercises name two larger sets: **California housing** (median house value from eight features) and **auto-mpg** (398 cars from the 1970s and 80s, with weight, horsepower, and model year). Both need a network fetch, so they live in the companion notebook, which loads them with `fetch_california_housing` and `fetch_openml` and runs the same workflow at full scale. Open it in Colab to work those exercises.
+
+```{=html}
+<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch02_04_applied.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+```
 
 ::: {.defbox}
 [Ordinary Least Squares Estimate]{.lbl}

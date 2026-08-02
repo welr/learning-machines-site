@@ -16,12 +16,20 @@ screening dataset, read its coefficients as [odds]{.term}, and then fit [linear 
 analysis]{.term}, the *generative* counterpart to logistic regression's *discriminative* fit,
 to see how close the two land.
 
-The source notebook fetches the Pima diabetes data over the network. That download cannot run
-in the browser, so we simulate a comparable screening dataset from a known two-Gaussian model,
-which has the side benefit of making the shared-covariance assumption behind linear discriminant
-analysis exactly true. Five markers (glucose, BMI, age, blood pressure, and HDL) separate a
-positive class from a negative one; we standardize them so each coefficient measures the effect
-of a one-standard-deviation change, which makes the coefficients comparable.
+The chapter's Applied exercise uses the **Pima diabetes** data: 768 patients, eight
+standardized measurements, a binary label. Fetching it needs a network call the browser
+sandbox cannot make, so it lives in the companion notebook, which loads it with
+`fetch_openml` and runs all three parts of the exercise there. Open it in Colab to work them.
+
+```{=html}
+<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch04_03_applied.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+```
+
+The cells on this page instead simulate a comparable screening dataset from a known
+two-Gaussian model, which has the side benefit of making the shared-covariance assumption behind
+linear discriminant analysis exactly true. Five markers (glucose, BMI, age, blood pressure, and
+HDL) separate a positive class from a negative one; we standardize them so each coefficient
+measures the effect of a one-standard-deviation change, which makes the coefficients comparable.
 
 ## Logistic regression, read as odds
 
