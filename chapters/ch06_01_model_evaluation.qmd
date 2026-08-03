@@ -13,12 +13,13 @@ engine: markdown
 
 The real question a model has to answer is how it behaves on data it has never seen.
 Score it on the same data it trained on and the number flatters you, because a flexible
-model can memorize. This page makes evaluation concrete. We fit a logistic classifier to
-an imbalanced, mildly nonlinear data set, then estimate its honest performance with
+model can memorize. This page makes evaluation concrete. We fit a logistic classifier to a
+roughly balanced, mildly nonlinear data set, then estimate its honest performance with
 [cross-validation]{.term}, dissect its errors with a [confusion matrix]{.term}, slide the
 decision threshold to watch [precision]{.term} and [recall]{.term} trade off, summarize
-that trade-off with the [ROC curve]{.term} and its [AUC]{.term}, and finally ask whether
-the predicted probabilities mean what they claim.
+that trade-off with the [ROC curve]{.term} and its [AUC]{.term}, watch what becomes of
+those summaries when positives turn rare, and finally ask whether the predicted
+probabilities mean what they claim.
 
 Formulas for precision and recall are easy to state. The value of running them is watching
 them move as the threshold slides, and seeing a calibration plot reveal whether a "70%"
@@ -52,7 +53,7 @@ land in the test set. Five folds means each point is held out exactly once.
 import numpy as np
 np.random.seed(42)
 
-# Imbalanced binary data with a mildly nonlinear boundary, 5% label noise.
+# Binary data with a mildly nonlinear boundary, 5% label noise.
 n = 500
 X = np.random.randn(n, 2) * 1.5
 y = (X[:, 0] + 0.3 * X[:, 1]**2 > 0.5).astype(int)
@@ -80,6 +81,14 @@ theta = fit_logistic(X[train], y[train])
 acc = lambda i: np.mean((proba(X[i], theta) >= 0.5).astype(int) == y[i])
 print(f"train accuracy {acc(train):.1%}, test accuracy {acc(test):.1%}")
 
+# Log-loss is the negative log-likelihood per observation: the very quantity the
+# gradient descent above drove down. Accuracy scores a decision; this scores the
+# probabilities the decision was made from.
+def log_loss(i):
+    p = np.clip(proba(X[i], theta), 1e-12, 1 - 1e-12)
+    return -np.mean(y[i] * np.log(p) + (1 - y[i]) * np.log(1 - p))
+print(f"train log-loss {log_loss(train):.3f}, test log-loss {log_loss(test):.3f}")
+
 # 5-fold cross-validation: refit on each training split, score the held-out fold.
 folds = np.array_split(np.random.permutation(n), 5)
 scores = []
@@ -97,7 +106,7 @@ print(f"CV accuracy {scores.mean():.1%} +/- {scores.std():.1%}")
 ```{webr}
 set.seed(42)
 
-# Imbalanced binary data with a mildly nonlinear boundary, 5% label noise.
+# Binary data with a mildly nonlinear boundary, 5% label noise.
 n <- 500
 x1 <- rnorm(n) * 1.5
 x2 <- rnorm(n) * 1.5
@@ -117,6 +126,15 @@ fit <- glm(y ~ x1 + x2, family = binomial, data = df[train, ])
 cat(sprintf("train accuracy %.1f%%, test accuracy %.1f%%\n",
             100 * acc(fit, df[train, ]), 100 * acc(fit, df[test, ])))
 
+# Log-loss is the negative log-likelihood per observation: exactly what glm
+# maximized. Accuracy scores a decision; this scores the probabilities.
+log_loss <- function(d) {
+  p <- pmin(pmax(predict(fit, d, type = "response"), 1e-12), 1 - 1e-12)
+  -mean(d$y * log(p) + (1 - d$y) * log(1 - p))
+}
+cat(sprintf("train log-loss %.3f, test log-loss %.3f\n",
+            log_loss(df[train, ]), log_loss(df[test, ])))
+
 # 5-fold cross-validation: refit on each training split, score the held-out fold.
 folds <- split(sample(n), rep(1:5, length.out = n))
 scores <- numeric(5)
@@ -133,6 +151,14 @@ cat(sprintf("CV accuracy %.1f%% +/- %.1f%%\n", 100 * mean(scores), 100 * sd(scor
 
 The spread across folds is the point. A single split can read several points high or low; the
 cross-validated mean, with its standard deviation, tells you how much to trust any one number.
+
+Notice the second pair of numbers. [Log-loss]{.term} is not one more score competing with
+accuracy: it is the negative log-likelihood per observation, which is to say the exact
+quantity the fit minimized. Every other metric on this page (accuracy, precision, recall,
+the G-mean, AUC) summarizes a *decision rule* laid on top of the fitted probabilities, and
+each depends on where you put the threshold. Log-loss scores the probabilities themselves,
+before any threshold exists. That is why a model can win on accuracy and lose on log-loss:
+it is being graded on two different things, only one of which it was trained to do.
 
 ## What accuracy leaves out: the confusion matrix
 
@@ -194,11 +220,13 @@ precision = TP / (TP + FP)
 recall = TP / (TP + FN)
 specificity = TN / (TN + FP)
 f1 = 2 * precision * recall / (precision + recall)
+gmean = np.sqrt(recall * specificity)   # geometric mean of the two class-wise rates
 print(f"\naccuracy    {accuracy:.3f}")
 print(f"precision   {precision:.3f}")
 print(f"recall      {recall:.3f}")
 print(f"specificity {specificity:.3f}")
 print(f"F1          {f1:.3f}")
+print(f"G-mean      {gmean:.3f}")
 ```
 
 ## R
@@ -227,11 +255,13 @@ precision <- TP / (TP + FP)
 recall <- TP / (TP + FN)
 specificity <- TN / (TN + FP)
 f1 <- 2 * precision * recall / (precision + recall)
+gmean <- sqrt(recall * specificity)   # geometric mean of the two class-wise rates
 cat(sprintf("\naccuracy    %.3f\n", accuracy))
 cat(sprintf("precision   %.3f\n", precision))
 cat(sprintf("recall      %.3f\n", recall))
 cat(sprintf("specificity %.3f\n", specificity))
 cat(sprintf("F1          %.3f\n", f1))
+cat(sprintf("G-mean      %.3f\n", gmean))
 ```
 
 :::
@@ -403,6 +433,12 @@ ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout()
 plt.show()
 print(f"AUC = {auc:.3f}")
+
+# The AUC claim, checked directly: take every (positive, negative) pair and count
+# how often the positive scores higher. This is the Mann-Whitney U statistic.
+pos, neg = p[yt == 1], p[yt == 0]
+wins = np.mean((pos[:, None] > neg[None, :]) + 0.5 * (pos[:, None] == neg[None, :]))
+print(f"P(random positive scored above random negative) = {wins:.3f}")
 ```
 
 ## R
@@ -432,6 +468,12 @@ abline(0, 1, col = "#666666", lty = 2)
 legend("bottomright", sprintf("ROC (AUC = %.3f)", auc),
        col = "#31417A", lwd = 3, bty = "n")
 cat(sprintf("AUC = %.3f\n", auc))
+
+# The AUC claim, checked directly: every (positive, negative) pair, counting how
+# often the positive scores higher. This is the Mann-Whitney U statistic.
+pos <- p[yt == 1]; neg <- p[yt == 0]
+wins <- mean(outer(pos, neg, ">") + 0.5 * outer(pos, neg, "=="))
+cat(sprintf("P(random positive scored above random negative) = %.3f\n", wins))
 ```
 
 :::
@@ -439,6 +481,139 @@ cat(sprintf("AUC = %.3f\n", auc))
 Both fits score an AUC near 0.9, comfortably above the 0.5 of a coin flip and well short of a
 perfect 1.0, which is what you expect from a linear model facing a curved boundary. The two
 numbers differ slightly because the data sets differ, not the method.
+
+## When the positives are rare
+
+AUC has a property that is easy to mistake for a virtue: it does not depend on how common
+the positive class is. Both of its coordinates are rates *within* a class, so changing the
+mix of classes leaves them alone. Precision is different. Its denominator counts every
+case flagged positive, most of which are negatives when negatives dominate, so precision
+falls as positives grow rarer even though the classifier has not changed at all.
+
+The cleanest way to see this is to hold the classifier fixed and vary only the base rate.
+Below, the same 200 positive cases keep the same scores throughout; all that changes is how
+many negatives they are buried among, as if the same screening test were rolled out to an
+ever-wider population. Alongside the ROC curve we trace the
+[precision-recall curve]{.term} and its area, the [PR-AUC]{.term}.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+np.random.seed(11)
+
+def curves(p, y):
+    """ROC and precision-recall coordinates from scores, by sorting once."""
+    order = np.argsort(-p)
+    ys = y[order]
+    tp = np.cumsum(ys)
+    fp = np.cumsum(1 - ys)
+    tpr = tp / ys.sum()
+    fpr = fp / (1 - ys).sum()
+    precision = tp / np.arange(1, len(ys) + 1)
+    return fpr, tpr, tpr, precision      # recall is the true positive rate
+
+def area(x, y_):
+    return np.trapezoid(np.concatenate([[0.0], y_]), np.concatenate([[0.0], x]))
+
+SEP, NPOS = 1.6, 200
+pos = np.random.normal(SEP, 1, NPOS)     # the same positive cases every time
+
+print(f"{'screened':>9}{'prevalence':>12}{'ROC-AUC':>10}{'PR-AUC':>9}{'PR baseline':>13}")
+fig, (a1, a2) = plt.subplots(1, 2, figsize=(11, 4.6))
+drawn = {200: "#31417A", 3800: "#E3120B"}      # the two we also plot
+for nneg in (200, 800, 3800, 19800):
+    neg = np.random.normal(0, 1, nneg)
+    p = 1 / (1 + np.exp(-np.concatenate([pos, neg])))
+    y = np.concatenate([np.ones(NPOS, int), np.zeros(nneg, int)])
+    fpr, tpr, rec, prec = curves(p, y)
+    pr_auc = np.sum(np.diff(np.concatenate([[0.0], rec])) * prec)
+    print(f"{NPOS+nneg:>9d}{y.mean():>11.0%}{area(fpr, tpr):>10.3f}"
+          f"{pr_auc:>9.3f}{y.mean():>13.3f}")
+    if nneg in drawn:
+        colour = drawn[nneg]
+        label = f"{y.mean():.0%} positive"
+        a1.plot(fpr, tpr, color=colour, lw=2.5, label=label)
+        a2.plot(rec, prec, color=colour, lw=2.5, label=label)
+        a2.axhline(y.mean(), color=colour, ls=":", lw=1.5)
+
+a1.plot([0, 1], [0, 1], color="#666666", ls="--", lw=1)
+a1.set_xlabel("false positive rate"); a1.set_ylabel("true positive rate")
+a1.set_title("ROC: barely moves")
+a2.set_xlabel("recall"); a2.set_ylabel("precision")
+a2.set_title("Precision-recall: collapses"); a2.set_ylim(0, 1.05)
+for ax in (a1, a2):
+    ax.legend(loc="best")
+    for s in ["top", "right"]:
+        ax.spines[s].set_visible(False)
+    ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
+plt.tight_layout()
+plt.show()
+```
+
+## R
+```{webr}
+set.seed(11)
+
+roc_pr <- function(p, y) {
+  o <- order(-p); ys <- y[o]
+  tp <- cumsum(ys); fp <- cumsum(1 - ys)
+  tpr <- tp / sum(ys); fpr <- fp / sum(1 - ys)
+  list(fpr = fpr, tpr = tpr, rec = tpr, prec = tp / seq_along(ys))
+}
+area <- function(x, y_) {
+  x <- c(0, x); y_ <- c(0, y_)
+  sum(diff(x) * (y_[-1] + y_[-length(y_)]) / 2)
+}
+
+SEP <- 1.6; NPOS <- 200
+pos <- rnorm(NPOS, SEP, 1)               # the same positive cases every time
+
+cat(sprintf("%9s %11s %9s %8s %12s\n",
+            "screened", "prevalence", "ROC-AUC", "PR-AUC", "PR baseline"))
+first <- TRUE
+for (nneg in c(200, 800, 3800, 19800)) {
+  neg <- rnorm(nneg, 0, 1)
+  p <- 1 / (1 + exp(-c(pos, neg)))
+  y <- c(rep(1L, NPOS), rep(0L, nneg))
+  cv <- roc_pr(p, y)
+  pr_auc <- sum(diff(c(0, cv$rec)) * cv$prec)
+  cat(sprintf("%9d %10.0f%% %9.3f %8.3f %12.3f\n",
+              NPOS + nneg, 100 * mean(y), area(cv$fpr, cv$tpr), pr_auc, mean(y)))
+  if (nneg %in% c(200, 3800)) {
+    colour <- if (nneg == 200) "#31417A" else "#E3120B"
+    if (first) {
+      plot(cv$rec, cv$prec, type = "l", col = colour, lwd = 2.5,
+           xlim = c(0, 1), ylim = c(0, 1.05),
+           xlab = "recall", ylab = "precision", bty = "l")
+      grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+      first <- FALSE
+    } else {
+      lines(cv$rec, cv$prec, col = colour, lwd = 2.5)
+    }
+    abline(h = mean(y), col = colour, lty = 3, lwd = 1.5)
+  }
+}
+legend("topright", c("50% positive", "5% positive"),
+       col = c("#31417A", "#E3120B"), lwd = 2.5, bty = "n")
+```
+
+:::
+
+Read the ROC-AUC column downward and it barely stirs; read the PR-AUC column and it falls
+away. Nothing about the classifier changed between those rows: the same cases, the same
+scores, the same ranking. Only the population being screened changed. AUC's independence
+from prevalence is exactly what makes it the right summary when the task is to *rank*
+candidates, and exactly what makes it a poor guide to what a deployed screening test will
+feel like, where one in a hundred is positive and most alarms are false. The dotted lines
+mark each setting's PR baseline, the precision a coin flip would achieve, which is just the
+prevalence itself; a PR curve is only impressive relative to that line.
+
+This is a base-rate argument, the same one that makes a positive result on a rare-disease
+test less alarming than it first appears. The metric did not lie in either case; it answered
+a different question from the one being asked.
 
 ## Do the probabilities mean what they say?
 
@@ -536,11 +711,14 @@ diagonal: the probabilities are roughly trustworthy. A model that ranked well ye
 far off the line would warn you that its scores rank cases correctly without being usable as
 probabilities.
 
-No single number settles whether a model is good. Accuracy can flatter an imbalanced
-classifier; the confusion matrix names the errors; the threshold sets the precision-recall
-balance for the task at hand; AUC measures ranking independent of any cutoff; and calibration
-asks whether the probabilities can be taken at face value. Choose the metric that matches the
-cost you actually face.
+No single number settles whether a model is good. Accuracy can flatter a classifier facing
+lopsided classes; the confusion matrix names the errors; the threshold sets the
+precision-recall balance for the task at hand; AUC measures ranking independent of any
+cutoff, which is a virtue when you are ranking and a blind spot when positives are rare;
+PR-AUC restores the base rate to the picture; and calibration asks whether the probabilities
+can be taken at face value. Log-loss sits apart from all of them, scoring the probabilities
+the model was actually fit to produce. Choose the metric that matches the question you are
+asking, and the cost you actually face.
 
 ::: {.explore}
 [Try it]{.lbl}
