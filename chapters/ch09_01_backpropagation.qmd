@@ -217,6 +217,7 @@ Gradients point uphill, so we step against them: $\theta \leftarrow \theta - \al
 
 ## Python
 ```{pyodide}
+#| autorun: true
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -244,9 +245,14 @@ for step in range(n_steps):
     w2 -= alpha * delta2 * a1
     b2 -= alpha * delta2
 
+# The loss falls by a near-constant factor per step, which only a log axis shows;
+# on a linear axis the whole run looks like one cliff followed by nothing.
+nonzero = [(i, v) for i, v in enumerate(losses) if v > 0]
+
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4))
-ax1.plot(losses, color="#31417A", linewidth=2.5)
-ax1.set_xlabel("Iteration"); ax1.set_ylabel("Loss")
+ax1.plot([i for i, _ in nonzero], [v for _, v in nonzero], color="#31417A", linewidth=2.5)
+ax1.set_yscale("log"); ax1.set_xlim(0, n_steps)
+ax1.set_xlabel("Iteration"); ax1.set_ylabel("Loss (log scale)")
 ax1.set_title("Loss during training")
 ax2.plot(preds, color="#31417A", linewidth=2.5, label="prediction")
 ax2.axhline(y, color="#E3120B", linestyle="--", linewidth=2, label=f"target y={y}")
@@ -259,7 +265,9 @@ for ax in (ax1, ax2):
 plt.tight_layout()
 plt.show()
 
-print(f"Initial loss: {losses[0]:.6f}   final loss: {losses[-1]:.6f}")
+last = nonzero[-1][0]
+print(f"Initial loss: {losses[0]:.6f}   loss at iteration {last}: {losses[last]:.3e}")
+print(f"Loss reaches exactly 0 at iteration {last + 1}")
 print(f"Final prediction: {preds[-1]:.4f}   (target {y})")
 ```
 
@@ -289,9 +297,14 @@ for (step in seq_len(n_steps)) {
   b2 <- b2 - alpha * delta2
 }
 
+# The loss falls by a near-constant factor per step, which only a log axis shows;
+# on a linear axis the whole run looks like one cliff followed by nothing.
+nz <- which(losses > 0)
+
 par(mfrow = c(1, 2))
-plot(seq_len(n_steps), losses, type = "l", col = "#31417A", lwd = 2.5, bty = "l",
-     xlab = "Iteration", ylab = "Loss", main = "Loss during training")
+plot(nz, losses[nz], type = "l", col = "#31417A", lwd = 2.5, bty = "l", log = "y",
+     xlim = c(1, n_steps), xlab = "Iteration", ylab = "Loss (log scale)",
+     main = "Loss during training")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 plot(seq_len(n_steps), preds, type = "l", col = "#31417A", lwd = 2.5, bty = "l",
      xlab = "Iteration", ylab = "Output", main = "Prediction converging to target")
@@ -300,13 +313,15 @@ abline(h = y, col = "#E3120B", lty = 2, lwd = 2)
 legend("bottomright", legend = c("prediction", sprintf("target y=%.1f", y)),
        col = c("#31417A", "#E3120B"), lty = c(1, 2), lwd = 2)
 
-cat(sprintf("Initial loss: %.6f   final loss: %.6f\n", losses[1], losses[n_steps]))
+last <- max(nz)
+cat(sprintf("Initial loss: %.6f   loss at iteration %d: %.3e\n", losses[1], last, losses[last]))
+cat(sprintf("Loss reaches exactly 0 at iteration %d\n", last + 1))
 cat(sprintf("Final prediction: %.4f   (target %.1f)\n", preds[n_steps], y))
 ```
 
 :::
 
-Both runs start and end at the same numbers, because the update is deterministic given the weights. The loss falls steeply at first, then flattens as the gradients shrink near the solution. This is the whole training loop in miniature: the deep networks of the next chapters differ only in scale, replacing these four scalars with millions of weights and these scalar products with matrix multiplications.
+Both runs start and end at the same numbers, because the update is deterministic given the weights. On the log axis the loss falls in a straight line: every step shrinks it by roughly the same factor, which is what geometric convergence looks like. It runs out of numbers before it runs out of progress, hitting exactly zero near iteration 30 — one training point and four free parameters, so the network can fit it perfectly and there is no asymptotic tail to speak of. Plotted on a linear axis the same run would show a single cliff and then a flat line, which reads as progress stalling; the flattening would be the axis, not the arithmetic. This is the whole training loop in miniature: the deep networks of the next chapters differ only in scale, replacing these four scalars with millions of weights and these scalar products with matrix multiplications.
 
 ## Why sigmoid makes deep networks hard
 
@@ -316,6 +331,7 @@ The hidden delta carries a factor of $\sigma'(z^{[1]})$, and that factor is the 
 
 ## Python
 ```{pyodide}
+#| autorun: true
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -383,7 +399,116 @@ cat(sprintf("After 20 sigmoid layers, gradient shrinks by up to %.2e\n", 0.25^20
 
 :::
 
-We kept sigmoid in the worked example because its derivative has a clean closed form, which makes the chain rule transparent. Production networks reach for ReLU and its variants for exactly the reason the right-hand plot shows: a derivative that does not collapse as the network deepens.
+That plot shows the ingredient. The consequence needs depth on the horizontal axis, not $z$: stack twenty identical scalar layers, run the backward recurrence from the top of this page unchanged, and record how much gradient is left by the time it reaches each layer.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+#| autorun: true
+import numpy as np
+import matplotlib.pyplot as plt
+
+sigmoid = lambda z: 1 / (1 + np.exp(-z))
+
+# activation, its derivative, plot color
+ACTIVATIONS = {
+    "sigmoid": (sigmoid, lambda z: sigmoid(z) * (1 - sigmoid(z)), "#31417A"),
+    "tanh":    (np.tanh, lambda z: 1 - np.tanh(z) ** 2,           "#666666"),
+    "ReLU":    (lambda z: max(0.0, z), lambda z: 1.0 * (z > 0),   "#076FA1"),
+}
+
+n_layers, w = 20, 1.0
+
+def gradient_by_layer(act, act_deriv):
+    # Forward: a chain of identical scalar layers, caching each pre-activation.
+    z, a = [], 0.5
+    for _ in range(n_layers):
+        z.append(w * a)
+        a = act(z[-1])
+    # Backward: the two-layer recurrence above, applied over and over.
+    delta, magnitudes = 1.0, []
+    for layer in reversed(range(n_layers)):
+        delta = delta * act_deriv(z[layer])   # through the activation
+        magnitudes.append(abs(delta))         # what this layer's weight sees
+        delta = delta * w                     # through the weight
+    return magnitudes[::-1]
+
+fig, ax = plt.subplots(figsize=(7.6, 4.4))
+for name, (act, act_deriv, color) in ACTIVATIONS.items():
+    ax.plot(range(1, n_layers + 1), gradient_by_layer(act, act_deriv),
+            color=color, linewidth=2.5, marker="o", markersize=3.5, label=name)
+ax.set_yscale("log")
+ax.set_xlabel("Layer (1 is furthest from the loss)")
+ax.set_ylabel("|gradient| reaching this layer")
+ax.set_title(f"Gradient magnitude after {n_layers} layers")
+ax.set_xticks([1, 5, 10, 15, 20])
+ax.legend(loc="lower right", frameon=False, fontsize=10.5)
+for s in ["top", "right"]:
+    ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
+plt.tight_layout()
+plt.show()
+
+for name, (act, act_deriv, _) in ACTIVATIONS.items():
+    g = gradient_by_layer(act, act_deriv)
+    print(f"{name:<8} layer {n_layers}: {g[-1]:.3e}   layer 1: {g[0]:.3e}")
+```
+
+## R
+```{webr}
+sigmoid <- function(z) 1 / (1 + exp(-z))
+
+# activation, its derivative, plot color
+acts <- list(
+  sigmoid = list(f = sigmoid,                d = function(z) sigmoid(z) * (1 - sigmoid(z)), col = "#31417A"),
+  tanh    = list(f = tanh,                   d = function(z) 1 - tanh(z)^2,                 col = "#666666"),
+  ReLU    = list(f = function(z) pmax(0, z), d = function(z) as.numeric(z > 0),             col = "#076FA1")
+)
+
+n_layers <- 20; w <- 1.0
+
+gradient_by_layer <- function(act) {
+  # Forward: a chain of identical scalar layers, caching each pre-activation.
+  z <- numeric(n_layers); a <- 0.5
+  for (l in seq_len(n_layers)) { z[l] <- w * a; a <- act$f(z[l]) }
+  # Backward: the two-layer recurrence above, applied over and over.
+  delta <- 1.0; mags <- numeric(n_layers)
+  for (l in rev(seq_len(n_layers))) {
+    delta <- delta * act$d(z[l])    # through the activation
+    mags[l] <- abs(delta)           # what this layer's weight sees
+    delta <- delta * w              # through the weight
+  }
+  mags
+}
+
+par(mfrow = c(1, 1))
+plot(NA, xlim = c(1, n_layers), ylim = c(1e-14, 2), log = "y", bty = "l", xaxt = "n",
+     xlab = "Layer (1 is furthest from the loss)",
+     ylab = "|gradient| reaching this layer",
+     main = sprintf("Gradient magnitude after %d layers", n_layers))
+axis(1, at = c(1, 5, 10, 15, 20))
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+for (nm in names(acts)) {
+  lines(seq_len(n_layers), gradient_by_layer(acts[[nm]]),
+        col = acts[[nm]]$col, lwd = 2.5, type = "b", pch = 16, cex = 0.6)
+}
+legend("bottomright", legend = names(acts),
+       col = sapply(acts, function(a) a$col), lwd = 2.5, bty = "n")
+
+for (nm in names(acts)) {
+  g <- gradient_by_layer(acts[[nm]])
+  cat(sprintf("%-8s layer %d: %.3e   layer 1: %.3e\n", nm, n_layers, g[n_layers], g[1]))
+}
+```
+
+:::
+
+Read the sigmoid line as the shape of the problem: straight on a log axis, so the gradient decays by a constant factor per layer, and by the layer nearest the input there is $10^{-13}$ of it left. That layer is not learning slowly; it is not learning. ReLU is flat at exactly $1$ — its derivative is $1$ wherever the unit is active, so the gradient arrives at the first layer with the same magnitude it left the loss with. tanh sits between them, losing one order of magnitude rather than thirteen, which is why it was the standard choice before ReLU.
+
+The decay rate is $|w \cdot \sigma'(z)|$, so the weight scale belongs to the story too — though not in the direction the formula first suggests. Raising `w` from $1$ to $5$ does not push the product above one and rescue the gradient; it makes things far worse, taking layer 1 from $10^{-13}$ down to $10^{-29}$. A larger weight drives the pre-activation further from zero, the sigmoid saturates there, and $\sigma'$ collapses faster than $w$ grows. Try it: the two effects are not independent, which is why keeping pre-activations near zero, rather than making weights large, is what initialization schemes are for.
+
+We kept sigmoid in the worked example because its derivative has a clean closed form, which makes the chain rule transparent. Production networks reach for ReLU and its variants for exactly the reason these two plots show: a derivative that does not collapse as the network deepens.
 
 ::: {.explore}
 [Try it]{.lbl}
