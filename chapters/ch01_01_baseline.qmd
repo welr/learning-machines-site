@@ -89,6 +89,14 @@ without calculus by scanning $c$ across a range and watching the error.
 
 ## Python
 ```{pyodide}
+import numpy as np
+
+# Same twenty sales as the first cell: every cell here stands on its own.
+area = np.array([52, 82, 120, 95, 140, 160, 180, 200, 210, 225,
+                 150, 110, 130, 170, 190, 205, 240, 60, 75, 100.])
+price = np.array([164, 384, 465, 420, 520, 610, 700, 760, 820, 900,
+                  560, 430, 500, 650, 720, 790, 980, 260, 330, 410.])
+
 candidates = np.linspace(price.min(), price.max(), 400)
 
 errors = np.empty_like(candidates)
@@ -111,6 +119,12 @@ print(f"  the median, their midpoint, is {np.median(price):.1f}")
 
 ## R
 ```{webr}
+# Same twenty sales as the first cell: every cell here stands on its own.
+area <- c(52, 82, 120, 95, 140, 160, 180, 200, 210, 225,
+          150, 110, 130, 170, 190, 205, 240, 60, 75, 100)
+price <- c(164, 384, 465, 420, 520, 610, 700, 760, 820, 900,
+           560, 430, 500, 650, 720, 790, 980, 260, 330, 410)
+
 candidates <- seq(min(price), max(price), length.out = 400)
 
 errors <- numeric(length(candidates))
@@ -242,6 +256,15 @@ line properly; here we just fit it and ask how much of the baseline's error it r
 
 ## Python
 ```{pyodide}
+import numpy as np
+
+# Same twenty sales as the first cell: every cell here stands on its own.
+area = np.array([52, 82, 120, 95, 140, 160, 180, 200, 210, 225,
+                 150, 110, 130, 170, 190, 205, 240, 60, 75, 100.])
+price = np.array([164, 384, 465, 420, 520, 610, 700, 760, 820, 900,
+                  560, 430, 500, 650, 720, 790, 980, 260, 330, 410.])
+mse = ((price - price.mean()) ** 2).mean()          # the baseline to beat
+
 area_c = area - area.mean()
 price_c = price - price.mean()
 
@@ -259,6 +282,13 @@ print(f"error removed = {1 - mse_line / mse:8.1%}")
 
 ## R
 ```{webr}
+# Same twenty sales as the first cell: every cell here stands on its own.
+area <- c(52, 82, 120, 95, 140, 160, 180, 200, 210, 225,
+          150, 110, 130, 170, 190, 205, 240, 60, 75, 100)
+price <- c(164, 384, 465, 420, 520, 610, 700, 760, 820, 900,
+           560, 430, 500, 650, 720, 790, 980, 260, 330, 410)
+mse <- mean((price - mean(price))^2)               # the baseline to beat
+
 area_c <- area - mean(area)
 price_c <- price - mean(price)
 
@@ -291,6 +321,14 @@ accuracy is the base rate. Overlook it and a useless model can look excellent.
 
 ## Python
 ```{pyodide}
+import numpy as np
+
+# Same twenty sales as the first cell: every cell here stands on its own.
+area = np.array([52, 82, 120, 95, 140, 160, 180, 200, 210, 225,
+                 150, 110, 130, 170, 190, 205, 240, 60, 75, 100.])
+price = np.array([164, 384, 465, 420, 520, 610, 700, 760, 820, 900,
+                  560, 430, 500, 650, 720, 790, 980, 260, 330, 410.])
+
 # 950 negatives, 50 positives: a deliberately imbalanced screening problem
 labels = np.concatenate([np.zeros(950), np.ones(50)])
 

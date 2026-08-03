@@ -4,7 +4,7 @@ engine: markdown
 ---
 
 ::: {.lm-hero}
-[Chapter 11 · Attention & the Transformer]{.eyebrow}
+[Chapter 11 · Attention and the Transformer]{.eyebrow}
 
 # Attention and Transformers
 

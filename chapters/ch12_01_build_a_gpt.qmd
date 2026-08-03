@@ -4,7 +4,7 @@ engine: markdown
 ---
 
 ::: {.lm-hero}
-[Chapter 12 · Large Language Models]{.eyebrow}
+[Chapter 12 · Language Models and Foundation Models]{.eyebrow}
 
 # Capstone — Build a GPT
 

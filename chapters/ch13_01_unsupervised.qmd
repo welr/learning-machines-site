@@ -75,6 +75,15 @@ close to a two-dimensional story.
 
 ## Python
 ```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+
+# Same sealed data as the first cell: every cell here stands on its own.
+iris = load_iris()
+X_raw, species_sealed = iris.data, iris.target
+X = (X_raw - X_raw.mean(axis=0)) / X_raw.std(axis=0)
+
 S = X.T @ X / len(X)                   # 4 x 4 sample covariance
 evals, evecs = np.linalg.eigh(S)
 evals, evecs = evals[::-1], evecs[:, ::-1]      # largest first
@@ -98,6 +107,11 @@ plt.tight_layout(); plt.show()
 
 ## R
 ```{webr}
+# Same sealed data as the first cell: every cell here stands on its own.
+X_raw <- as.matrix(iris[, 1:4])
+species_sealed <- iris$Species
+X <- scale(X_raw)
+
 S <- t(X) %*% X / nrow(X)              # 4 x 4 sample covariance
 e <- eigen(S)                          # largest first by default
 frac <- e$values / sum(e$values)
@@ -131,6 +145,17 @@ the textbook's worked example, on real data.
 
 ## Python
 ```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+
+# Same sealed data as the first cell: every cell here stands on its own.
+iris = load_iris()
+X_raw, species_sealed = iris.data, iris.target
+X = (X_raw - X_raw.mean(axis=0)) / X_raw.std(axis=0)
+evals, evecs = np.linalg.eigh(X.T @ X / len(X))    # the projection from above
+Z = X @ evecs[:, ::-1]
+
 rng = np.random.default_rng(1)
 K = 3
 mus = Z[rng.choice(len(Z), K, replace=False)]   # init: three random flowers
@@ -146,6 +171,13 @@ for it in range(6):
 
 ## R
 ```{webr}
+# Same sealed data as the first cell: every cell here stands on its own.
+X_raw <- as.matrix(iris[, 1:4])
+species_sealed <- iris$Species
+X <- scale(X_raw)
+e <- eigen(t(X) %*% X / nrow(X), symmetric = TRUE)  # the projection from above
+Z <- X %*% e$vectors
+
 set.seed(1)
 K <- 3
 mus <- Z[sample(nrow(Z), K), ]                   # init: three random flowers
@@ -179,6 +211,26 @@ Now, and only now, we look at the species.
 
 ## Python
 ```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+
+# Same sealed data as the first cell: every cell here stands on its own.
+iris = load_iris()
+X_raw, species_sealed = iris.data, iris.target
+X = (X_raw - X_raw.mean(axis=0)) / X_raw.std(axis=0)
+evals, evecs = np.linalg.eigh(X.T @ X / len(X))    # the projection from above
+Z = X @ evecs[:, ::-1]
+
+rng = np.random.default_rng(1)                     # the clustering from above
+K = 3
+mus = Z[rng.choice(len(Z), K, replace=False)]
+for _ in range(6):
+    d2 = ((Z[:, None, :] - mus[None, :, :]) ** 2).sum(axis=2)
+    cluster = d2.argmin(axis=1)
+    for k in range(K):
+        mus[k] = Z[cluster == k].mean(axis=0)
+
 names = iris.target_names
 fig, ax = plt.subplots(figsize=(7, 5))
 for s, color in zip(range(3), ["#076FA1", "#2FC1D3", "#9E4F00"]):
@@ -202,6 +254,22 @@ print(f"purity: {tab.max(axis=1).sum() / len(Z):.1%}")
 
 ## R
 ```{webr}
+# Same sealed data as the first cell: every cell here stands on its own.
+X_raw <- as.matrix(iris[, 1:4])
+species_sealed <- iris$Species
+X <- scale(X_raw)
+e <- eigen(t(X) %*% X / nrow(X), symmetric = TRUE)  # the projection from above
+Z <- X %*% e$vectors
+
+set.seed(1)                                        # the clustering from above
+K <- 3
+mus <- Z[sample(nrow(Z), K), ]
+for (it in 1:6) {
+  d2 <- sapply(1:K, function(k) rowSums(sweep(Z, 2, mus[k, ])^2))
+  cluster <- max.col(-d2)
+  for (k in 1:K) mus[k, ] <- colMeans(Z[cluster == k, , drop = FALSE])
+}
+
 cols <- c("#076FA1", "#2FC1D3", "#9E4F00")
 plot(Z, pch = 19, cex = 1.1, bty = "l",
      col = adjustcolor(cols[as.integer(species_sealed)], 0.75),
