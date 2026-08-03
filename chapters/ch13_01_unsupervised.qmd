@@ -228,14 +228,14 @@ where the species are hard to tell apart, labels in hand or not.
 ## The full-scale version
 
 The textbook's applied exercise runs this same experiment at scale: 10,000 Fashion-MNIST
-images with the labels sealed, PCA "eigen-garments," $K$-means cluster averages you can
-recognize as trousers and boots, and a small PyTorch [autoencoder]{.term} whose learned
-two-dimensional code bends where PCA's cannot. The autoencoder needs PyTorch, which is
-more than a browser sandbox can carry, so the notebook runs in Google Colab.
+images with the labels sealed, PCA on the sample covariance, $K$-means cluster averages you
+can recognize as trousers and boots, and a small PyTorch [autoencoder]{.term} whose learned
+two-dimensional code bends where PCA's cannot. Just over half the images end up in a cluster
+whose dominant class is their own — from an analysis that never saw a label — but the
+garments that separate and the ones that do not are worth studying separately.
 
-```{=html}
-<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch13_01_unsupervised.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
-```
+[**Applied — Unsupervised Fashion-MNIST**](ch13_02_applied.qmd) walks through it, and opens
+in Google Colab.
 
 ::: {.explore}
 [Try it]{.lbl}

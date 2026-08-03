@@ -112,6 +112,8 @@ website:
         contents:
           - href: chapters/ch13_01_unsupervised.qmd
             text: "Structure Without Labels"
+          - href: chapters/ch13_02_applied.qmd
+            text: "Applied: Fashion-MNIST"
   page-footer:
     border: true
     left: "Learning Machines · A Statistical Introduction"

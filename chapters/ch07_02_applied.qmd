@@ -1,12 +1,12 @@
 ---
-title: "Ridge, LASSO, and the Regularization Path"
+title: "Applied — Ridge, LASSO, and the Regularization Path"
 engine: markdown
 ---
 
 ::: {.lm-hero}
 [Chapter 7 · Regularization]{.eyebrow}
 
-# Ridge, LASSO, and the Regularization Path
+# Applied — Ridge, LASSO, and the Regularization Path
 
 [Two penalties shrink the same coefficients toward zero, but only one of them sets coefficients exactly to zero and so chooses which features to keep.]{.dek}
 :::

@@ -1,0 +1,121 @@
+---
+title: "Applied — Unsupervised Fashion-MNIST"
+engine: markdown
+---
+
+::: {.lm-hero}
+[Chapter 13 · Unsupervised Learning]{.eyebrow}
+
+# Applied — Unsupervised Fashion-MNIST
+
+[Seal the labels away, look for structure in the pixels alone, and only then check how much of the answer was already there.]{.dek}
+:::
+
+The browser page worked on a data set small enough to hold in your head. This one runs the same experiment at scale, on the 10,000 Fashion-MNIST images you met in Chapter 9's applied exercise — with one change: the labels are locked away before anything begins, and stay locked until the last section. Everything up to that point sees nothing but pixels.
+
+That constraint is the point. The question Chapter 13 asks is how much of the class structure is already present in $p(\mathbf{x})$, before any label is used, and you can only answer it honestly if you have not peeked. PCA finds the directions the images vary along; $K$-means proposes groups; a small autoencoder learns a code that can bend where PCA's cannot. Only then does the seal come off.
+
+The autoencoder needs PyTorch, and the full data set is more than a browser sandbox can carry, so this page runs in Google Colab.
+
+```{=html}
+<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch13_01_unsupervised.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+```
+
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch13_02_applied.png" alt="Two panels. Left, a scatter of ten thousand Fashion-MNIST images in the plane of the first two principal components, each point colored by the class label that was withheld during the analysis; footwear forms a distinct arm on the left, trousers and dresses a lobe at the bottom, and the four upper-body garment classes overlap heavily through the middle and right. Right, a ten-by-ten heatmap cross-tabulating the ten K-means clusters against the ten true classes, with strong single-class cells for trouser, sandal, sneaker, bag and ankle boot, and diffuse rows where T-shirt, pullover, coat and shirt are mixed together.">
+<figcaption><strong>Breaking the seal.</strong> The projection and the clusters were both computed without a single label. Coloring them afterwards shows how much was already there: footwear separates into its own arm, bags fall into two clusters that are 94% and 95% bags, trousers into one that is 59% trousers. The upper-body garments do not separate at all &mdash; the cluster whose best class is <em>shirt</em> is only 26% shirts, mixing T-shirts, pullovers and coats with it. Overall, 55% of images sit in a cluster whose dominant class is their own. The structure that survives without labels is the structure a person would also see at a glance; the structure that dissolves is the part people find hard too.</figcaption>
+</figure>
+```
+
+## The data, with the labels sealed
+
+Fashion-MNIST is 70,000 grayscale garment images, 28&times;28 pixels, ten classes. The notebook keeps 10,000, flattens each to a 784-vector, scales pixels to $[0,1]$, and puts the labels in a variable named to remind you not to touch it.
+
+```python
+from sklearn.datasets import fetch_openml
+
+X_all, y_all = fetch_openml("Fashion-MNIST", version=1, as_frame=False,
+                            return_X_y=True, parser="auto")
+m = 10_000
+X = X_all[:m].astype(np.float64) / 255.0
+y_sealed = y_all[:m].astype(int)            # sealed until the last section
+del X_all, y_all
+```
+
+## Principal components and the scree curve
+
+784 dimensions is more than the data needs. PCA rotates to the directions of greatest variance and reports how much each one carries; the [scree curve]{.term} is where you read off how fast the returns fall away.
+
+The notebook builds this by hand rather than calling `PCA`, so the eigenvectors are visibly the eigenvectors of a covariance matrix — the Chapter 13 derivation, executed.
+
+```python
+x_mean = X.mean(axis=0)
+Xc = X - x_mean
+S = Xc.T @ Xc / m                           # 784 x 784 sample covariance
+
+evals, evecs = np.linalg.eigh(S)            # ascending order
+evals, evecs = evals[::-1], evecs[:, ::-1]  # largest first
+frac = evals / evals.sum()                  # frac[:2] -> [0.291, 0.180]
+```
+
+Two components carry 47% of the variance and fifty carry 86%: a 784-dimensional cloud that mostly lives in a few dozen directions. Both ends of the decomposition are worth viewing as images. The mean image is a ghostly average garment. The leading eigenvectors are not garments but *contrast patterns* — signed maps, drawn on a diverging scale, whose positive and negative regions say which parts of the frame trade off against which. Adding a few of them to the mean is what reconstructs an image, and the notebook shows that reconstruction sharpening as $k$ goes from 2 to 400.
+
+## $K$-means on the components
+
+Clustering runs on the fifty leading components rather than the raw pixels: the same information, far less noise, and a distance that means more. $K = 10$ is asserted, not discovered — that is the awkwardness the chapter is honest about, and the mixture-model reading is what turns it into ordinary model selection.
+
+```python
+from sklearn.cluster import KMeans
+
+Z50 = Xc @ evecs[:, :50]
+km = KMeans(n_clusters=10, n_init=10, random_state=0).fit(Z50)
+cluster = km.labels_
+```
+
+Averaging the images in each cluster shows what $K$-means actually found: several of the averages are crisp enough to name on sight — a trouser, a sneaker, a bag — while others are the blur you get from averaging four kinds of upper-body garment together.
+
+`n_init=10` matters. Lloyd's algorithm converges to a local optimum that depends on where it starts, so several restarts and keeping the best is not a refinement, it is the method.
+
+## Breaking the seal
+
+Now, and only now, the labels come out. Cross-tabulate clusters against classes and the figure at the top of this page is the result.
+
+```python
+table = np.zeros((10, 10), dtype=int)
+for c, lab in zip(km.labels_, y_sealed):
+    table[c, lab] += 1
+purity = table.max(axis=1).sum() / table.sum()   # 0.554
+```
+
+Read the answer carefully, because it cuts both ways. A little over half the images landed in a cluster whose dominant class is their own — far better than the 10% chance would give, from an analysis that never saw a label. But the successes and failures are not distributed evenly. Bags, sneakers, sandals, ankle boots and trousers come out sharply; T-shirts, pullovers, coats and shirts are a single smear. The pixels know that footwear is not clothing. They do not know that a pullover is not a coat.
+
+That is the honest form of the chapter's claim. Unsupervised structure is real and it is free, but it is the structure the data's own geometry supports, which need not be the structure your labels encode. Where the two coincide you get most of the way to a classifier without a single label; where they do not, no amount of clustering will invent the distinction for you.
+
+## The autoencoder
+
+PCA is restricted to a linear subspace. An [autoencoder]{.term} is the same compress-then-reconstruct idea with the linear map replaced by a network, so its two-dimensional code can curve where PCA's cannot. The notebook trains a small one and puts its codes beside the PCA projection.
+
+```python
+class AutoEncoder(nn.Module):
+    """784 -> 2 -> 784. The bottleneck is the whole point."""
+    def __init__(self, code_dim=2):
+        super().__init__()
+        self.enc = nn.Sequential(nn.Linear(784, 128), nn.ReLU(),
+                                 nn.Linear(128, code_dim))
+        self.dec = nn.Sequential(nn.Linear(code_dim, 128), nn.ReLU(),
+                                 nn.Linear(128, 784), nn.Sigmoid())
+
+    def forward(self, x):
+        return self.dec(self.enc(x))
+```
+
+The loss is reconstruction error against the input itself, which is what makes this unsupervised despite looking exactly like supervised training: the target is the input. Chapter 13's closing question — in what sense is a method "unsupervised" when it minimizes a supervised-looking objective — is best answered with this model in front of you.
+
+::: {.explore}
+[Try it]{.lbl}
+
+Compare the autoencoder's two-dimensional codes with the PCA projection, colored the same way. Does the extra flexibility separate the upper-body garments that PCA smears together, or does it just rearrange the same smear? Answer that before reading on, then check whether cluster purity on the autoencoder codes actually beats the 0.554 above — a curved code is not automatically a better one.
+
+Then push on $K$. The chapter's mixture-model reading turns "which $K$?" into model selection with held-out likelihood. Fit a Gaussian mixture for $K = 5, 10, 15, 20$, compare held-out log-likelihood, and see whether the data prefers the ten classes the labels happen to use.
+:::

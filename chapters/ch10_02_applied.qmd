@@ -1,12 +1,12 @@
 ---
-title: "Applied: A Convolutional Network"
+title: "Applied — A Convolutional Network"
 engine: markdown
 ---
 
 ::: {.lm-hero}
 [Chapter 10 · Representation Learning]{.eyebrow}
 
-# Applied: A Convolutional Network
+# Applied — A Convolutional Network
 
 [Swap a flat MLP for a network that respects the grid, and the same training loop does more with far fewer parameters.]{.dek}
 :::

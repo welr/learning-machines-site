@@ -530,6 +530,149 @@ legend("bottomright", c("alpha = 0.30 (diverges)", "alpha = 0.25 (converges)"),
 
 :::
 
+## Where a bad $\lambda_{\max}$ comes from
+
+That threshold has a practical consequence the toy data hides. $\lambda_{\max}$ is set by the
+scale of the features, and real features arrive in whatever units the world recorded them in.
+Put a covariate measured in hundreds beside one measured in ones and the loss surface stops
+being a bowl: it becomes a canyon whose walls are steep in one coordinate and nearly flat in
+another. The step size has to respect the steep wall, so progress along the flat floor is
+glacial.
+
+The [condition number]{.term} $\kappa = \lambda_{\max}/\lambda_{\min}$ measures how bad the
+canyon is. Below, the same regression is run twice: once on the raw features, once after
+[standardizing]{.term} each to mean zero and unit variance. Each run uses the largest step the
+stability rule allows, so neither is handicapped by a badly chosen $\alpha$ — the only
+difference is the units.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Two covariates on very different scales: x1 is O(1), x2 is O(100).
+x1 = np.array([-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
+               1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18])
+x2 = np.array([311., 347., 357., 338., 354., 362., 394.,
+               395., 422., 388., 461., 444., 470., 468.])
+y  = np.array([6.29, 7.88, 8.71, 8.55, 9.51, 10.52, 11.04,
+               11.41, 13.14, 12.71, 14.21, 14.88, 16.12, 16.30])
+n = len(x1)
+
+def standardize(v):
+    return (v - v.mean()) / v.std()
+
+designs = {
+    "raw features":  np.column_stack([np.ones(n), x1, x2]),
+    "standardized":  np.column_stack([np.ones(n), standardize(x1), standardize(x2)]),
+}
+
+def descend(X, n_steps=400):
+    """Steepest descent at the largest step the stability rule permits."""
+    H = (2 / n) * X.T @ X
+    eigs = np.linalg.eigvalsh(H)
+    alpha = 1.9 / eigs[-1]                      # just inside 2 / lambda_max
+    theta_star = np.linalg.lstsq(X, y, rcond=None)[0]
+    best = np.mean((y - X @ theta_star) ** 2)   # the loss GD is trying to reach
+    theta, excess = np.zeros(X.shape[1]), []
+    for _ in range(n_steps):
+        excess.append(np.mean((y - X @ theta) ** 2) - best)
+        theta -= alpha * (-2 / n) * X.T @ (y - X @ theta)
+    return np.array(excess), eigs, alpha
+
+fig, ax = plt.subplots(figsize=(7.4, 4.2))
+for (name, X), color in zip(designs.items(), ["#E3120B", "#31417A"]):
+    excess, eigs, alpha = descend(X)
+    kappa = eigs[-1] / eigs[0]
+    print(f"{name:14} lambda_max = {eigs[-1]:9.3g}   kappa = {kappa:11.1f}   "
+          f"largest stable alpha = {2 / eigs[-1]:.3g}")
+    print(f"{'':14} excess loss after 400 steps: {max(excess[-1], 0):.3e}")
+    visible = [(i, v) for i, v in enumerate(excess) if v > 0]   # log axis, exact 0 at the end
+    ax.plot([i for i, _ in visible], [v for _, v in visible], color=color, linewidth=2.5,
+            label=f"{name}  ($\\kappa$ = {kappa:,.0f})")
+
+ax.set_yscale("log")
+ax.set_xlabel("Iteration"); ax.set_ylabel("Loss above the optimum (log scale)")
+ax.set_title("The same regression, the same rule for $\\alpha$, different units")
+ax.legend(loc="lower left", frameon=False, fontsize=10.5)
+for s in ["top", "right"]:
+    ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
+plt.tight_layout()
+plt.show()
+```
+
+## R
+```{webr}
+# Two covariates on very different scales: x1 is O(1), x2 is O(100).
+x1 <- c(-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
+        1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18)
+x2 <- c(311, 347, 357, 338, 354, 362, 394,
+        395, 422, 388, 461, 444, 470, 468)
+y  <- c(6.29, 7.88, 8.71, 8.55, 9.51, 10.52, 11.04,
+        11.41, 13.14, 12.71, 14.21, 14.88, 16.12, 16.30)
+n <- length(x1)
+
+standardize <- function(v) (v - mean(v)) / sqrt(mean((v - mean(v))^2))
+
+designs <- list(
+  "raw features" = cbind(1, x1, x2),
+  "standardized" = cbind(1, standardize(x1), standardize(x2))
+)
+
+descend <- function(X, n_steps = 400) {
+  # Steepest descent at the largest step the stability rule permits.
+  H <- (2 / n) * t(X) %*% X
+  eigs <- sort(eigen(H, symmetric = TRUE)$values)
+  alpha <- 1.9 / eigs[length(eigs)]             # just inside 2 / lambda_max
+  theta_star <- qr.solve(X, y)
+  best <- mean((y - X %*% theta_star)^2)        # the loss GD is trying to reach
+  theta <- rep(0, ncol(X)); excess <- numeric(n_steps)
+  for (k in seq_len(n_steps)) {
+    excess[k] <- mean((y - X %*% theta)^2) - best
+    theta <- theta - alpha * as.vector((-2 / n) * t(X) %*% (y - X %*% theta))
+  }
+  list(excess = excess, eigs = eigs, alpha = alpha)
+}
+
+cols <- c("#E3120B", "#31417A"); kappas <- numeric(2)
+plot(NA, xlim = c(1, 400), ylim = c(1e-17, 300), log = "y", bty = "l",
+     xlab = "Iteration", ylab = "Loss above the optimum (log scale)",
+     main = "The same regression, the same rule for alpha, different units")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+for (i in seq_along(designs)) {
+  r <- descend(designs[[i]])
+  lmax <- r$eigs[length(r$eigs)]
+  kappas[i] <- lmax / r$eigs[1]
+  cat(sprintf("%-14s lambda_max = %9.3g   kappa = %11.1f   largest stable alpha = %.3g\n",
+              names(designs)[i], lmax, kappas[i], 2 / lmax))
+  cat(sprintf("%-14s excess loss after 400 steps: %.3e\n", "", max(r$excess[400], 0)))
+  vis <- which(r$excess > 0)                    # log axis, exact 0 at the end
+  lines(vis, r$excess[vis], col = cols[i], lwd = 2.5)
+}
+legend("bottomleft", sprintf("%s  (kappa = %s)", names(designs),
+                             format(round(kappas), big.mark = ",")),
+       col = cols, lwd = 2.5, bty = "n")
+```
+
+:::
+
+The raw features give $\kappa \approx 7\times10^{7}$, which forces a step size around
+$6\times10^{-6}$; four hundred iterations later the loss is still about 2.6 above its optimum,
+and it will sit there for a very long time. Standardizing drops $\kappa$ to about 38, lets the
+step size rise to roughly $0.5$, and the same four hundred iterations reach the optimum to
+machine precision. Nothing about the model, the data, or the algorithm changed — only the
+units the features were written in.
+
+This is why standardizing is reflexive in practice, and it is worth being clear about what it
+does and does not do. It does not change the fitted model: the OLS solution is equivariant
+under rescaling, so the closed form of Chapter 2 returns the same predictions either way. It
+changes what an *iterative* solver has to climb. That distinction matters again in Chapter 7,
+where the penalty is not equivariant, and standardizing stops being a convenience and becomes
+part of the model's definition.
+
 ## Stochastic gradient descent
 
 The full gradient averages over all $n$ points. [Stochastic gradient descent]{.term} estimates
