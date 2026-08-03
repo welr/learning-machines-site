@@ -65,12 +65,12 @@ np.random.seed(42)
 # Synthetic data: y = 1 + 2x + noise, with known noise sd 0.5
 true_theta = np.array([1.0, 2.0])
 true_sigma = 0.5
-n = 30
-x = np.random.uniform(0, 3, n)
-y = true_theta[0] + true_theta[1] * x + np.random.normal(0, true_sigma, n)
+m = 30
+x = np.random.uniform(0, 3, m)
+y = true_theta[0] + true_theta[1] * x + np.random.normal(0, true_sigma, m)
 
 # Design matrix with an intercept column
-X = np.column_stack([np.ones(n), x])
+X = np.column_stack([np.ones(m), x])
 
 # Gaussian prior on (theta0, theta1): mean 0, broad covariance
 prior_mean = np.array([0.0, 0.0])
@@ -100,9 +100,9 @@ set.seed(42)
 # Synthetic data: y = 1 + 2x + noise, with known noise sd 0.5
 true_theta <- c(1.0, 2.0)
 true_sigma <- 0.5
-n <- 30
-x <- runif(n, 0, 3)
-y <- true_theta[1] + true_theta[2] * x + rnorm(n, 0, true_sigma)
+m <- 30
+x <- runif(m, 0, 3)
+y <- true_theta[1] + true_theta[2] * x + rnorm(m, 0, true_sigma)
 
 # Design matrix with an intercept column
 X <- cbind(1, x)
@@ -149,10 +149,10 @@ import matplotlib.pyplot as plt
 
 np.random.seed(42)
 true_theta = np.array([1.0, 2.0]); true_sigma = 0.5
-n = 30
-x = np.random.uniform(0, 3, n)
-y = true_theta[0] + true_theta[1] * x + np.random.normal(0, true_sigma, n)
-X = np.column_stack([np.ones(n), x])
+m = 30
+x = np.random.uniform(0, 3, m)
+y = true_theta[0] + true_theta[1] * x + np.random.normal(0, true_sigma, m)
+X = np.column_stack([np.ones(m), x])
 
 prior_cov = np.diag([10.0, 10.0]); noise_var = true_sigma**2
 prior_prec = np.linalg.inv(prior_cov)
@@ -188,9 +188,9 @@ print(f"predictive sd at x=8.5 (edge):   {pred_sd[-1]:.3f}")
 ```{webr}
 set.seed(42)
 true_theta <- c(1.0, 2.0); true_sigma <- 0.5
-n <- 30
-x <- runif(n, 0, 3)
-y <- true_theta[1] + true_theta[2] * x + rnorm(n, 0, true_sigma)
+m <- 30
+x <- runif(m, 0, 3)
+y <- true_theta[1] + true_theta[2] * x + rnorm(m, 0, true_sigma)
 X <- cbind(1, x)
 
 prior_cov <- diag(c(10, 10)); noise_var <- true_sigma^2
@@ -243,10 +243,10 @@ import numpy as np
 
 np.random.seed(42)
 true_theta = np.array([1.0, 2.0]); true_sigma = 0.5
-n = 30
-x = np.random.uniform(0, 3, n)
-y = true_theta[0] + true_theta[1] * x + np.random.normal(0, true_sigma, n)
-X = np.column_stack([np.ones(n), x])
+m = 30
+x = np.random.uniform(0, 3, m)
+y = true_theta[0] + true_theta[1] * x + np.random.normal(0, true_sigma, m)
+X = np.column_stack([np.ones(m), x])
 noise_var = true_sigma**2
 
 def posterior_mean(prior_mean, prior_cov):
@@ -262,8 +262,8 @@ priors = [
 
 print(f"{'prior':<18} theta0   theta1")
 for name, m0, S0 in priors:
-    m = posterior_mean(m0, S0)
-    print(f"{name:<18}{m[0]:6.3f}  {m[1]:6.3f}")
+    mu_post = posterior_mean(m0, S0)
+    print(f"{name:<18}{mu_post[0]:6.3f}  {mu_post[1]:6.3f}")
 print(f"{'(truth)':<18}{true_theta[0]:6.3f}  {true_theta[1]:6.3f}")
 ```
 
@@ -271,9 +271,9 @@ print(f"{'(truth)':<18}{true_theta[0]:6.3f}  {true_theta[1]:6.3f}")
 ```{webr}
 set.seed(42)
 true_theta <- c(1.0, 2.0); true_sigma <- 0.5
-n <- 30
-x <- runif(n, 0, 3)
-y <- true_theta[1] + true_theta[2] * x + rnorm(n, 0, true_sigma)
+m <- 30
+x <- runif(m, 0, 3)
+y <- true_theta[1] + true_theta[2] * x + rnorm(m, 0, true_sigma)
 X <- cbind(1, x)
 noise_var <- true_sigma^2
 
@@ -291,8 +291,8 @@ priors <- list(
 
 cat(sprintf("%-18s theta0   theta1\n", "prior"))
 for (p in priors) {
-  m <- posterior_mean(p[[2]], p[[3]])
-  cat(sprintf("%-18s%6.3f  %6.3f\n", p[[1]], m[1], m[2]))
+  mu_post <- posterior_mean(p[[2]], p[[3]])
+  cat(sprintf("%-18s%6.3f  %6.3f\n", p[[1]], mu_post[1], mu_post[2]))
 }
 cat(sprintf("%-18s%6.3f  %6.3f\n", "(truth)", true_theta[1], true_theta[2]))
 ```

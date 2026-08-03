@@ -348,12 +348,12 @@ def fit(a, p):
 
 def standard_errors(a, p):
     """SE of the mean, and SE of the least-squares slope."""
-    n = len(a)
+    m = len(a)
     _, slope = fit(a, p)
     intercept = p.mean() - slope * a.mean()
     resid = p - (intercept + slope * a)
-    s2 = (resid ** 2).sum() / (n - 2)
-    return p.std(ddof=1) / np.sqrt(n), np.sqrt(s2 / ((a - a.mean()) ** 2).sum())
+    s2 = (resid ** 2).sum() / (m - 2)
+    return p.std(ddof=1) / np.sqrt(m), np.sqrt(s2 / ((a - a.mean()) ** 2).sum())
 
 mean_all, slope_all = fit(area, price)
 se_mean, se_slope = standard_errors(area, price)

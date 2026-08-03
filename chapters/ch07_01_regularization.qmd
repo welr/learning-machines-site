@@ -100,8 +100,8 @@ y <- c(0.5377, -0.582, -1.7774, -0.2958, 1.0756, 0.3734, 0.2285, -0.9679,
 poly_features <- function(x, d) outer(x, 0:d, `^`)   # [1, x, x^2, ..., x^d]
 
 ridge_fit <- function(X, y, lambda) {
-  p <- ncol(X)
-  P <- lambda * diag(p); P[1, 1] <- 0                # do not penalize the intercept
+  n <- ncol(X)
+  P <- lambda * diag(n); P[1, 1] <- 0                # do not penalize the intercept
   solve(t(X) %*% X + P, t(X) %*% y)
 }
 
@@ -231,16 +231,16 @@ y <- c(0.5377, -0.582, -1.7774, -0.2958, 1.0756, 0.3734, 0.2285, -0.9679,
 poly_features <- function(x, d) outer(x, 0:d, `^`)
 
 ridge_fit <- function(X, y, lambda) {
-  p <- ncol(X); P <- lambda * diag(p); P[1, 1] <- 0
+  n <- ncol(X); P <- lambda * diag(n); P[1, 1] <- 0
   solve(t(X) %*% X + P, t(X) %*% y)
 }
 
 lasso_fit <- function(X, y, lambda, iters = 5000, tol = 1e-7) {
-  m <- nrow(X); p <- ncol(X)
-  theta <- rep(0, p); col_sq <- colSums(X^2)
+  m <- nrow(X); n <- ncol(X)
+  theta <- rep(0, n); col_sq <- colSums(X^2)
   for (it in seq_len(iters)) {
     old <- theta
-    for (j in seq_len(p)) {
+    for (j in seq_len(n)) {
       r   <- y - X %*% theta + X[, j] * theta[j]    # residual without feature j
       rho <- sum(X[, j] * r)
       if (j == 1) {                                 # intercept: no penalty
@@ -418,7 +418,7 @@ y  <- 100*x1 + 0.001*x2 + c(0.02, -0.01, 0.015, -0.02, 0.01, -0.012, 0.018,
         -0.003, 0.014, -0.016, 0.005, -0.009, 0.017, -0.006, 0.002)
 
 ridge_fit <- function(X, y, lambda) {
-  p <- ncol(X); P <- lambda * diag(p); P[1, 1] <- 0
+  n <- ncol(X); P <- lambda * diag(n); P[1, 1] <- 0
   solve(t(X) %*% X + P, t(X) %*% y)
 }
 

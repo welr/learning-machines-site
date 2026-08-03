@@ -330,12 +330,12 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 
 np.random.seed(42)
-n = 50
-area = np.random.uniform(8, 20, n)
-bedrooms = np.random.randint(2, 5, n)
-price = 20 + 15 * area + 25 * bedrooms + np.random.normal(0, 15, n)
+m = 50
+area = np.random.uniform(8, 20, m)
+bedrooms = np.random.randint(2, 5, m)
+price = 20 + 15 * area + 25 * bedrooms + np.random.normal(0, 15, m)
 
-X = np.column_stack([np.ones(n), area, bedrooms])
+X = np.column_stack([np.ones(m), area, bedrooms])
 theta = np.linalg.inv(X.T @ X) @ (X.T @ price)
 
 print("Closed-form coefficients (true value in parens):")
@@ -363,10 +363,10 @@ plt.show()
 ## R
 ```{webr}
 set.seed(42)
-n <- 50
-area <- runif(n, 8, 20)
-bedrooms <- sample(2:4, n, replace = TRUE)
-price <- 20 + 15 * area + 25 * bedrooms + rnorm(n, 0, 15)
+m <- 50
+area <- runif(m, 8, 20)
+bedrooms <- sample(2:4, m, replace = TRUE)
+price <- 20 + 15 * area + 25 * bedrooms + rnorm(m, 0, 15)
 
 X <- cbind(1, area, bedrooms)
 theta <- solve(t(X) %*% X, t(X) %*% price)
@@ -412,12 +412,12 @@ $\mathbf{X}^\top\mathbf{X}$. The production fitters take the same care for a dif
 import numpy as np
 
 np.random.seed(42)
-n = 100
-x1 = np.random.randn(n)
-x2 = x1 + np.random.randn(n) * 1e-8        # x2 is almost identical to x1
-y = 3 * x1 + 2 * x2 + np.random.randn(n) * 0.1   # so theta1 + theta2 should be ~5
+m = 100
+x1 = np.random.randn(m)
+x2 = x1 + np.random.randn(m) * 1e-8        # x2 is almost identical to x1
+y = 3 * x1 + 2 * x2 + np.random.randn(m) * 0.1   # so theta1 + theta2 should be ~5
 
-X = np.column_stack([np.ones(n), x1, x2])
+X = np.column_stack([np.ones(m), x1, x2])
 print(f"Condition number of X^T X: {np.linalg.cond(X.T @ X):.2e}  (housing data: ~10)\n")
 
 theta_inv = np.linalg.inv(X.T @ X) @ (X.T @ y)   # invert the squared matrix
@@ -434,10 +434,10 @@ print(f"  lstsq:   {theta_svd[1] + theta_svd[2]:.3f}")
 ## R
 ```{webr}
 set.seed(42)
-n <- 100
-x1 <- rnorm(n)
-x2 <- x1 + rnorm(n) * 1e-8                 # x2 is almost identical to x1
-y <- 3 * x1 + 2 * x2 + rnorm(n) * 0.1      # so theta1 + theta2 should be ~5
+m <- 100
+x1 <- rnorm(m)
+x2 <- x1 + rnorm(m) * 1e-8                 # x2 is almost identical to x1
+y <- 3 * x1 + 2 * x2 + rnorm(m) * 0.1      # so theta1 + theta2 should be ~5
 
 X <- cbind(1, x1, x2)
 cat(sprintf("Condition number of X^T X: %.2e  (housing data: ~10)\n\n",

@@ -33,14 +33,14 @@ The two languages build the same deterministic rings, so their figures and the t
 import numpy as np
 import matplotlib.pyplot as plt
 
-def make_rings(n=120):
+def make_rings(m=120):
     """Two deterministic concentric rings: outer class 0, inner class 1."""
-    theta = np.linspace(0, 2*np.pi, n, endpoint=False)
+    theta = np.linspace(0, 2*np.pi, m, endpoint=False)
     r_out = 1.00 + 0.08*np.cos(7*theta)
     r_in  = 0.40 + 0.08*np.sin(6*theta)
     X = np.vstack([np.column_stack([r_out*np.cos(theta), r_out*np.sin(theta)]),
                    np.column_stack([r_in *np.cos(theta), r_in *np.sin(theta)])])
-    return X, np.r_[np.zeros(n), np.ones(n)].astype(int)
+    return X, np.r_[np.zeros(m), np.ones(m)].astype(int)
 
 X, y = make_rings()
 r2 = X[:, 0]**2 + X[:, 1]**2          # the lift: phi(x) = x1^2 + x2^2
@@ -67,13 +67,13 @@ print(f"Threshold rule on the lift: {acc:.1%} training accuracy")
 
 ## R
 ```{webr}
-make_rings <- function(n = 120) {
-  theta <- seq(0, 2*pi, length.out = n + 1)[1:n]
+make_rings <- function(m = 120) {
+  theta <- seq(0, 2*pi, length.out = m + 1)[1:m]
   r_out <- 1.00 + 0.08 * cos(7 * theta)
   r_in  <- 0.40 + 0.08 * sin(6 * theta)
   X <- rbind(cbind(r_out * cos(theta), r_out * sin(theta)),
              cbind(r_in  * cos(theta), r_in  * sin(theta)))
-  list(X = X, y = c(rep(0, n), rep(1, n)))
+  list(X = X, y = c(rep(0, m), rep(1, m)))
 }
 
 d <- make_rings(); X <- d$X; y <- d$y
@@ -179,13 +179,13 @@ The numbers make the point of the whole chapter: a linear kernel cannot beat cha
 import numpy as np
 from sklearn.svm import SVC
 
-def make_rings(n=120):
-    theta = np.linspace(0, 2*np.pi, n, endpoint=False)
+def make_rings(m=120):
+    theta = np.linspace(0, 2*np.pi, m, endpoint=False)
     r_out = 1.00 + 0.08*np.cos(7*theta)
     r_in  = 0.40 + 0.08*np.sin(6*theta)
     X = np.vstack([np.column_stack([r_out*np.cos(theta), r_out*np.sin(theta)]),
                    np.column_stack([r_in *np.cos(theta), r_in *np.sin(theta)])])
-    return X, np.r_[np.zeros(n), np.ones(n)].astype(int)
+    return X, np.r_[np.zeros(m), np.ones(m)].astype(int)
 
 X, y = make_rings()
 
@@ -201,13 +201,13 @@ print("the SVM keeps only its support vectors; kernel ridge (the R tab) keeps al
 
 ## R
 ```{webr}
-make_rings <- function(n = 120) {
-  theta <- seq(0, 2*pi, length.out = n + 1)[1:n]
+make_rings <- function(m = 120) {
+  theta <- seq(0, 2*pi, length.out = m + 1)[1:m]
   r_out <- 1.00 + 0.08 * cos(7 * theta)
   r_in  <- 0.40 + 0.08 * sin(6 * theta)
   X <- rbind(cbind(r_out * cos(theta), r_out * sin(theta)),
              cbind(r_in  * cos(theta), r_in  * sin(theta)))
-  list(X = X, y = c(rep(0, n), rep(1, n)))
+  list(X = X, y = c(rep(0, m), rep(1, m)))
 }
 
 # Squared-distance Gram matrix for an RBF kernel, rows of A against rows of B
@@ -253,13 +253,13 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from sklearn.svm import SVC
 
-def make_rings(n=120):
-    theta = np.linspace(0, 2*np.pi, n, endpoint=False)
+def make_rings(m=120):
+    theta = np.linspace(0, 2*np.pi, m, endpoint=False)
     r_out = 1.00 + 0.08*np.cos(7*theta)
     r_in  = 0.40 + 0.08*np.sin(6*theta)
     X = np.vstack([np.column_stack([r_out*np.cos(theta), r_out*np.sin(theta)]),
                    np.column_stack([r_in *np.cos(theta), r_in *np.sin(theta)])])
-    return X, np.r_[np.zeros(n), np.ones(n)].astype(int)
+    return X, np.r_[np.zeros(m), np.ones(m)].astype(int)
 
 X, y = make_rings()
 xx, yy = np.meshgrid(np.linspace(-1.4, 1.4, 160), np.linspace(-1.4, 1.4, 160))
@@ -284,13 +284,13 @@ print("Support vectors are fewest in between -- see the slider below.")
 
 ## R
 ```{webr}
-make_rings <- function(n = 120) {
-  theta <- seq(0, 2*pi, length.out = n + 1)[1:n]
+make_rings <- function(m = 120) {
+  theta <- seq(0, 2*pi, length.out = m + 1)[1:m]
   r_out <- 1.00 + 0.08 * cos(7 * theta)
   r_in  <- 0.40 + 0.08 * sin(6 * theta)
   X <- rbind(cbind(r_out * cos(theta), r_out * sin(theta)),
              cbind(r_in  * cos(theta), r_in  * sin(theta)))
-  list(X = X, y = c(rep(0, n), rep(1, n)))
+  list(X = X, y = c(rep(0, m), rep(1, m)))
 }
 rbf_gram <- function(A, B, gamma) {
   d2 <- outer(rowSums(A^2), rowSums(B^2), "+") - 2 * A %*% t(B)
@@ -382,13 +382,13 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from sklearn.svm import SVC
 
-def rings(n=120):
-    theta = np.linspace(0, 2*np.pi, n, endpoint=False)
+def rings(m=120):
+    theta = np.linspace(0, 2*np.pi, m, endpoint=False)
     r_out = 1.00 + 0.08*np.cos(7*theta)
     r_in  = 0.40 + 0.08*np.sin(6*theta)
     P = np.vstack([np.column_stack([r_out*np.cos(theta), r_out*np.sin(theta)]),
                    np.column_stack([r_in *np.cos(theta), r_in *np.sin(theta)])])
-    return P, np.r_[np.zeros(n), np.ones(n)].astype(int)
+    return P, np.r_[np.zeros(m), np.ones(m)].astype(int)
 
 g = float(gam)
 Xr, yr = rings()

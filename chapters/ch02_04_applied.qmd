@@ -98,7 +98,7 @@ Both languages read the same fixed numbers and solve the same linear system, so 
 
 ## What a coefficient means: scale and collinearity
 
-The raw coefficients above are not comparable. Weight runs from 1.5 to 5.4 (thousand pounds), horsepower from 50 to 335, so a coefficient's size reflects its units as much as its influence. Standardizing each feature to zero mean and unit variance puts them on a common scale. On that scale weight dominates, horsepower follows, and displacement nearly vanishes.
+The raw coefficients above are not comparable. Weight runs from 1.5 to 5.4 (thousand pounds), horsepower from 52 to 335, so a coefficient's size reflects its units as much as its influence. Standardizing each feature to zero mean and unit variance puts them on a common scale. On that scale weight dominates, horsepower follows, and displacement nearly vanishes.
 
 Displacement vanishing is not a sign that engine size is irrelevant. It is the chapter's collinearity warning made concrete: weight and displacement measure engine size two ways and correlate at $0.89$, so $\mathbf{X}^\top\mathbf{X}$ is ill-conditioned and the two features split the credit for one effect. Fit displacement *alone* and its standardized coefficient is about $-5$; add weight and it collapses to near zero, because weight has already claimed the shared effect. No single coefficient reports this reliably.
 

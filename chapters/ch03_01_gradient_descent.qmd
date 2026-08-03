@@ -33,7 +33,7 @@ $\alpha$. The gradient points uphill; we go the other way.
 ```
 
 Throughout we fit a simple line $\hat{y} = \theta_0 + \theta_1 x$ under mean squared error,
-$J(\theta_0, \theta_1) = \frac{1}{n}\sum_i (y_i - \theta_0 - \theta_1 x_i)^2$. The data is defined
+$J(\theta_0, \theta_1) = \frac{1}{m}\sum_i (y_i - \theta_0 - \theta_1 x_i)^2$. The data is defined
 inline, identical in both languages, so every deterministic result below agrees digit for
 digit across Python and R.
 
@@ -57,10 +57,10 @@ x = np.array([-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
               1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18])
 y = np.array([0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
               3.60, 4.09, 5.10, 6.25, 6.37, 6.47, 7.07])
-n = len(x)
+m = len(x)
 
 # OLS optimum: the target gradient descent is trying to reach
-X = np.column_stack([np.ones(n), x])
+X = np.column_stack([np.ones(m), x])
 theta_ols = np.linalg.solve(X.T @ X, X.T @ y)
 print(f"OLS optimum: theta0 = {theta_ols[0]:.3f}, theta1 = {theta_ols[1]:.3f}")
 
@@ -110,7 +110,7 @@ x <- c(-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
        1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18)
 y <- c(0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
        3.60, 4.09, 5.10, 6.25, 6.37, 6.47, 7.07)
-n <- length(x)
+m <- length(x)
 
 # OLS optimum: the target gradient descent is trying to reach
 X <- cbind(1, x)
@@ -176,8 +176,8 @@ x = np.array([-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
               1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18])
 y = np.array([0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
               3.60, 4.09, 5.10, 6.25, 6.37, 6.47, 7.07])
-n = len(x)
-X = np.column_stack([np.ones(n), x])
+m = len(x)
+X = np.column_stack([np.ones(m), x])
 theta_ols = np.linalg.solve(X.T @ X, X.T @ y)
 opt_loss = np.mean((y - X @ theta_ols)**2)
 
@@ -246,7 +246,7 @@ x <- c(-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
        1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18)
 y <- c(0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
        3.60, 4.09, 5.10, 6.25, 6.37, 6.47, 7.07)
-n <- length(x)
+m <- length(x)
 X <- cbind(1, x)
 theta_ols <- solve(t(X) %*% X, t(X) %*% y)
 opt_loss <- mean((y - X %*% theta_ols)^2)
@@ -422,7 +422,7 @@ print(f"alpha = {alpha:.2f}  ->  final loss {final:.4f}  ({verdict}; optimum {be
 ## A hard threshold for stability
 
 The zig-zag is not a quirk of bad luck. On a quadratic the Hessian is constant,
-$H = \frac{2}{n}\mathbf{X}^\top\mathbf{X}$, and gradient descent converges only when the step
+$H = \frac{2}{m}\mathbf{X}^\top\mathbf{X}$, and gradient descent converges only when the step
 size stays below $2 / \lambda_{\max}(H)$, twice the reciprocal of the largest curvature. Below
 that line the loss falls; a hair above it, the error grows by a fixed factor every step and the
 loss explodes. The number is computable, not guessed.
@@ -438,11 +438,11 @@ x = np.array([-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
               1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18])
 y = np.array([0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
               3.60, 4.09, 5.10, 6.25, 6.37, 6.47, 7.07])
-n = len(x)
-X = np.column_stack([np.ones(n), x])
+m = len(x)
+X = np.column_stack([np.ones(m), x])
 
 # The MSE Hessian is constant; stability needs alpha < 2 / lambda_max(H)
-Hess = (2 / n) * (X.T @ X)
+Hess = (2 / m) * (X.T @ X)
 lam_max = np.linalg.eigvalsh(Hess).max()
 alpha_crit = 2 / lam_max
 print(f"largest curvature lambda_max  = {lam_max:.3f}")
@@ -489,11 +489,11 @@ x <- c(-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
        1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18)
 y <- c(0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
        3.60, 4.09, 5.10, 6.25, 6.37, 6.47, 7.07)
-n <- length(x)
+m <- length(x)
 X <- cbind(1, x)
 
 # The MSE Hessian is constant; stability needs alpha < 2 / lambda_max(H)
-Hess <- (2 / n) * (t(X) %*% X)
+Hess <- (2 / m) * (t(X) %*% X)
 lam_max <- max(eigen(Hess, symmetric = TRUE)$values)
 alpha_crit <- 2 / lam_max
 cat(sprintf("largest curvature lambda_max  = %.3f\n", lam_max))
@@ -559,19 +559,19 @@ x2 = np.array([311., 347., 357., 338., 354., 362., 394.,
                395., 422., 388., 461., 444., 470., 468.])
 y  = np.array([6.29, 7.88, 8.71, 8.55, 9.51, 10.52, 11.04,
                11.41, 13.14, 12.71, 14.21, 14.88, 16.12, 16.30])
-n = len(x1)
+m = len(x1)
 
 def standardize(v):
     return (v - v.mean()) / v.std()
 
 designs = {
-    "raw features":  np.column_stack([np.ones(n), x1, x2]),
-    "standardized":  np.column_stack([np.ones(n), standardize(x1), standardize(x2)]),
+    "raw features":  np.column_stack([np.ones(m), x1, x2]),
+    "standardized":  np.column_stack([np.ones(m), standardize(x1), standardize(x2)]),
 }
 
 def descend(X, n_steps=400):
     """Steepest descent at the largest step the stability rule permits."""
-    H = (2 / n) * X.T @ X
+    H = (2 / m) * X.T @ X
     eigs = np.linalg.eigvalsh(H)
     alpha = 1.9 / eigs[-1]                      # just inside 2 / lambda_max
     theta_star = np.linalg.lstsq(X, y, rcond=None)[0]
@@ -579,7 +579,7 @@ def descend(X, n_steps=400):
     theta, excess = np.zeros(X.shape[1]), []
     for _ in range(n_steps):
         excess.append(np.mean((y - X @ theta) ** 2) - best)
-        theta -= alpha * (-2 / n) * X.T @ (y - X @ theta)
+        theta -= alpha * (-2 / m) * X.T @ (y - X @ theta)
     return np.array(excess), eigs, alpha
 
 fig, ax = plt.subplots(figsize=(7.4, 4.2))
@@ -613,7 +613,7 @@ x2 <- c(311, 347, 357, 338, 354, 362, 394,
         395, 422, 388, 461, 444, 470, 468)
 y  <- c(6.29, 7.88, 8.71, 8.55, 9.51, 10.52, 11.04,
         11.41, 13.14, 12.71, 14.21, 14.88, 16.12, 16.30)
-n <- length(x1)
+m <- length(x1)
 
 standardize <- function(v) (v - mean(v)) / sqrt(mean((v - mean(v))^2))
 
@@ -624,7 +624,7 @@ designs <- list(
 
 descend <- function(X, n_steps = 400) {
   # Steepest descent at the largest step the stability rule permits.
-  H <- (2 / n) * t(X) %*% X
+  H <- (2 / m) * t(X) %*% X
   eigs <- sort(eigen(H, symmetric = TRUE)$values)
   alpha <- 1.9 / eigs[length(eigs)]             # just inside 2 / lambda_max
   theta_star <- qr.solve(X, y)
@@ -632,7 +632,7 @@ descend <- function(X, n_steps = 400) {
   theta <- rep(0, ncol(X)); excess <- numeric(n_steps)
   for (k in seq_len(n_steps)) {
     excess[k] <- mean((y - X %*% theta)^2) - best
-    theta <- theta - alpha * as.vector((-2 / n) * t(X) %*% (y - X %*% theta))
+    theta <- theta - alpha * as.vector((-2 / m) * t(X) %*% (y - X %*% theta))
   }
   list(excess = excess, eigs = eigs, alpha = alpha)
 }
@@ -675,7 +675,7 @@ part of the model's definition.
 
 ## Stochastic gradient descent
 
-The full gradient averages over all $n$ points. [Stochastic gradient descent]{.term} estimates
+The full gradient averages over all $m$ points. [Stochastic gradient descent]{.term} estimates
 it from a random handful instead, a [mini-batch]{.term}, trading exactness for cheaper, more
 frequent steps. The estimate is noisy, so the path wanders, but it still drifts toward the
 optimum and each step costs a fraction of the full pass. With a batch of one the loss curve is
@@ -694,8 +694,8 @@ x = np.array([-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
               1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18])
 y = np.array([0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
               3.60, 4.09, 5.10, 6.25, 6.37, 6.47, 7.07])
-n = len(x)
-X = np.column_stack([np.ones(n), x])
+m = len(x)
+X = np.column_stack([np.ones(m), x])
 theta_ols = np.linalg.solve(X.T @ X, X.T @ y)
 opt_loss = np.mean((y - X @ theta_ols)**2)
 
@@ -712,14 +712,14 @@ def run(lr, n_iter, batch, start, seed):
     theta = np.array(start, float)
     losses = [mse(*theta)]
     for _ in range(n_iter):
-        idx = rng.choice(n, size=batch, replace=False)
+        idx = rng.choice(m, size=batch, replace=False)
         theta = theta - lr * grad_on(idx, theta[0], theta[1])
         losses.append(mse(*theta))               # full-data loss, for monitoring
     return np.array(losses)
 
 start = [2.0, -1.0]
 n_iter = 80
-L_batch = run(0.10, n_iter, n, start, 0)        # full batch = ordinary GD
+L_batch = run(0.10, n_iter, m, start, 0)        # full batch = ordinary GD
 L_mini  = run(0.10, n_iter, 5, start, 1)        # mini-batch of 5
 L_sgd   = run(0.05, n_iter, 1, start, 2)        # one sample at a time
 
@@ -748,7 +748,7 @@ x <- c(-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
        1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18)
 y <- c(0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
        3.60, 4.09, 5.10, 6.25, 6.37, 6.47, 7.07)
-n <- length(x)
+m <- length(x)
 X <- cbind(1, x)
 theta_ols <- solve(t(X) %*% X, t(X) %*% y)
 opt_loss <- mean((y - X %*% theta_ols)^2)
@@ -765,7 +765,7 @@ run <- function(lr, n_iter, batch, start, seed) {
   theta <- start
   losses <- mse(theta[1], theta[2])
   for (i in seq_len(n_iter)) {
-    idx <- sample.int(n, batch)
+    idx <- sample.int(m, batch)
     theta <- theta - lr * grad_on(idx, theta[1], theta[2])
     losses <- c(losses, mse(theta[1], theta[2]))   # full-data loss, for monitoring
   }
@@ -774,7 +774,7 @@ run <- function(lr, n_iter, batch, start, seed) {
 
 start <- c(2.0, -1.0)
 n_iter <- 80
-L_batch <- run(0.10, n_iter, n, start, 0)        # full batch = ordinary GD
+L_batch <- run(0.10, n_iter, m, start, 0)        # full batch = ordinary GD
 L_mini  <- run(0.10, n_iter, 5, start, 1)        # mini-batch of 5
 L_sgd   <- run(0.05, n_iter, 1, start, 2)        # one sample at a time
 
@@ -815,8 +815,8 @@ x = np.array([-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
               1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18])
 y = np.array([0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
               3.60, 4.09, 5.10, 6.25, 6.37, 6.47, 7.07])
-n = len(x)
-X = np.column_stack([np.ones(n), x])
+m = len(x)
+X = np.column_stack([np.ones(m), x])
 theta_ols = np.linalg.solve(X.T @ X, X.T @ y)
 opt_loss = np.mean((y - X @ theta_ols)**2)
 
@@ -894,7 +894,7 @@ x <- c(-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
        1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18)
 y <- c(0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
        3.60, 4.09, 5.10, 6.25, 6.37, 6.47, 7.07)
-n <- length(x)
+m <- length(x)
 X <- cbind(1, x)
 theta_ols <- solve(t(X) %*% X, t(X) %*% y)
 opt_loss <- mean((y - X %*% theta_ols)^2)

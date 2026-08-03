@@ -68,16 +68,16 @@ print("informative indices:", np.flatnonzero(coef_true))
 ## R
 ```{webr}
 set.seed(0)
-n <- 200; p <- 30; k <- 8                 # 200 rows, 30 features, 8 with signal
+m <- 200; n <- 30; k <- 8                 # 200 rows, 30 features, 8 with signal
 
-X <- scale(matrix(rnorm(n * p), n, p))    # standardize: each column mean 0, sd 1
-true_idx <- sort(sample(p, k))            # which features carry signal
-theta_true <- numeric(p)
+X <- scale(matrix(rnorm(m * n), m, n))    # standardize: each column mean 0, sd 1
+true_idx <- sort(sample(n, k))            # which features carry signal
+theta_true <- numeric(n)
 theta_true[true_idx] <- runif(k, 10, 100)  # their coefficients
-y <- as.vector(X %*% theta_true) + rnorm(n, 0, 10)
+y <- as.vector(X %*% theta_true) + rnorm(m, 0, 10)
 y <- y - mean(y)                          # center the target, so no intercept is needed
 
-cat(p, "features;", sum(theta_true != 0), "of them actually matter\n")
+cat(n, "features;", sum(theta_true != 0), "of them actually matter\n")
 cat("informative indices:", true_idx, "\n")
 ```
 
@@ -174,26 +174,26 @@ for a, c in zip(lasso_alphas[::8], counts[::8]):
 ## R
 ```{webr}
 set.seed(0)
-n <- 200; p <- 30; k <- 8
-X <- scale(matrix(rnorm(n * p), n, p))
-true_idx <- sort(sample(p, k))
-theta_true <- numeric(p); theta_true[true_idx] <- runif(k, 10, 100)
-y <- as.vector(X %*% theta_true) + rnorm(n, 0, 10)
+m <- 200; n <- 30; k <- 8
+X <- scale(matrix(rnorm(m * n), m, n))
+true_idx <- sort(sample(n, k))
+theta_true <- numeric(n); theta_true[true_idx] <- runif(k, 10, 100)
+y <- as.vector(X %*% theta_true) + rnorm(m, 0, 10)
 y <- y - mean(y)
 
 # LASSO by coordinate descent: cycle the coefficients, soft-thresholding each one
 # against the partial residual. The soft threshold is what snaps a weight to 0.
 lasso_cd <- function(X, y, lambda, n_iter = 200, tol = 1e-7) {
-  n <- nrow(X); p <- ncol(X)
-  theta <- numeric(p)
+  m <- nrow(X); n <- ncol(X)
+  theta <- numeric(n)
   cj <- colSums(X^2)               # column energies (= n - 1 after scaling)
   r  <- y - X %*% theta             # working residual
   for (it in seq_len(n_iter)) {
     theta_old <- theta
-    for (j in seq_len(p)) {
+    for (j in seq_len(n)) {
       r <- r + X[, j] * theta[j]    # add feature j back into the residual
       rho <- sum(X[, j] * r)
-      theta[j] <- sign(rho) * max(abs(rho) - n * lambda, 0) / cj[j]  # soft-threshold
+      theta[j] <- sign(rho) * max(abs(rho) - m * lambda, 0) / cj[j]  # soft-threshold
       r <- r - X[, j] * theta[j]    # take the updated feature back out
     }
     if (max(abs(theta - theta_old)) < tol) break
@@ -206,11 +206,11 @@ ridge_fit <- function(X, y, lambda)
   solve(crossprod(X) + lambda * diag(ncol(X)), crossprod(X, y))
 
 # lambda_max for LASSO: the smallest penalty that zeroes every coefficient.
-lam_max  <- max(abs(crossprod(X, y))) / n
+lam_max  <- max(abs(crossprod(X, y))) / m
 lam_grid <- 10^seq(log10(lam_max), log10(lam_max * 1e-3), length.out = 40)
 
 lasso_path <- t(sapply(lam_grid, function(l) lasso_cd(X, y, l)))   # 40 x p
-ridge_grid <- 10^seq(-1, 3.5, length.out = 40) * n
+ridge_grid <- 10^seq(-1, 3.5, length.out = 40) * m
 ridge_path <- t(sapply(ridge_grid, function(l) ridge_fit(X, y, l)))
 
 # Color by truth, matching the hero figure: informative blue, spurious gray.
@@ -221,12 +221,12 @@ INFO <- "#076FA1"; SPUR <- "#666666"
 par(mfrow = c(1, 2))
 
 # ridge: spurious gray behind, informative blue on top
-matplot(log10(ridge_grid / n), ridge_path, type = "n", bty = "l",
+matplot(log10(ridge_grid / m), ridge_path, type = "n", bty = "l",
         main = "ridge", xlab = "log10 penalty", ylab = "coefficient")
 abline(h = 0, col = SPUR, lwd = 0.9)                       # gray zero line, as in the hero
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-matlines(log10(ridge_grid / n), ridge_path[, spur], lty = 1, lwd = 0.9, col = SPUR)
-matlines(log10(ridge_grid / n), ridge_path[, info], lty = 1, lwd = 1.8, col = INFO)
+matlines(log10(ridge_grid / m), ridge_path[, spur], lty = 1, lwd = 0.9, col = SPUR)
+matlines(log10(ridge_grid / m), ridge_path[, info], lty = 1, lwd = 1.8, col = INFO)
 
 # LASSO (the hero panel): informative blue survive deepest, spurious gray hug zero
 matplot(log10(lam_grid), lasso_path, type = "n", bty = "l",
@@ -286,22 +286,22 @@ print(f"spurious features kept:  {len(kept - true_idx)}")
 ## R
 ```{webr}
 set.seed(0)
-n <- 200; p <- 30; k <- 8
-X <- scale(matrix(rnorm(n * p), n, p))
-true_idx <- sort(sample(p, k))
-theta_true <- numeric(p); theta_true[true_idx] <- runif(k, 10, 100)
-y <- as.vector(X %*% theta_true) + rnorm(n, 0, 10)
+m <- 200; n <- 30; k <- 8
+X <- scale(matrix(rnorm(m * n), m, n))
+true_idx <- sort(sample(n, k))
+theta_true <- numeric(n); theta_true[true_idx] <- runif(k, 10, 100)
+y <- as.vector(X %*% theta_true) + rnorm(m, 0, 10)
 y <- y - mean(y)
 
 lasso_cd <- function(X, y, lambda, n_iter = 200, tol = 1e-7) {
-  n <- nrow(X); p <- ncol(X)
-  theta <- numeric(p); cj <- colSums(X^2); r <- y - X %*% theta
+  m <- nrow(X); n <- ncol(X)
+  theta <- numeric(n); cj <- colSums(X^2); r <- y - X %*% theta
   for (it in seq_len(n_iter)) {
     theta_old <- theta
-    for (j in seq_len(p)) {
+    for (j in seq_len(n)) {
       r <- r + X[, j] * theta[j]
       rho <- sum(X[, j] * r)
-      theta[j] <- sign(rho) * max(abs(rho) - n * lambda, 0) / cj[j]
+      theta[j] <- sign(rho) * max(abs(rho) - m * lambda, 0) / cj[j]
       r <- r - X[, j] * theta[j]
     }
     if (max(abs(theta - theta_old)) < tol) break
@@ -309,12 +309,12 @@ lasso_cd <- function(X, y, lambda, n_iter = 200, tol = 1e-7) {
   theta
 }
 
-lam_max  <- max(abs(crossprod(X, y))) / n
+lam_max  <- max(abs(crossprod(X, y))) / m
 lam_grid <- 10^seq(log10(lam_max), log10(lam_max * 1e-3), length.out = 40)
 
 # 5-fold cross-validation: for each penalty, average held-out squared error.
 K <- 5
-folds <- sample(rep(1:K, length.out = n))
+folds <- sample(rep(1:K, length.out = m))
 cv_mse <- sapply(lam_grid, function(l) {
   err <- 0
   for (f in 1:K) {
@@ -322,7 +322,7 @@ cv_mse <- sapply(lam_grid, function(l) {
     b <- lasso_cd(X[tr, , drop = FALSE], y[tr], l)
     err <- err + sum((y[te] - X[te, , drop = FALSE] %*% b)^2)
   }
-  err / n
+  err / m
 })
 
 best_lambda <- lam_grid[which.min(cv_mse)]
@@ -330,8 +330,8 @@ theta_hat <- lasso_cd(X, y, best_lambda)        # refit on all data at the chose
 kept <- which(theta_hat != 0)
 
 cat(sprintf("LASSO cross-validated penalty: lambda = %.3f\n", best_lambda))
-cat(sprintf("features kept by LASSO: %d of %d\n", length(kept), p))
-cat(sprintf("features kept by ridge: %d of %d  (all shrunk, none exactly zero)\n", p, p))
+cat(sprintf("features kept by LASSO: %d of %d\n", length(kept), n))
+cat(sprintf("features kept by ridge: %d of %d  (all shrunk, none exactly zero)\n", n, n))
 cat(sprintf("true features recovered: %d of %d\n", length(intersect(kept, true_idx)), k))
 cat(sprintf("spurious features kept:  %d\n", length(setdiff(kept, true_idx))))
 ```

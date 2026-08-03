@@ -54,12 +54,12 @@ import numpy as np
 np.random.seed(42)
 
 # Binary data with a mildly nonlinear boundary, 5% label noise.
-n = 500
-X = np.random.randn(n, 2) * 1.5
+m = 500
+X = np.random.randn(m, 2) * 1.5
 y = (X[:, 0] + 0.3 * X[:, 1]**2 > 0.5).astype(int)
-flip = np.random.choice(n, size=int(0.05 * n), replace=False)
+flip = np.random.choice(m, size=int(0.05 * m), replace=False)
 y[flip] = 1 - y[flip]
-print(f"{n} samples, {y.mean():.0%} positive")
+print(f"{m} samples, {y.mean():.0%} positive")
 
 # Logistic regression by gradient descent (the from-scratch fit).
 def fit_logistic(X, y, lr=0.1, iters=1000):
@@ -75,7 +75,7 @@ def proba(X, theta):
     return 1 / (1 + np.exp(-np.clip(Xd @ theta, -500, 500)))
 
 # Single 80/20 split: optimistic on train, honest on the held-out test set.
-idx = np.random.permutation(n)
+idx = np.random.permutation(m)
 test, train = idx[:100], idx[100:]
 theta = fit_logistic(X[train], y[train])
 acc = lambda i: np.mean((proba(X[i], theta) >= 0.5).astype(int) == y[i])
@@ -90,7 +90,7 @@ def log_loss(i):
 print(f"train log-loss {log_loss(train):.3f}, test log-loss {log_loss(test):.3f}")
 
 # 5-fold cross-validation: refit on each training split, score the held-out fold.
-folds = np.array_split(np.random.permutation(n), 5)
+folds = np.array_split(np.random.permutation(m), 5)
 scores = []
 for k in range(5):
     te = folds[k]
@@ -107,21 +107,21 @@ print(f"CV accuracy {scores.mean():.1%} +/- {scores.std():.1%}")
 set.seed(42)
 
 # Binary data with a mildly nonlinear boundary, 5% label noise.
-n <- 500
-x1 <- rnorm(n) * 1.5
-x2 <- rnorm(n) * 1.5
+m <- 500
+x1 <- rnorm(m) * 1.5
+x2 <- rnorm(m) * 1.5
 y <- as.integer(x1 + 0.3 * x2^2 > 0.5)
-flip <- sample(n, size = round(0.05 * n))
+flip <- sample(m, size = round(0.05 * m))
 y[flip] <- 1 - y[flip]
 df <- data.frame(x1 = x1, x2 = x2, y = y)
-cat(sprintf("%d samples, %.0f%% positive\n", n, 100 * mean(y)))
+cat(sprintf("%d samples, %.0f%% positive\n", m, 100 * mean(y)))
 
 # Logistic regression by maximum likelihood (base-R glm).
 acc <- function(fit, d) mean((predict(fit, d, type = "response") >= 0.5) == d$y)
 
 # Single 80/20 split: optimistic on train, honest on the held-out test set.
-idx <- sample(n)
-test <- idx[1:100]; train <- idx[101:n]
+idx <- sample(m)
+test <- idx[1:100]; train <- idx[101:m]
 fit <- glm(y ~ x1 + x2, family = binomial, data = df[train, ])
 cat(sprintf("train accuracy %.1f%%, test accuracy %.1f%%\n",
             100 * acc(fit, df[train, ]), 100 * acc(fit, df[test, ])))
@@ -136,10 +136,10 @@ cat(sprintf("train log-loss %.3f, test log-loss %.3f\n",
             log_loss(df[train, ]), log_loss(df[test, ])))
 
 # 5-fold cross-validation: refit on each training split, score the held-out fold.
-folds <- split(sample(n), rep(1:5, length.out = n))
+folds <- split(sample(m), rep(1:5, length.out = m))
 scores <- numeric(5)
 for (k in 1:5) {
-  te <- folds[[k]]; tr <- setdiff(1:n, te)
+  te <- folds[[k]]; tr <- setdiff(1:m, te)
   fk <- glm(y ~ x1 + x2, family = binomial, data = df[tr, ])
   scores[k] <- acc(fk, df[te, ])
   cat(sprintf("  fold %d: %.1f%%\n", k, 100 * scores[k]))
@@ -187,10 +187,10 @@ negative class.
 ```{pyodide}
 import numpy as np
 np.random.seed(42)
-n = 500
-X = np.random.randn(n, 2) * 1.5
+m = 500
+X = np.random.randn(m, 2) * 1.5
 y = (X[:, 0] + 0.3 * X[:, 1]**2 > 0.5).astype(int)
-flip = np.random.choice(n, size=int(0.05 * n), replace=False)
+flip = np.random.choice(m, size=int(0.05 * m), replace=False)
 y[flip] = 1 - y[flip]
 
 def fit_logistic(X, y, lr=0.1, iters=1000):
@@ -204,7 +204,7 @@ def proba(X, theta):
     Xd = np.column_stack([np.ones(len(X)), X])
     return 1 / (1 + np.exp(-np.clip(Xd @ theta, -500, 500)))
 
-idx = np.random.permutation(n); test, train = idx[:100], idx[100:]
+idx = np.random.permutation(m); test, train = idx[:100], idx[100:]
 p = proba(X[test], fit_logistic(X[train], y[train]))
 yhat = (p >= 0.5).astype(int)
 yt = y[test]
@@ -232,13 +232,13 @@ print(f"G-mean      {gmean:.3f}")
 ## R
 ```{webr}
 set.seed(42)
-n <- 500
-x1 <- rnorm(n) * 1.5; x2 <- rnorm(n) * 1.5
+m <- 500
+x1 <- rnorm(m) * 1.5; x2 <- rnorm(m) * 1.5
 y <- as.integer(x1 + 0.3 * x2^2 > 0.5)
-flip <- sample(n, size = round(0.05 * n)); y[flip] <- 1 - y[flip]
+flip <- sample(m, size = round(0.05 * m)); y[flip] <- 1 - y[flip]
 df <- data.frame(x1 = x1, x2 = x2, y = y)
 
-idx <- sample(n); test <- idx[1:100]; train <- idx[101:n]
+idx <- sample(m); test <- idx[1:100]; train <- idx[101:m]
 fit <- glm(y ~ x1 + x2, family = binomial, data = df[train, ])
 p <- predict(fit, df[test, ], type = "response")
 yhat <- as.integer(p >= 0.5); yt <- df$y[test]
@@ -280,10 +280,10 @@ the same model evaluated at every cutoff from near 0 to near 1.
 import numpy as np
 import matplotlib.pyplot as plt
 np.random.seed(42)
-n = 500
-X = np.random.randn(n, 2) * 1.5
+m = 500
+X = np.random.randn(m, 2) * 1.5
 y = (X[:, 0] + 0.3 * X[:, 1]**2 > 0.5).astype(int)
-flip = np.random.choice(n, size=int(0.05 * n), replace=False)
+flip = np.random.choice(m, size=int(0.05 * m), replace=False)
 y[flip] = 1 - y[flip]
 
 def fit_logistic(X, y, lr=0.1, iters=1000):
@@ -297,7 +297,7 @@ def proba(X, theta):
     Xd = np.column_stack([np.ones(len(X)), X])
     return 1 / (1 + np.exp(-np.clip(Xd @ theta, -500, 500)))
 
-idx = np.random.permutation(n); test, train = idx[:100], idx[100:]
+idx = np.random.permutation(m); test, train = idx[:100], idx[100:]
 p = proba(X[test], fit_logistic(X[train], y[train]))
 yt = y[test]
 
@@ -329,12 +329,12 @@ plt.show()
 ## R
 ```{webr}
 set.seed(42)
-n <- 500
-x1 <- rnorm(n) * 1.5; x2 <- rnorm(n) * 1.5
+m <- 500
+x1 <- rnorm(m) * 1.5; x2 <- rnorm(m) * 1.5
 y <- as.integer(x1 + 0.3 * x2^2 > 0.5)
-flip <- sample(n, size = round(0.05 * n)); y[flip] <- 1 - y[flip]
+flip <- sample(m, size = round(0.05 * m)); y[flip] <- 1 - y[flip]
 df <- data.frame(x1 = x1, x2 = x2, y = y)
-idx <- sample(n); test <- idx[1:100]; train <- idx[101:n]
+idx <- sample(m); test <- idx[1:100]; train <- idx[101:m]
 fit <- glm(y ~ x1 + x2, family = binomial, data = df[train, ])
 p <- predict(fit, df[test, ], type = "response"); yt <- df$y[test]
 
@@ -391,10 +391,10 @@ a threshold, count the two rates, then integrate by the trapezoid rule. No `pROC
 import numpy as np
 import matplotlib.pyplot as plt
 np.random.seed(42)
-n = 500
-X = np.random.randn(n, 2) * 1.5
+m = 500
+X = np.random.randn(m, 2) * 1.5
 y = (X[:, 0] + 0.3 * X[:, 1]**2 > 0.5).astype(int)
-flip = np.random.choice(n, size=int(0.05 * n), replace=False)
+flip = np.random.choice(m, size=int(0.05 * m), replace=False)
 y[flip] = 1 - y[flip]
 
 def fit_logistic(X, y, lr=0.1, iters=1000):
@@ -408,7 +408,7 @@ def proba(X, theta):
     Xd = np.column_stack([np.ones(len(X)), X])
     return 1 / (1 + np.exp(-np.clip(Xd @ theta, -500, 500)))
 
-idx = np.random.permutation(n); test, train = idx[:100], idx[100:]
+idx = np.random.permutation(m); test, train = idx[:100], idx[100:]
 p = proba(X[test], fit_logistic(X[train], y[train]))
 yt = y[test]
 
@@ -444,12 +444,12 @@ print(f"P(random positive scored above random negative) = {wins:.3f}")
 ## R
 ```{webr}
 set.seed(42)
-n <- 500
-x1 <- rnorm(n) * 1.5; x2 <- rnorm(n) * 1.5
+m <- 500
+x1 <- rnorm(m) * 1.5; x2 <- rnorm(m) * 1.5
 y <- as.integer(x1 + 0.3 * x2^2 > 0.5)
-flip <- sample(n, size = round(0.05 * n)); y[flip] <- 1 - y[flip]
+flip <- sample(m, size = round(0.05 * m)); y[flip] <- 1 - y[flip]
 df <- data.frame(x1 = x1, x2 = x2, y = y)
-idx <- sample(n); test <- idx[1:100]; train <- idx[101:n]
+idx <- sample(m); test <- idx[1:100]; train <- idx[101:m]
 fit <- glm(y ~ x1 + x2, family = binomial, data = df[train, ])
 p <- predict(fit, df[test, ], type = "response"); yt <- df$y[test]
 
@@ -533,11 +533,11 @@ for nneg in (200, 800, 3800, 19800):
     print(f"{NPOS+nneg:>9d}{y.mean():>11.0%}{area(fpr, tpr):>10.3f}"
           f"{pr_auc:>9.3f}{y.mean():>13.3f}")
     if nneg in drawn:
-        colour = drawn[nneg]
+        color = drawn[nneg]
         label = f"{y.mean():.0%} positive"
-        a1.plot(fpr, tpr, color=colour, lw=2.5, label=label)
-        a2.plot(rec, prec, color=colour, lw=2.5, label=label)
-        a2.axhline(y.mean(), color=colour, ls=":", lw=1.5)
+        a1.plot(fpr, tpr, color=color, lw=2.5, label=label)
+        a2.plot(rec, prec, color=color, lw=2.5, label=label)
+        a2.axhline(y.mean(), color=color, ls=":", lw=1.5)
 
 a1.plot([0, 1], [0, 1], color="#666666", ls="--", lw=1)
 a1.set_xlabel("false positive rate"); a1.set_ylabel("true positive rate")
@@ -583,17 +583,17 @@ for (nneg in c(200, 800, 3800, 19800)) {
   cat(sprintf("%9d %10.0f%% %9.3f %8.3f %12.3f\n",
               NPOS + nneg, 100 * mean(y), area(cv$fpr, cv$tpr), pr_auc, mean(y)))
   if (nneg %in% c(200, 3800)) {
-    colour <- if (nneg == 200) "#31417A" else "#E3120B"
+    color <- if (nneg == 200) "#31417A" else "#E3120B"
     if (first) {
-      plot(cv$rec, cv$prec, type = "l", col = colour, lwd = 2.5,
+      plot(cv$rec, cv$prec, type = "l", col = color, lwd = 2.5,
            xlim = c(0, 1), ylim = c(0, 1.05),
            xlab = "recall", ylab = "precision", bty = "l")
       grid(col = "#e6e3da", lty = 1, lwd = 0.6)
       first <- FALSE
     } else {
-      lines(cv$rec, cv$prec, col = colour, lwd = 2.5)
+      lines(cv$rec, cv$prec, col = color, lwd = 2.5)
     }
-    abline(h = mean(y), col = colour, lty = 3, lwd = 1.5)
+    abline(h = mean(y), col = color, lty = 3, lwd = 1.5)
   }
 }
 legend("topright", c("50% positive", "5% positive"),
@@ -631,10 +631,10 @@ maximum likelihood, is usually close to the line by construction.
 import numpy as np
 import matplotlib.pyplot as plt
 np.random.seed(42)
-n = 500
-X = np.random.randn(n, 2) * 1.5
+m = 500
+X = np.random.randn(m, 2) * 1.5
 y = (X[:, 0] + 0.3 * X[:, 1]**2 > 0.5).astype(int)
-flip = np.random.choice(n, size=int(0.05 * n), replace=False)
+flip = np.random.choice(m, size=int(0.05 * m), replace=False)
 y[flip] = 1 - y[flip]
 
 def fit_logistic(X, y, lr=0.1, iters=1000):
@@ -648,7 +648,7 @@ def proba(X, theta):
     Xd = np.column_stack([np.ones(len(X)), X])
     return 1 / (1 + np.exp(-np.clip(Xd @ theta, -500, 500)))
 
-idx = np.random.permutation(n); test, train = idx[:100], idx[100:]
+idx = np.random.permutation(m); test, train = idx[:100], idx[100:]
 p = proba(X[test], fit_logistic(X[train], y[train]))
 yt = y[test]
 
@@ -656,10 +656,10 @@ yt = y[test]
 bins = np.linspace(0, 1, 11)
 mean_pred, frac_pos = [], []
 for i in range(10):
-    m = (p >= bins[i]) & (p < bins[i + 1])
-    if m.sum() > 0:
-        mean_pred.append(p[m].mean())
-        frac_pos.append(yt[m].mean())
+    in_bin = (p >= bins[i]) & (p < bins[i + 1])
+    if in_bin.sum() > 0:
+        mean_pred.append(p[in_bin].mean())
+        frac_pos.append(yt[in_bin].mean())
 mean_pred = np.array(mean_pred); frac_pos = np.array(frac_pos)
 
 fig, ax = plt.subplots(figsize=(6, 6))
@@ -679,12 +679,12 @@ plt.show()
 ## R
 ```{webr}
 set.seed(42)
-n <- 500
-x1 <- rnorm(n) * 1.5; x2 <- rnorm(n) * 1.5
+m <- 500
+x1 <- rnorm(m) * 1.5; x2 <- rnorm(m) * 1.5
 y <- as.integer(x1 + 0.3 * x2^2 > 0.5)
-flip <- sample(n, size = round(0.05 * n)); y[flip] <- 1 - y[flip]
+flip <- sample(m, size = round(0.05 * m)); y[flip] <- 1 - y[flip]
 df <- data.frame(x1 = x1, x2 = x2, y = y)
-idx <- sample(n); test <- idx[1:100]; train <- idx[101:n]
+idx <- sample(m); test <- idx[1:100]; train <- idx[101:m]
 fit <- glm(y ~ x1 + x2, family = binomial, data = df[train, ])
 p <- predict(fit, df[test, ], type = "response"); yt <- df$y[test]
 

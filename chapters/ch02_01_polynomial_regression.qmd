@@ -29,7 +29,7 @@ $\text{price} = 50 + 4.0\,\text{area} - 0.010\,\text{area}^2$, plus Gaussian noi
 true signal is exactly quadratic and everything past degree two is the model chasing noise.
 The same fifteen points are hard-coded into every cell, so Python and R compute identical
 numbers. We measure fit with [mean squared error]{.term},
-$\text{MSE} = \frac{1}{n}\sum_i (y_i - \hat{y}_i)^2$.
+$\text{MSE} = \frac{1}{m}\sum_i (y_i - \hat{y}_i)^2$.
 
 One numerical note carried by both languages: before building the design matrix we
 standardize the area (subtract its mean, divide by its standard deviation). A raw Vandermonde
@@ -141,7 +141,7 @@ legend("topleft", bty = "n",
 
 ## The pathology of interpolation
 
-Push the degree to $n - 1 = 14$ and the polynomial passes *exactly* through all fifteen
+Push the degree to $m - 1 = 14$ and the polynomial passes *exactly* through all fifteen
 points: training MSE is zero. The price of that perfection is paid between and beyond the
 points, where the curve swings violently. Evaluated across a slightly wider range of house
 sizes, this interpolating polynomial predicts *negative prices* across part of its range, an

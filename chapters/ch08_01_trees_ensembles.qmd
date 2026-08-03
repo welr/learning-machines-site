@@ -151,7 +151,7 @@ def gini(labels):
 
 def best_split(X, y):
     """Find the single axis-aligned split that most reduces weighted Gini."""
-    n, d = X.shape
+    m, d = X.shape
     parent = gini(y)
     best = (-np.inf, None, None)        # (gain, feature, threshold)
     for feature in range(d):
@@ -283,11 +283,11 @@ import matplotlib.pyplot as plt
 np.random.seed(0)
 
 # Noisy sine; the learner never sees the truth f(x) = sin(x).
-n = 160
-x = np.sort(np.random.uniform(0, 6, n))
-y = np.sin(x) + np.random.normal(0, 0.3, n)
+m = 160
+x = np.sort(np.random.uniform(0, 6, m))
+y = np.sin(x) + np.random.normal(0, 0.3, m)
 # Interleave into train and test so both span the whole range.
-test = np.zeros(n, bool); test[1::2] = True
+test = np.zeros(m, bool); test[1::2] = True
 x_tr, y_tr = x[~test], y[~test]
 x_te, y_te = x[test],  y[test]
 
@@ -366,11 +366,11 @@ plt.show()
 set.seed(0)
 
 # Noisy sine; the learner never sees the truth f(x) = sin(x).
-n <- 160
-x <- sort(runif(n, 0, 6))
-y <- sin(x) + rnorm(n, 0, 0.3)
+m <- 160
+x <- sort(runif(m, 0, 6))
+y <- sin(x) + rnorm(m, 0, 0.3)
 # Interleave into train and test so both span the whole range.
-test <- rep(c(FALSE, TRUE), length.out = n)
+test <- rep(c(FALSE, TRUE), length.out = m)
 x_tr <- x[!test]; y_tr <- y[!test]
 x_te <- x[test];  y_te <- y[test]
 
@@ -475,10 +475,10 @@ import matplotlib.pyplot as plt
 np.random.seed(0)
 
 # The same noisy sine, split into train and test.
-n = 160
-x = np.sort(np.random.uniform(0, 6, n))
-y = np.sin(x) + np.random.normal(0, 0.3, n)
-test = np.zeros(n, bool); test[1::2] = True
+m = 160
+x = np.sort(np.random.uniform(0, 6, m))
+y = np.sin(x) + np.random.normal(0, 0.3, m)
+test = np.zeros(m, bool); test[1::2] = True
 x_tr, y_tr = x[~test], y[~test]
 x_te, y_te = x[test],  y[test]
 
@@ -557,10 +557,10 @@ plt.show()
 set.seed(0)
 
 # The same noisy sine, split into train and test.
-n <- 160
-x <- sort(runif(n, 0, 6))
-y <- sin(x) + rnorm(n, 0, 0.3)
-test <- rep(c(FALSE, TRUE), length.out = n)
+m <- 160
+x <- sort(runif(m, 0, 6))
+y <- sin(x) + rnorm(m, 0, 0.3)
+test <- rep(c(FALSE, TRUE), length.out = m)
 x_tr <- x[!test]; y_tr <- y[!test]
 x_te <- x[test];  y_te <- y[test]
 
@@ -795,10 +795,10 @@ import matplotlib.pyplot as plt
 np.random.seed(1)
 
 # Four features, but only 0 and 2 carry signal (0 the stronger).
-n, d = 300, 4
-X = np.random.randn(n, d)
+m, d = 300, 4
+X = np.random.randn(m, d)
 signal = 1.5 * X[:, 0] + 1.0 * X[:, 2]
-y = (signal + 0.5 * np.random.randn(n) > 0).astype(int)
+y = (signal + 0.5 * np.random.randn(m) > 0).astype(int)
 
 def gini(labels):
     if len(labels) == 0:
@@ -822,11 +822,11 @@ def best_split(X, y, feats):
 
 # A small forest of stumps: bootstrap rows, random 2-feature subset each time,
 # tally how much Gini each chosen feature removes (mean impurity decrease).
-B, m = 100, 2
+B, mtry = 100, 2
 importance = np.zeros(d)
 for _ in range(B):
-    idx = np.random.choice(n, n, replace=True)
-    feats = np.random.choice(d, m, replace=False)
+    idx = np.random.choice(m, m, replace=True)
+    feats = np.random.choice(d, mtry, replace=False)
     f, gain = best_split(X[idx], y[idx], feats)
     if f is not None:
         importance[f] += gain
@@ -853,10 +853,10 @@ plt.show()
 set.seed(1)
 
 # Four features, but only 0 and 2 (1-indexed: 1 and 3) carry signal.
-n <- 300; d <- 4
-X <- matrix(rnorm(n * d), n, d)
+m <- 300; d <- 4
+X <- matrix(rnorm(m * d), m, d)
 signal <- 1.5 * X[, 1] + 1.0 * X[, 3]
-y <- as.integer(signal + 0.5 * rnorm(n) > 0)
+y <- as.integer(signal + 0.5 * rnorm(m) > 0)
 
 gini <- function(labels) {
   if (length(labels) == 0) return(0)
@@ -881,11 +881,11 @@ best_split <- function(X, y, feats) {
 
 # A small forest of stumps: bootstrap rows, random 2-feature subset each time,
 # tally how much Gini each chosen feature removes (mean impurity decrease).
-B <- 100; m <- 2
+B <- 100; mtry <- 2
 importance <- numeric(d)
 for (b in 1:B) {
-  idx <- sample(n, n, replace = TRUE)
-  feats <- sample(d, m)
+  idx <- sample(m, m, replace = TRUE)
+  feats <- sample(d, mtry)
   res <- best_split(X[idx, , drop = FALSE], y[idx], feats)
   if (!is.na(res$feature)) importance[res$feature] <- importance[res$feature] + res$gain
 }

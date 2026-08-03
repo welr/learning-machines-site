@@ -100,17 +100,17 @@ print(f"top 8 features account for {importances[order].sum():.1%} of total impor
 set.seed(0)
 
 # Recreate make_moons in base R: two interleaving half-circles, plus noise.
-make_moons <- function(n, noise = 0.30) {
-  n_out <- n %/% 2; n_in <- n - n_out
+make_moons <- function(m, noise = 0.30) {
+  n_out <- m %/% 2; n_in <- m - n_out
   t_out <- seq(0, pi, length.out = n_out)
   t_in  <- seq(0, pi, length.out = n_in)
   x <- c(cos(t_out),      1 - cos(t_in))
   y <- c(sin(t_out), 0.5 - sin(t_in))
-  X <- cbind(x, y) + matrix(rnorm(2 * n, sd = noise), ncol = 2)
+  X <- cbind(x, y) + matrix(rnorm(2 * m, sd = noise), ncol = 2)
   list(X = X, label = c(rep(0L, n_out), rep(1L, n_in)))
 }
 
-m <- make_moons(300, noise = 0.30); X <- m$X; lab <- m$label
+moons <- make_moons(300, noise = 0.30); X <- moons$X; lab <- moons$label
 test <- sample(nrow(X), nrow(X) %/% 4)            # hold out a quarter
 Xtr <- X[-test, ]; ytr <- lab[-test]
 Xte <- X[ test, ]; yte <- lab[ test]
@@ -241,14 +241,14 @@ plt.show()
 ```{webr}
 set.seed(0)
 
-make_moons <- function(n, noise = 0.30) {
-  n_out <- n %/% 2; n_in <- n - n_out
+make_moons <- function(m, noise = 0.30) {
+  n_out <- m %/% 2; n_in <- m - n_out
   t_out <- seq(0, pi, length.out = n_out); t_in <- seq(0, pi, length.out = n_in)
   x <- c(cos(t_out), 1 - cos(t_in)); y <- c(sin(t_out), 0.5 - sin(t_in))
-  X <- cbind(x, y) + matrix(rnorm(2 * n, sd = noise), ncol = 2)
+  X <- cbind(x, y) + matrix(rnorm(2 * m, sd = noise), ncol = 2)
   list(X = X, label = c(rep(0L, n_out), rep(1L, n_in)))
 }
-m <- make_moons(300, noise = 0.30); X <- m$X; lab <- m$label
+moons <- make_moons(300, noise = 0.30); X <- moons$X; lab <- moons$label
 
 fit_stump <- function(X, y) {
   best <- list(err = Inf)
