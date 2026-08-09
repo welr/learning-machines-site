@@ -25,13 +25,13 @@ approximates.
 
 ::: {.defbox}
 [Gaussian Posterior (conjugate regression)]{.lbl}
-[ &Sigma;<sub>n</sub> = (&Sigma;<sub>0</sub><sup>&#8722;1</sup> + &sigma;<sup>&#8722;2</sup>X&#8868;X)<sup>&#8722;1</sup> &nbsp;&nbsp;&nbsp; &mu;<sub>n</sub> = &Sigma;<sub>n</sub>(&Sigma;<sub>0</sub><sup>&#8722;1</sup>&mu;<sub>0</sub> + &sigma;<sup>&#8722;2</sup>X&#8868;y) ]{.math}
+[ &Sigma;<sub>m</sub> = (&Sigma;<sub>0</sub><sup>&#8722;1</sup> + &sigma;<sup>&#8722;2</sup>X&#8868;X)<sup>&#8722;1</sup> &nbsp;&nbsp;&nbsp; &mu;<sub>m</sub> = &Sigma;<sub>m</sub>(&Sigma;<sub>0</sub><sup>&#8722;1</sup>&mu;<sub>0</sub> + &sigma;<sup>&#8722;2</sup>X&#8868;y) ]{.math}
 :::
 
 Here $(\boldsymbol{\mu}_0, \boldsymbol{\Sigma}_0)$ are the prior mean and covariance,
-$\sigma^2$ is the known noise variance, and $(\boldsymbol{\mu}_n, \boldsymbol{\Sigma}_n)$
+$\sigma^2$ is the known noise variance, and $(\boldsymbol{\mu}_m, \boldsymbol{\Sigma}_m)$
 are the posterior mean and covariance. With a broad (vague) prior the
-$\boldsymbol{\Sigma}_0^{-1}$ term nearly vanishes and $\boldsymbol{\mu}_n$ collapses onto
+$\boldsymbol{\Sigma}_0^{-1}$ term nearly vanishes and $\boldsymbol{\mu}_m$ collapses onto
 the OLS estimate. A tight prior pulls it toward $\boldsymbol{\mu}_0$. The next cell makes
 that comparison concrete.
 
@@ -134,7 +134,7 @@ cat(sprintf("\nposterior sd    %7.3f %7.3f\n", post_sd[1], post_sd[2]))
 
 A point estimate predicts a single $y$ for each new $x$. The posterior predicts a
 distribution. For an input $x^\*$ the [posterior predictive]{.term} variance is
-$x^{\*\top}\boldsymbol{\Sigma}_n x^\* + \sigma^2$: parameter uncertainty plus observation
+$x^{\*\top}\boldsymbol{\Sigma}_m x^\* + \sigma^2$: parameter uncertainty plus observation
 noise. Plot the posterior mean line with its 95% [credible interval]{.term} and the band
 tells an honest story. It is tightest where the data cluster and flares outward where the
 model is extrapolating, because the parameter-uncertainty term grows as $x^\*$ moves from
