@@ -19,7 +19,7 @@ Welcome to the interactive companion to *Learning Machines: A Statistical Introd
 - **Run it yourself.** Code cells run live in your browser — click **Run Code**. The Python (Pyodide) and R (WebR) runtimes start downloading as soon as a page opens, which takes a few seconds; the Run button stays gray until they are ready, then turns red. Some cells run themselves at that point and draw without a click.
 - **Python or R, your choice.** The worked code carries both. Pick a tab and the rest of the page follows; the two are genuine twins, not a translation of one into the other. The four parameter sliders, the Chapter 1 exercises, the PyTorch listings, and one NumPy snippet in Chapter 8's exploration box are Python only.
 - **Same method, sometimes different digits.** When a cell uses fixed data the two languages agree to the last digit; when a cell draws a random sample they differ a little, and that difference is the lesson — what holds is the method, not the digits.
-- **The heaviest work runs in Colab.** Chapters 9–12 train in PyTorch, too heavy for a browser sandbox, so those notebooks open in Google Colab. What each of those chapters rests on still runs here: convolution by hand, scaled dot-product attention, and a bigram language model fitted by counting.
+- **The heaviest work runs in Colab.** Chapters 9–12 and the Chapter 13 applied exercise train in PyTorch, too heavy for a browser sandbox, so those notebooks open in Google Colab. What each of those chapters rests on still runs here: convolution by hand, scaled dot-product attention, a bigram language model fitted by counting, and PCA and K-means from scratch.
 :::
 
 ## Try it now

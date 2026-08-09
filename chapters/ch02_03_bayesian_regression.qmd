@@ -1,12 +1,12 @@
 ---
-title: "Bayesian Linear Regression"
+title: "Bayesian Regression"
 engine: markdown
 ---
 
 ::: {.lm-hero}
 [Chapter 2 · Regression Models · Optional enrichment]{.eyebrow}
 
-# Bayesian Linear Regression
+# Bayesian Regression
 
 [Give the coefficients a prior and the same data returns not one line but a distribution over lines, with a closed-form Gaussian posterior that sampling methods only approximate.]{.dek}
 :::

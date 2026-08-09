@@ -1,12 +1,12 @@
 ---
-title: "Convolutional Neural Networks"
+title: "Convolutional Networks"
 engine: markdown
 ---
 
 ::: {.lm-hero}
 [Chapter 10 · Representation Learning]{.eyebrow}
 
-# Convolutional Neural Networks
+# Convolutional Networks
 
 [*One filter, slid across every position: weight sharing is a structured prior, and it is what lets a network learn to see.*]{.dek}
 :::
