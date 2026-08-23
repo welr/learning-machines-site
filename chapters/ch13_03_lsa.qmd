@@ -86,12 +86,18 @@ document says *flour* and *bake* but uses either *oven* or *stove*. The synonym 
 linked only through the company they keep. The two topics get different document counts and
 hub weights on purpose: identical blocks would tie the two leading singular values, and a
 tie leaves the individual axes undetermined — the degeneracy the textbook's Theorem 13.1
-flags. Everything is deterministic, so Python and R agree digit for digit.
+flags. Everything is deterministic, so Python and R agree digit for digit. For a moving
+picture of the same idea, Wikipedia's
+[topic-model animation](https://en.wikipedia.org/wiki/File:Topic_model_scheme.webm)
+(Christoph Carl Kling, CC BY-SA 4.0) shows a document–word matrix reorganized until its
+topic blocks surface — our corpus is that scheme at hand scale.
 
 ::: {.panel-tabset group="lang"}
 
 ## Python
 ```{pyodide}
+import numpy as np
+
 vocab = ["loan", "credit", "bank", "interest", "rate", "payment",
          "oven", "stove", "flour", "bake", "dough", "recipe"]
 col = {term: j for j, term in enumerate(vocab)}
@@ -180,6 +186,34 @@ convention (loadings sum positive) to make the two languages, and the plot below
 
 ## Python
 ```{pyodide}
+import numpy as np
+
+# Same corpus as above, rebuilt compactly: every cell on this page stands on its own.
+vocab = ["loan", "credit", "bank", "interest", "rate", "payment",
+         "oven", "stove", "flour", "bake", "dough", "recipe"]
+col = {term: j for j, term in enumerate(vocab)}
+
+def finance_doc(i):
+    c = {("loan" if i % 2 == 0 else "credit"): 1 + (i % 3 == 0),
+         "bank": 2 + (i % 5 == 0), "interest": 2}
+    if i % 3 == 1: c["rate"] = 1
+    if i % 4 == 2: c["payment"] = 1
+    return c
+
+def cooking_doc(i):
+    c = {("oven" if i % 2 == 0 else "stove"): 1 + (i % 3 == 0),
+         "flour": 2 + (i % 4 == 0), "bake": 2}
+    if i % 3 == 1: c["dough"] = 1
+    if i % 4 == 2: c["recipe"] = 1
+    return c
+
+docs = [finance_doc(i) for i in range(20)] + [cooking_doc(i) for i in range(16)]
+topic = ["finance"] * 20 + ["cooking"] * 16
+X = np.zeros((len(docs), len(vocab)))
+for i, counts in enumerate(docs):
+    for term, c in counts.items():
+        X[i, col[term]] = c
+
 U, d, Vt = np.linalg.svd(X, full_matrices=False)
 print("singular values:", np.round(d, 2))
 
@@ -188,13 +222,39 @@ for j in range(k):                      # canonical signs: topic loadings positi
     if Vt[j].sum() < 0:
         Vt[j] *= -1
         U[:, j] *= -1
-
 doc_coords  = U[:, :k] * d[:k]          # documents in the latent plane
 term_coords = Vt[:k, :].T * d[:k]       # terms in the same plane
 ```
 
 ## R
 ```{webr}
+# Same corpus as above, rebuilt compactly: every cell on this page stands on its own.
+vocab <- c("loan", "credit", "bank", "interest", "rate", "payment",
+           "oven", "stove", "flour", "bake", "dough", "recipe")
+
+finance_doc <- function(i) {
+  counts <- setNames(numeric(12), vocab)
+  counts[if (i %% 2 == 0) "loan" else "credit"] <- 1 + (i %% 3 == 0)
+  counts["bank"] <- 2 + (i %% 5 == 0)
+  counts["interest"] <- 2
+  if (i %% 3 == 1) counts["rate"] <- 1
+  if (i %% 4 == 2) counts["payment"] <- 1
+  counts
+}
+
+cooking_doc <- function(i) {
+  counts <- setNames(numeric(12), vocab)
+  counts[if (i %% 2 == 0) "oven" else "stove"] <- 1 + (i %% 3 == 0)
+  counts["flour"] <- 2 + (i %% 4 == 0)
+  counts["bake"] <- 2
+  if (i %% 3 == 1) counts["dough"] <- 1
+  if (i %% 4 == 2) counts["recipe"] <- 1
+  counts
+}
+
+X <- rbind(t(sapply(0:19, finance_doc)), t(sapply(0:15, cooking_doc)))
+topic <- c(rep("finance", 20), rep("cooking", 16))
+
 s <- svd(X)
 d <- s$d; U <- s$u; V <- s$v
 cat("singular values:", round(d, 2), "\n")
@@ -223,6 +283,43 @@ the latent plane both load on the finance direction, because both co-occur with 
 
 ## Python
 ```{pyodide}
+import numpy as np
+
+# Same corpus as above, rebuilt compactly: every cell on this page stands on its own.
+vocab = ["loan", "credit", "bank", "interest", "rate", "payment",
+         "oven", "stove", "flour", "bake", "dough", "recipe"]
+col = {term: j for j, term in enumerate(vocab)}
+
+def finance_doc(i):
+    c = {("loan" if i % 2 == 0 else "credit"): 1 + (i % 3 == 0),
+         "bank": 2 + (i % 5 == 0), "interest": 2}
+    if i % 3 == 1: c["rate"] = 1
+    if i % 4 == 2: c["payment"] = 1
+    return c
+
+def cooking_doc(i):
+    c = {("oven" if i % 2 == 0 else "stove"): 1 + (i % 3 == 0),
+         "flour": 2 + (i % 4 == 0), "bake": 2}
+    if i % 3 == 1: c["dough"] = 1
+    if i % 4 == 2: c["recipe"] = 1
+    return c
+
+docs = [finance_doc(i) for i in range(20)] + [cooking_doc(i) for i in range(16)]
+topic = ["finance"] * 20 + ["cooking"] * 16
+X = np.zeros((len(docs), len(vocab)))
+for i, counts in enumerate(docs):
+    for term, c in counts.items():
+        X[i, col[term]] = c
+
+U, d, Vt = np.linalg.svd(X, full_matrices=False)
+k = 2
+for j in range(k):                      # canonical signs: topic loadings positive
+    if Vt[j].sum() < 0:
+        Vt[j] *= -1
+        U[:, j] *= -1
+doc_coords  = U[:, :k] * d[:k]          # documents in the latent plane
+term_coords = Vt[:k, :].T * d[:k]       # terms in the same plane
+
 def cosine(a, b):
     return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
 
@@ -235,6 +332,45 @@ for s_, t_ in [("loan", "credit"), ("oven", "stove"), ("loan", "oven")]:
 
 ## R
 ```{webr}
+# Same corpus as above, rebuilt compactly: every cell on this page stands on its own.
+vocab <- c("loan", "credit", "bank", "interest", "rate", "payment",
+           "oven", "stove", "flour", "bake", "dough", "recipe")
+
+finance_doc <- function(i) {
+  counts <- setNames(numeric(12), vocab)
+  counts[if (i %% 2 == 0) "loan" else "credit"] <- 1 + (i %% 3 == 0)
+  counts["bank"] <- 2 + (i %% 5 == 0)
+  counts["interest"] <- 2
+  if (i %% 3 == 1) counts["rate"] <- 1
+  if (i %% 4 == 2) counts["payment"] <- 1
+  counts
+}
+
+cooking_doc <- function(i) {
+  counts <- setNames(numeric(12), vocab)
+  counts[if (i %% 2 == 0) "oven" else "stove"] <- 1 + (i %% 3 == 0)
+  counts["flour"] <- 2 + (i %% 4 == 0)
+  counts["bake"] <- 2
+  if (i %% 3 == 1) counts["dough"] <- 1
+  if (i %% 4 == 2) counts["recipe"] <- 1
+  counts
+}
+
+X <- rbind(t(sapply(0:19, finance_doc)), t(sapply(0:15, cooking_doc)))
+topic <- c(rep("finance", 20), rep("cooking", 16))
+
+s <- svd(X)
+d <- s$d; U <- s$u; V <- s$v
+k <- 2
+for (j in 1:k) {                        # canonical signs: topic loadings positive
+  if (sum(V[, j]) < 0) {
+    V[, j] <- -V[, j]
+    U[, j] <- -U[, j]
+  }
+}
+doc_coords  <- U[, 1:k] %*% diag(d[1:k])   # documents in the latent plane
+term_coords <- V[, 1:k] %*% diag(d[1:k])   # terms in the same plane
+
 cosine <- function(a, b) sum(a * b) / (sqrt(sum(a * a)) * sqrt(sum(b * b)))
 
 cat(sprintf("%16s  %10s  %13s\n", "pair", "raw cosine", "latent cosine"))
@@ -266,6 +402,46 @@ two ways: raw inner product with the count vector, and cosine in the latent plan
 
 ## Python
 ```{pyodide}
+import numpy as np
+
+# Same corpus as above, rebuilt compactly: every cell on this page stands on its own.
+vocab = ["loan", "credit", "bank", "interest", "rate", "payment",
+         "oven", "stove", "flour", "bake", "dough", "recipe"]
+col = {term: j for j, term in enumerate(vocab)}
+
+def finance_doc(i):
+    c = {("loan" if i % 2 == 0 else "credit"): 1 + (i % 3 == 0),
+         "bank": 2 + (i % 5 == 0), "interest": 2}
+    if i % 3 == 1: c["rate"] = 1
+    if i % 4 == 2: c["payment"] = 1
+    return c
+
+def cooking_doc(i):
+    c = {("oven" if i % 2 == 0 else "stove"): 1 + (i % 3 == 0),
+         "flour": 2 + (i % 4 == 0), "bake": 2}
+    if i % 3 == 1: c["dough"] = 1
+    if i % 4 == 2: c["recipe"] = 1
+    return c
+
+docs = [finance_doc(i) for i in range(20)] + [cooking_doc(i) for i in range(16)]
+topic = ["finance"] * 20 + ["cooking"] * 16
+X = np.zeros((len(docs), len(vocab)))
+for i, counts in enumerate(docs):
+    for term, c in counts.items():
+        X[i, col[term]] = c
+
+U, d, Vt = np.linalg.svd(X, full_matrices=False)
+k = 2
+for j in range(k):                      # canonical signs: topic loadings positive
+    if Vt[j].sum() < 0:
+        Vt[j] *= -1
+        U[:, j] *= -1
+doc_coords  = U[:, :k] * d[:k]          # documents in the latent plane
+term_coords = Vt[:k, :].T * d[:k]       # terms in the same plane
+
+def cosine(a, b):
+    return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
+
 q = np.zeros(len(vocab))
 q[col["credit"]] = 1.0
 
@@ -286,6 +462,47 @@ print("best LATENT score among cooking documents :",
 
 ## R
 ```{webr}
+# Same corpus as above, rebuilt compactly: every cell on this page stands on its own.
+vocab <- c("loan", "credit", "bank", "interest", "rate", "payment",
+           "oven", "stove", "flour", "bake", "dough", "recipe")
+
+finance_doc <- function(i) {
+  counts <- setNames(numeric(12), vocab)
+  counts[if (i %% 2 == 0) "loan" else "credit"] <- 1 + (i %% 3 == 0)
+  counts["bank"] <- 2 + (i %% 5 == 0)
+  counts["interest"] <- 2
+  if (i %% 3 == 1) counts["rate"] <- 1
+  if (i %% 4 == 2) counts["payment"] <- 1
+  counts
+}
+
+cooking_doc <- function(i) {
+  counts <- setNames(numeric(12), vocab)
+  counts[if (i %% 2 == 0) "oven" else "stove"] <- 1 + (i %% 3 == 0)
+  counts["flour"] <- 2 + (i %% 4 == 0)
+  counts["bake"] <- 2
+  if (i %% 3 == 1) counts["dough"] <- 1
+  if (i %% 4 == 2) counts["recipe"] <- 1
+  counts
+}
+
+X <- rbind(t(sapply(0:19, finance_doc)), t(sapply(0:15, cooking_doc)))
+topic <- c(rep("finance", 20), rep("cooking", 16))
+
+s <- svd(X)
+d <- s$d; U <- s$u; V <- s$v
+k <- 2
+for (j in 1:k) {                        # canonical signs: topic loadings positive
+  if (sum(V[, j]) < 0) {
+    V[, j] <- -V[, j]
+    U[, j] <- -U[, j]
+  }
+}
+doc_coords  <- U[, 1:k] %*% diag(d[1:k])   # documents in the latent plane
+term_coords <- V[, 1:k] %*% diag(d[1:k])   # terms in the same plane
+
+cosine <- function(a, b) sum(a * b) / (sqrt(sum(a * a)) * sqrt(sum(b * b)))
+
 q <- setNames(numeric(12), vocab)
 q["credit"] <- 1
 
@@ -320,6 +537,43 @@ geometry — the plot at the top of this page.
 
 ## Python
 ```{pyodide}
+import numpy as np
+
+# Same corpus as above, rebuilt compactly: every cell on this page stands on its own.
+vocab = ["loan", "credit", "bank", "interest", "rate", "payment",
+         "oven", "stove", "flour", "bake", "dough", "recipe"]
+col = {term: j for j, term in enumerate(vocab)}
+
+def finance_doc(i):
+    c = {("loan" if i % 2 == 0 else "credit"): 1 + (i % 3 == 0),
+         "bank": 2 + (i % 5 == 0), "interest": 2}
+    if i % 3 == 1: c["rate"] = 1
+    if i % 4 == 2: c["payment"] = 1
+    return c
+
+def cooking_doc(i):
+    c = {("oven" if i % 2 == 0 else "stove"): 1 + (i % 3 == 0),
+         "flour": 2 + (i % 4 == 0), "bake": 2}
+    if i % 3 == 1: c["dough"] = 1
+    if i % 4 == 2: c["recipe"] = 1
+    return c
+
+docs = [finance_doc(i) for i in range(20)] + [cooking_doc(i) for i in range(16)]
+topic = ["finance"] * 20 + ["cooking"] * 16
+X = np.zeros((len(docs), len(vocab)))
+for i, counts in enumerate(docs):
+    for term, c in counts.items():
+        X[i, col[term]] = c
+
+U, d, Vt = np.linalg.svd(X, full_matrices=False)
+k = 2
+for j in range(k):                      # canonical signs: topic loadings positive
+    if Vt[j].sum() < 0:
+        Vt[j] *= -1
+        U[:, j] *= -1
+doc_coords  = U[:, :k] * d[:k]          # documents in the latent plane
+term_coords = Vt[:k, :].T * d[:k]       # terms in the same plane
+
 import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots(figsize=(7.5, 5))
@@ -341,6 +595,45 @@ plt.show()
 
 ## R
 ```{webr}
+# Same corpus as above, rebuilt compactly: every cell on this page stands on its own.
+vocab <- c("loan", "credit", "bank", "interest", "rate", "payment",
+           "oven", "stove", "flour", "bake", "dough", "recipe")
+
+finance_doc <- function(i) {
+  counts <- setNames(numeric(12), vocab)
+  counts[if (i %% 2 == 0) "loan" else "credit"] <- 1 + (i %% 3 == 0)
+  counts["bank"] <- 2 + (i %% 5 == 0)
+  counts["interest"] <- 2
+  if (i %% 3 == 1) counts["rate"] <- 1
+  if (i %% 4 == 2) counts["payment"] <- 1
+  counts
+}
+
+cooking_doc <- function(i) {
+  counts <- setNames(numeric(12), vocab)
+  counts[if (i %% 2 == 0) "oven" else "stove"] <- 1 + (i %% 3 == 0)
+  counts["flour"] <- 2 + (i %% 4 == 0)
+  counts["bake"] <- 2
+  if (i %% 3 == 1) counts["dough"] <- 1
+  if (i %% 4 == 2) counts["recipe"] <- 1
+  counts
+}
+
+X <- rbind(t(sapply(0:19, finance_doc)), t(sapply(0:15, cooking_doc)))
+topic <- c(rep("finance", 20), rep("cooking", 16))
+
+s <- svd(X)
+d <- s$d; U <- s$u; V <- s$v
+k <- 2
+for (j in 1:k) {                        # canonical signs: topic loadings positive
+  if (sum(V[, j]) < 0) {
+    V[, j] <- -V[, j]
+    U[, j] <- -U[, j]
+  }
+}
+doc_coords  <- U[, 1:k] %*% diag(d[1:k])   # documents in the latent plane
+term_coords <- V[, 1:k] %*% diag(d[1:k])   # terms in the same plane
+
 plot(doc_coords, col = ifelse(topic == "finance", "#31417A", "#4F9E00"),
      pch = ifelse(topic == "finance", 19, 15),
      xlab = "latent direction 1 (finance)",
