@@ -114,6 +114,8 @@ website:
             text: "Structure Without Labels"
           - href: chapters/ch13_02_applied.qmd
             text: "Applied: Fashion-MNIST"
+          - href: chapters/ch13_03_lsa.qmd
+            text: "Latent Semantic Analysis"
   page-footer:
     border: true
     left: "Learning Machines · A Statistical Introduction"
