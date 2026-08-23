@@ -1,11 +1,12 @@
 """Hero figure for the Chapter 13 LSA page.
 
-The latent plane: 36 documents and 12 terms of the constructed two-topic corpus,
-plotted in the coordinates of the two leading singular directions. The synonym
-pairs (loan/credit, oven/stove) land on top of each other although they never
-co-occur -- the moment the page is built around. Same deterministic corpus as the
-page's cells and the companion notebook (ch13_03_lsa.ipynb), so the figure shows
-exactly what the reader's own run will show.
+Topics surface as blocks: the document-term count matrix before and after rank-2
+truncation. Left, the raw counts with rows and columns in an arbitrary order --
+what the algorithm actually receives. Right, the rank-2 reconstruction with rows
+and columns sorted by their leading latent coordinates: two topic blocks emerge,
+and the loan/credit columns (outlined), each half-empty in the raw counts because
+the two synonyms never co-occur, come back filled across every finance document.
+Same deterministic corpus as the page's cells and the companion notebook.
 """
 
 import sys, pathlib
@@ -64,24 +65,45 @@ for j in range(k):                      # canonical signs: topic loadings positi
 doc_coords = U[:, :k] * d[:k]
 term_coords = Vt[:k, :].T * d[:k]
 
-fig, ax = plt.subplots(figsize=(9, 6))
-for name, marker, color in [("finance", "o", mt.FS_BLUE), ("cooking", "s", mt.GREEN)]:
-    idx = [i for i in range(len(docs)) if topic[i] == name]
-    ax.scatter(doc_coords[idx, 0], doc_coords[idx, 1], marker=marker,
-               color=color, alpha=0.55, s=55, label=f"{name} documents")
-ax.scatter(term_coords[:, 0], term_coords[:, 1], marker="x", color=mt.RED,
-           s=60, linewidths=2, label="terms", zorder=3)
-OFFSETS = {"loan": (6, 8), "credit": (6, -16), "oven": (7, 7), "stove": (7, -17),
-"rate": (-4, 9), "payment": (-4, -18), "dough": (6, 6), "recipe": (6, -16)}
-for j, term in enumerate(VOCAB):
-    ax.annotate(term, term_coords[j], textcoords="offset points",
-                xytext=OFFSETS.get(term, (5, 5)), fontsize=10)
-ax.set_xlabel("latent direction 1 (finance)")
-ax.set_ylabel("latent direction 2 (cooking)")
-ax.legend(loc="upper right")
-mt.apply_book_style(ax)
-plt.tight_layout()
+
+X_hat = U[:, :k] @ np.diag(d[:k]) @ Vt[:k, :]
+
+# Left panel: arbitrary (but deterministic) row and column order
+row_shuffle = [(7 * j) % 36 for j in range(36)]        # stride permutation
+col_shuffle = ["flour", "loan", "recipe", "bank", "stove", "payment",
+               "interest", "oven", "credit", "dough", "bake", "rate"]
+
+# Right panel: rows and columns sorted by leading latent coordinate, per topic
+fin_rows  = sorted(range(20), key=lambda i: -doc_coords[i, 0])
+cook_rows = sorted(range(20, 36), key=lambda i: -doc_coords[i, 1])
+fin_terms  = sorted([t for t in VOCAB[:6]], key=lambda t: -term_coords[COL[t], 0])
+cook_terms = sorted([t for t in VOCAB[6:]], key=lambda t: -term_coords[COL[t], 1])
+row_sorted, col_sorted = fin_rows + cook_rows, fin_terms + cook_terms
+
+left  = X[np.ix_(row_shuffle, [COL[t] for t in col_shuffle])]
+right = X_hat[np.ix_(row_sorted, [COL[t] for t in col_sorted])]
+
+from matplotlib.patches import Rectangle
+fig, axes = plt.subplots(1, 2, figsize=(11, 6), sharey=True)
+vmax = X.max()
+for ax, M, terms, title in [
+        (axes[0], left, col_shuffle, "raw counts $\\mathbf{X}$ (arbitrary order)"),
+        (axes[1], right, col_sorted,
+         "rank-2 reconstruction $\\hat{\\mathbf{X}}$ (sorted by latent coordinate)")]:
+    im = ax.imshow(M, cmap="Blues", vmin=0, vmax=vmax, aspect="auto",
+                   interpolation="nearest")
+    ax.set_xticks(range(12))
+    ax.set_xticklabels(terms, rotation=60, ha="right", fontsize=10)
+    ax.set_yticks([])
+    ax.set_title(title, fontsize=12, pad=10)
+    for j, t in enumerate(terms):                      # track the synonym columns
+        if t in ("loan", "credit"):
+            ax.add_patch(Rectangle((j - 0.5, -0.5), 1, 36, fill=False,
+                                   edgecolor=mt.RED, linewidth=1.8))
+axes[0].set_ylabel("36 documents")
+cb = fig.colorbar(im, ax=axes, fraction=0.035, pad=0.02)
+cb.set_label("count")
 
 out = pathlib.Path(__file__).resolve().parents[1] / "figures" / "ch13_03_lsa.png"
-plt.savefig(out, dpi=200)
+plt.savefig(out, dpi=200, bbox_inches="tight")
 print("wrote", out)

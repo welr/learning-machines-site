@@ -15,7 +15,7 @@ The textbook's Chapter 13 shows that PCA has a second computational route — th
 design matrix — and that [latent semantic analysis]{.term} is this route applied to text: one
 row per document, one column per term, entries counting occurrences, truncate the SVD, and
 the retained singular directions play the role of [topics]{.term}. The book factors a
-three-document corpus by hand. This page first verifies that example, then builds a corpus
+three-document corpus by hand. This page first reproduces that example, then builds a corpus
 just large enough to show the effect the tiny one cannot: [synonymy]{.term}. Two terms that
 never appear in the same document end up identical in the latent space, because they keep
 the same company.
@@ -27,12 +27,12 @@ the same company.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch13_03_lsa.png" alt="Scatter plot of the latent plane: finance documents cluster on one axis and cooking documents on the other, with red crosses marking term positions; loan and credit overlap on the finance axis, oven and stove on the cooking axis.">
-<figcaption><strong>The latent plane.</strong> Thirty-six documents and twelve terms in the coordinates of the two leading singular directions. <em>Loan</em> and <em>credit</em> never co-occur, yet both land on the finance ray — same direction, cosine 1, differing only in length; <em>oven</em> and <em>stove</em> likewise on the cooking ray. The code below builds exactly this.</figcaption>
+<img src="../figures/ch13_03_lsa.png" alt="Two heatmaps of the 36-by-12 document-term matrix. Left: raw counts in arbitrary order, no visible structure, with the loan and credit columns outlined and full of holes. Right: the rank-2 reconstruction sorted by latent coordinate, showing two clean topic blocks, with the outlined loan and credit columns now filled across every finance document.">
+<figcaption><strong>Topics surface as blocks.</strong> Left: the document–term count matrix as the algorithm receives it — rows and columns in arbitrary order, no visible structure. Right: the rank-two reconstruction with rows and columns sorted by their leading latent coordinates. Two topic blocks emerge, and the <em>loan</em> and <em>credit</em> columns (outlined) — each full of holes on the left, because the two synonyms never share a document — come back filled across every finance document: the synonym effect, visible as color. The code below builds this matrix and measures the effect.</figcaption>
 </figure>
 ```
 
-## The book's corpus, verified
+## The three-document corpus
 
 Three documents over the vocabulary (*loan*, *interest*, *flour*, *oven*): two loan-office
 documents and a recipe. The singular values should come out $3$, $\sqrt{2}$, $1$, and the
@@ -530,8 +530,8 @@ sits at $0$: the query crossed the synonym gap.
 
 ## The latent plane
 
-Documents and terms live in the same two-dimensional space, so one plot shows the whole
-geometry — the plot at the top of this page.
+Documents and terms live in the same two-dimensional space, so one scatter shows the whole
+geometry: two document clusters on two topic rays, the synonym pairs collinear.
 
 ::: {.panel-tabset group="lang"}
 
