@@ -105,10 +105,10 @@ pred = (proba >= 0.5).astype(int)
 
 TN = int(((pred == 0) & (y == 0)).sum()); FP = int(((pred == 1) & (y == 0)).sum())
 FN = int(((pred == 0) & (y == 1)).sum()); TP = int(((pred == 1) & (y == 1)).sum())
-cm = np.array([[TN, FP], [FN, TP]])          # rows = actual, cols = predicted
+cm = np.array([[TP, FP], [FN, TN]])          # rows = predicted, cols = actual, benign (positive) first
 precision = TP / (TP + FP); recall = TP / (TP + FN)
 f1 = 2 * precision * recall / (precision + recall)
-print("Confusion matrix [rows actual, cols predicted]:")
+print("Confusion matrix [rows predicted, cols actual; benign first]:")
 print(cm)
 print(f"precision {precision:.3f} | recall {recall:.3f} | F1 {f1:.3f}")
 
@@ -120,9 +120,9 @@ for i in range(2):
         level = (cm[i, j] - cm.min()) / max(cm.max() - cm.min(), 1)
         shade = "white" if level > 0.65 else "#31417A"
         ax.text(j, i, cm[i, j], ha="center", va="center", fontsize=13, color=shade)
-ax.set_xticks([0, 1]); ax.set_xticklabels(["malignant", "benign"])
-ax.set_yticks([0, 1]); ax.set_yticklabels(["malignant", "benign"])
-ax.set_xlabel("predicted"); ax.set_ylabel("actual")
+ax.set_xticks([0, 1]); ax.set_xticklabels(["benign", "malignant"])
+ax.set_yticks([0, 1]); ax.set_yticklabels(["benign", "malignant"])
+ax.set_xlabel("actual"); ax.set_ylabel("predicted")
 for s in ["top", "right"]: ax.spines[s].set_visible(False)
 plt.tight_layout()
 plt.show()
@@ -174,23 +174,23 @@ fit   <- glm(y ~ radius + texture + concave_pts, family = binomial)
 proba <- as.numeric(predict(fit, type = "response"))   # P(benign), the MLE fit
 pred  <- as.integer(proba >= 0.5)
 
-cm <- table(actual    = factor(y,    levels = c(0, 1)),
-            predicted = factor(pred, levels = c(0, 1)))
-cat("Confusion matrix [rows actual, cols predicted]:\n")
+cm <- table(predicted = factor(pred, levels = c(1, 0)),
+            actual    = factor(y,    levels = c(1, 0)))
+cat("Confusion matrix [rows predicted, cols actual; benign first]:\n")
 print(cm)
 
-TP <- cm["1","1"]; FP <- cm["0","1"]; FN <- cm["1","0"]; TN <- cm["0","0"]
+TP <- cm["1","1"]; FP <- cm["1","0"]; FN <- cm["0","1"]; TN <- cm["0","0"]
 precision <- TP / (TP + FP)
 recall    <- TP / (TP + FN)
 f1        <- 2 * precision * recall / (precision + recall)
 cat(sprintf("precision %.3f | recall %.3f | F1 %.3f\n", precision, recall, f1))
 
-# Confusion-matrix heatmap, blue identity (rows actual, cols predicted)
-counts <- matrix(c(TN, FP, FN, TP), nrow = 2, byrow = TRUE)
-labels <- c("malignant", "benign")
+# Confusion-matrix heatmap, blue identity (rows predicted, cols actual; benign first)
+counts <- matrix(c(TP, FP, FN, TN), nrow = 2, byrow = TRUE)
+labels <- c("benign", "malignant")
 shade  <- counts / max(counts)
 plot(NA, xlim = c(0, 2), ylim = c(0, 2), axes = FALSE, asp = 1,
-     xlab = "predicted", ylab = "actual")
+     xlab = "actual", ylab = "predicted")
 for (i in 1:2) for (j in 1:2) {
   rect(j - 1, 2 - i, j, 3 - i,
        col = rgb(7, 111, 161, alpha = 255 * shade[i, j], maxColorValue = 255),
@@ -275,7 +275,7 @@ pred = (proba_fit >= t).astype(int)
 
 TN = int(((pred == 0) & (label == 0)).sum()); FP = int(((pred == 1) & (label == 0)).sum())
 FN = int(((pred == 0) & (label == 1)).sum()); TP = int(((pred == 1) & (label == 1)).sum())
-cm = np.array([[TN, FP], [FN, TP]])
+cm = np.array([[TP, FP], [FN, TN]])          # rows = predicted, cols = actual, benign first
 
 precision = TP / (TP + FP) if (TP + FP) else float("nan")
 recall = TP / (TP + FN) if (TP + FN) else float("nan")
@@ -290,9 +290,9 @@ for i in range(2):
         level = (cm[i, j] - cm.min()) / max(cm.max() - cm.min(), 1)
         shade = "white" if level > 0.65 else "#31417A"
         ax.text(j, i, cm[i, j], ha="center", va="center", fontsize=13, color=shade)
-ax.set_xticks([0, 1]); ax.set_xticklabels(["malignant", "benign"])
-ax.set_yticks([0, 1]); ax.set_yticklabels(["malignant", "benign"])
-ax.set_xlabel("predicted"); ax.set_ylabel("actual")
+ax.set_xticks([0, 1]); ax.set_xticklabels(["benign", "malignant"])
+ax.set_yticks([0, 1]); ax.set_yticklabels(["benign", "malignant"])
+ax.set_xlabel("actual"); ax.set_ylabel("predicted")
 ax.set_title(f"threshold = {t:.2f}")
 for s in ["top", "right"]: ax.spines[s].set_visible(False)
 plt.tight_layout()
