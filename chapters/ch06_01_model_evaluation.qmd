@@ -165,10 +165,14 @@ it is being graded on two different things, only one of which it was trained to 
 One accuracy figure collapses two very different mistakes into one. The confusion matrix
 keeps them apart by crossing the truth against the prediction.
 
-|  | Predicted negative | Predicted positive |
-|--|--------------------|--------------------|
-| **Actual negative** | True negative (TN) | False positive (FP) |
-| **Actual positive** | False negative (FN) | True positive (TP) |
+|  | Actual negative | Actual positive |
+|--|-----------------|-----------------|
+| **Predicted negative** | True negative (TN) | False negative (FN) |
+| **Predicted positive** | False positive (FP) | True positive (TP) |
+
+The layout follows the book and decision theory: the classifier's predictions down the
+rows, the actual classes across the columns. Most software, scikit-learn included,
+prints the transpose, with the actual classes down the rows.
 
 From its four counts come the metrics that matter when the two error types carry different
 costs. [Precision]{.term} asks how trustworthy a positive prediction is; [recall]{.term}
@@ -211,9 +215,9 @@ yt = y[test]
 
 TP = np.sum((yt == 1) & (yhat == 1)); TN = np.sum((yt == 0) & (yhat == 0))
 FP = np.sum((yt == 0) & (yhat == 1)); FN = np.sum((yt == 1) & (yhat == 0))
-print("            pred 0   pred 1")
-print(f"actual 0 |   {TN:5d}   {FP:5d}    (TN, FP)")
-print(f"actual 1 |   {FN:5d}   {TP:5d}    (FN, TP)")
+print("            actual 0   actual 1")
+print(f"pred 0   |    {TN:5d}     {FN:5d}    (TN, FN)")
+print(f"pred 1   |    {FP:5d}     {TP:5d}    (FP, TP)")
 
 accuracy = (TP + TN) / (TP + TN + FP + FN)
 precision = TP / (TP + FP)
@@ -246,9 +250,9 @@ yhat <- as.integer(p >= 0.5); yt <- df$y[test]
 # Confusion matrix from logical sums (base R, no caret).
 TP <- sum(yt == 1 & yhat == 1); TN <- sum(yt == 0 & yhat == 0)
 FP <- sum(yt == 0 & yhat == 1); FN <- sum(yt == 1 & yhat == 0)
-cat("            pred 0   pred 1\n")
-cat(sprintf("actual 0 |   %5d   %5d    (TN, FP)\n", TN, FP))
-cat(sprintf("actual 1 |   %5d   %5d    (FN, TP)\n", FN, TP))
+cat("            actual 0   actual 1\n")
+cat(sprintf("pred 0   |    %5d     %5d    (TN, FN)\n", TN, FN))
+cat(sprintf("pred 1   |    %5d     %5d    (FP, TP)\n", FP, TP))
 
 accuracy <- (TP + TN) / (TP + TN + FP + FN)
 precision <- TP / (TP + FP)
