@@ -8,10 +8,10 @@ engine: markdown
 
 # Attention and Transformers
 
-[Each token's new representation is a weighted average of the others: the Nadaraya–Watson smoother of Chapter 8, with the similarity learned.]{.dek}
+[Each token's new representation is a weighted average of the others: the Nadaraya–Watson smoother the chapter introduces, built on the kernel idea of Chapter 8, with the similarity learned.]{.dek}
 :::
 
-The book reaches [attention]{.term} not as a novelty but as a return. To build the representation of a token, attention takes a weighted average of value vectors, with the weights set by how similar a query is to each key. That is the kernel smoother of Chapter 8, with two changes: the notion of similarity is now learned rather than fixed, and the weights are normalized by a softmax. The notebook makes the mechanism concrete by tracing exact values through the computation rather than drawing arrows between boxes.
+The book reaches [attention]{.term} not as a novelty but as a return. To build the representation of a token, attention takes a weighted average of value vectors, with the weights set by how similar a query is to each key. That is a kernel smoother in the sense of Chapter 8's kernels (the book's Chapter 11 names it the Nadaraya–Watson estimator), with two changes: the notion of similarity is now learned rather than fixed, and the weights are normalized by a softmax. The notebook makes the mechanism concrete by tracing exact values through the computation rather than drawing arrows between boxes.
 
 Why gather context at all? Consider the word "bank" in "I deposited money at the bank" and "we sat by the river bank." The meaning depends on the surrounding words, so a good representation must incorporate them. Attention gives each position a way to pull information from every other position in proportion to relevance.
 
@@ -88,7 +88,7 @@ def softmax_rows(S):
 
 Q, K, V = X @ W_Q, X @ W_K, X @ W_V
 scores = Q @ K.T / np.sqrt(d_k)               # scaled query-key similarity
-A = softmax_rows(scores)                      # the kernel weights of Chapter 8
+A = softmax_rows(scores)                      # the kernel weights (Nadaraya–Watson, Ch. 11)
 context = A @ V                               # weighted average of the values
 
 assert np.allclose(A.sum(axis=1), 1.0), "each row must be a distribution"
@@ -175,7 +175,7 @@ softmax_rows <- function(S) {
 
 Q <- X %*% W_Q; K <- X %*% W_K; V <- X %*% W_V
 scores <- Q %*% t(K) / sqrt(d_k)              # scaled query-key similarity
-A <- softmax_rows(scores)                     # the kernel weights of Chapter 8
+A <- softmax_rows(scores)                     # the kernel weights (Nadaraya–Watson, Ch. 11)
 context <- A %*% V                            # weighted average of the values
 
 stopifnot(all(abs(rowSums(A) - 1) < 1e-12))
@@ -263,7 +263,7 @@ def scaled_dot_product_attention(Q, K, V, mask=None):
     scores = (Q @ K.transpose(-2, -1)) / d_k ** 0.5   # query–key similarity
     if mask is not None:                              # causal mask: no peeking ahead
         scores = scores.masked_fill(mask == 0, float("-inf"))
-    weights = F.softmax(scores, dim=-1)               # the kernel weights of Chapter 8
+    weights = F.softmax(scores, dim=-1)               # the kernel weights (Nadaraya–Watson, Ch. 11)
     context = weights @ V                             # weighted average of the values
     return context, weights
 ```
@@ -316,5 +316,5 @@ One cost is worth naming. Because every token attends to every other, attention 
 ::: {.explore}
 [Try it]{.lbl}
 
-In Colab, set `Q = K = V` and run attention with the projections frozen to the identity. With a fixed, un-learned similarity the layer reduces exactly to the Chapter 8 kernel smoother. Then let the network learn `W_q`, `W_k`, and `W_v`, and watch the heads discover which tokens should attend to which: that learned similarity is the whole of what attention adds.
+In Colab, set `Q = K = V` and run attention with the projections frozen to the identity. With a fixed, un-learned similarity the layer reduces exactly to a Nadaraya–Watson kernel smoother. Then let the network learn `W_q`, `W_k`, and `W_v`, and watch the heads discover which tokens should attend to which: that learned similarity is the whole of what attention adds.
 :::

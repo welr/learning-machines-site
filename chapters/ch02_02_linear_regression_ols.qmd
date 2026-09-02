@@ -418,7 +418,7 @@ x2 = x1 + np.random.randn(m) * 1e-8        # x2 is almost identical to x1
 y = 3 * x1 + 2 * x2 + np.random.randn(m) * 0.1   # so theta1 + theta2 should be ~5
 
 X = np.column_stack([np.ones(m), x1, x2])
-print(f"Condition number of X^T X: {np.linalg.cond(X.T @ X):.2e}  (housing data: ~10)\n")
+print(f"Condition number of X^T X: {np.linalg.cond(X.T @ X):.2e}  (housing data: about 3,000)\n")
 
 theta_inv = np.linalg.inv(X.T @ X) @ (X.T @ y)   # invert the squared matrix
 theta_svd, *_ = np.linalg.lstsq(X, y, rcond=None)  # SVD on X directly
@@ -440,7 +440,7 @@ x2 <- x1 + rnorm(m) * 1e-8                 # x2 is almost identical to x1
 y <- 3 * x1 + 2 * x2 + rnorm(m) * 0.1      # so theta1 + theta2 should be ~5
 
 X <- cbind(1, x1, x2)
-cat(sprintf("Condition number of X^T X: %.2e  (housing data: ~10)\n\n",
+cat(sprintf("Condition number of X^T X: %.2e  (housing data: about 3,000)\n\n",
             kappa(t(X) %*% X, exact = TRUE)))
 
 # Invert the squared matrix (tol = 0 forces R past its singularity guard)
@@ -463,7 +463,7 @@ cat(sprintf("  svd:     %.3f\n", theta_svd[2] + theta_svd[3]))
 :::
 
 The closed form is exact, direct, and the right mental model for what regression does. Its
-costs (an invertible cross-product, an $\mathcal{O}(p^3)$ inversion, no easy room for
+costs (an invertible cross-product, an $\mathcal{O}(n^3)$ inversion, no easy room for
 regularization) are exactly what motivate gradient descent and ridge penalties in the
 chapters that follow.
 

@@ -196,7 +196,7 @@ for (it in 1:6) {
 :::
 
 The two languages start from different random centers, so the traces differ, but both
-settle near $J \approx 115$–$116$ within a few iterations. Convergence is guaranteed;
+settle near $J \approx 139$–$141$ within a few iterations. Convergence is guaranteed;
 convergence to the *best* partition is not, which is why production implementations
 (`sklearn.cluster.KMeans`, R's `kmeans` with `nstart`) run several restarts and keep the
 best. The textbook's statistical reading explains what we just fit: a Gaussian mixture

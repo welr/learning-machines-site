@@ -341,8 +341,8 @@ cat(sprintf("spurious features kept:  %d\n", length(setdiff(kept, true_idx))))
 The two languages compute on independently generated data with different LASSO solvers
 (scikit-learn's optimized path versus our from-scratch coordinate descent), so the chosen penalty
 and exact survivor count differ. The lesson is identical in both. At a penalty tuned for
-prediction, LASSO recovers all eight true features but over-selects, keeping a handful of spurious
-ones alongside them. Ridge keeps all thirty, every coefficient shrunk but none exactly zero.
+prediction, LASSO recovers all eight true features but over-selects, keeping about as many spurious
+features as true ones. Ridge keeps all thirty, every coefficient shrunk but none exactly zero.
 Prediction-optimal is not selection-optimal: the penalty that predicts best is looser than the
 penalty that would isolate exactly the true support. The production tool for the LASSO is
 `glmnet` in R and `LassoCV` in Python; the coordinate descent above is what they run underneath.

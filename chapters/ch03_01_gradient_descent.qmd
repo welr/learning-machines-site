@@ -315,8 +315,7 @@ cat(sprintf("optimal loss = %.4f\n", opt_loss))
 
 :::
 
-The slow run never reaches the floor in forty steps; the good and oscillating runs both land
-on the optimal loss, but the oscillating one earns it through visible zig-zags.
+The slow run never reaches the floor in forty steps; the good run lands on the optimal loss, while the oscillating run is still about 0.05 above it after forty steps, having spent most of its motion zig-zagging.
 
 Three fixed rates make the argument; a fourth of your own choosing makes it stick. Drag the
 slider and the descent path below is recomputed from scratch. The region worth exploring is
