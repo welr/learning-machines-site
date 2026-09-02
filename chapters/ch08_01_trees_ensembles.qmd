@@ -639,12 +639,12 @@ out-of-bag scoring, and fast C internals.
 [Gradient boosting]{.term} builds the ensemble the opposite way. Instead of training trees in
 parallel and averaging, it trains them in sequence, and each new tree fits the part of the
 target the current ensemble still gets wrong, the [residual]{.term}. A small
-[learning rate]{.term} $\nu$ shrinks each contribution so the model improves in careful steps
+[learning rate]{.term} $\eta$ (the book's symbol; some libraries write $\nu$) shrinks each contribution so the model improves in careful steps
 rather than overshooting.
 
 ::: {.defbox}
 [Gradient boosting update]{.lbl}
-[ F<sub>m</sub>(x) = F<sub>m&minus;1</sub>(x) + &nu; h<sub>m</sub>(x), &nbsp; with h<sub>m</sub> fit to y &minus; F<sub>m&minus;1</sub>(x) ]{.math}
+[ F<sub>b</sub>(x) = F<sub>b&minus;1</sub>(x) + &eta; h<sub>b</sub>(x), &nbsp; with h<sub>b</sub> fit to y &minus; F<sub>b&minus;1</sub>(x) ]{.math}
 :::
 
 Each stump is too weak to fit a sine on its own, but the additive sequence drives the error
