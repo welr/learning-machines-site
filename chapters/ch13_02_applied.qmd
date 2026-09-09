@@ -18,7 +18,7 @@ That constraint is the point. The question Chapter 13 asks is how much of the cl
 The autoencoder needs PyTorch, and the full data set is more than a browser sandbox can carry, so this page runs in Google Colab.
 
 ```{=html}
-<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch13_01_unsupervised.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
+<a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch13_02_applied.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
 ```
 
 ```{=html}
