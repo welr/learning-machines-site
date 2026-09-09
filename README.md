@@ -87,7 +87,8 @@ Colab, everything else runs in the browser.
 | ch02–ch08, `ch09_01_backpropagation` | NumPy / scikit-learn, base R | `{pyodide}` / `{webr}` — in the browser |
 | `ch09_02`, `ch10_02`, `ch11_02` | PyTorch | **Open in Colab** button (`.colab-btn`) |
 | `ch10_01`, `ch11_01`, `ch12_01` | PyTorch, plus one NumPy idea | live cell **and** a Colab link |
-| `ch02_03_bayesian_regression`, `ch13_01_unsupervised` | mixed | live cells **and** a Colab link |
+| `ch02_03_bayesian_regression` | mixed | live cells **and** a Colab link |
+| `ch13_01_unsupervised` | NumPy | live cells only |
 
 Every one of the six deep-learning pages carries a pre-rendered hero figure generated from
 that page's own notebook (`tools/make_ch*_figure.py`); before 2026-08-01 they had no images

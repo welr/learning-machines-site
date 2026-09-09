@@ -4,7 +4,7 @@ The moment the exercise is built around: the seal comes off. Left, the two leadi
 principal components of 10,000 Fashion-MNIST images, colored by the labels that were
 withheld for the whole analysis. Right, the K-means clusters cross-tabulated against
 those labels. Generated from the same computation as the companion notebook
-(ch13_01_unsupervised.ipynb) — same source, same subsample, same K.
+(ch13_02_applied.ipynb) — same source, same subsample, same K.
 """
 
 import sys
