@@ -33,7 +33,9 @@ $\alpha$. The gradient points uphill; we go the other way.
 ```
 
 Throughout we fit a simple line $\hat{y} = \theta_0 + \theta_1 x$ under mean squared error,
-$J(\theta_0, \theta_1) = \frac{1}{m}\sum_i (y_i - \theta_0 - \theta_1 x_i)^2$. The data is defined
+$J(\theta_0, \theta_1) = \frac{1}{m}\sum_i (y_i - \theta_0 - \theta_1 x_i)^2$. The book's
+Equation 3.4 carries a factor of $\tfrac{1}{2}$ that we drop here; that doubles every gradient
+and halves every step size on this page, and changes nothing else. The data is defined
 inline, identical in both languages, so every deterministic result below agrees digit for
 digit across Python and R.
 

@@ -391,8 +391,7 @@ abline(v = best, col = "#666666", lty = 2)
 Accuracy alone hides the trade: at a threshold of $0.6$ this model reaches its best score by
 eliminating false passes, but a setting that tolerates a false pass to never miss a real one
 would push the threshold lower. Which error costs more is a question about the application,
-not the algorithm, and it is the bridge to precision, recall, and ROC curves in the next
-chapter.
+not the algorithm, and it is the bridge to precision, recall, and ROC curves in Chapter 6.
 
 ::: {.explore}
 [Try it]{.lbl}

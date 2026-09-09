@@ -40,7 +40,10 @@ the same AUC. Toggling the language switches the syntax, not the problem.
 ## The confusion matrix, and the metrics built on it
 
 At a threshold of $0.5$ the [confusion matrix]{.term} tallies the four outcomes: true and
-false positives, true and false negatives. Treating "benign" as the positive class,
+false positives, true and false negatives. This page takes "benign" as the positive class,
+the opposite of the book's screening convention in Section 6.5, where the disease is
+positive; so the error the book counts as a false negative appears here as a false positive.
+With benign positive,
 [precision]{.term} asks what fraction of the cases flagged benign really are, and
 [recall]{.term} asks what fraction of the truly benign cases were caught. $F_1$ is their
 harmonic mean, a single number that punishes a model for sacrificing one to inflate the other.

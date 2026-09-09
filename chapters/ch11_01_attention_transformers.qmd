@@ -282,7 +282,7 @@ Autoregressive models such as GPT carry one more constraint. When predicting the
 
 ## A transformer block
 
-The block that the next chapter stacks into a language model wraps two sublayers. First comes multi-head self-attention, added back to its input through a [residual connection]{.term} and stabilized by [layer normalization]{.term}; then a position-wise feed-forward network, again with a residual and a norm. Residuals open a direct path for gradients through many layers, and layer norm holds the distribution of activations steady as they pass through the depth.
+The block wraps two sublayers. First comes multi-head self-attention, added back to its input through a [residual connection]{.term} and stabilized by [layer normalization]{.term}; then a position-wise feed-forward network, again with a residual and a norm. Residuals open a direct path for gradients through many layers, and layer norm holds the distribution of activations steady as they pass through the depth.
 
 ```python
 import torch.nn as nn
@@ -310,6 +310,12 @@ class TransformerBlock(nn.Module):
 ```
 
 Here `MultiHeadAttention` is the layer the notebook builds around `scaled_dot_product_attention`. Nothing in the block would surprise a reader who understood kernel smoothing and the gradient descent of Chapter 3; the transformer is those ideas, made deep and made trainable. Stacking many such blocks gives the architecture that Chapter 12 turns into a language model.
+
+The order above is the book's Equations 11.4 and 11.5: each sublayer is applied, added to its
+input, and then normalized. This is the *post-LN* arrangement. The Chapter 12 capstone uses the
+*pre-LN* arrangement instead, normalizing before each sublayer and leaving the residual path
+clear, which trains more stably at depth. They are two orderings of the same three components,
+and the book notes the difference in a footnote to Section 11.3.
 
 One cost is worth naming. Because every token attends to every other, attention is O(n&sup2;) in sequence length n: a thousand-token sequence means roughly a million pairwise scores per layer. That quadratic scaling motivates sparse, linear, and flash-attention variants, though standard attention remains the right default for the moderate sequence lengths most applications use.
 

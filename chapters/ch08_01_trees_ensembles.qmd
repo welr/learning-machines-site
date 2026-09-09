@@ -37,7 +37,7 @@ mixed, and in practice they track each other closely.
 
 ::: {.defbox}
 [Impurity of a binary node]{.lbl}
-[ Gini &nbsp; G = 1 &minus; &Sigma; p<sub>k</sub><sup>2</sup> &nbsp;&nbsp;&nbsp;&nbsp; Entropy &nbsp; H = &minus; &Sigma; p<sub>k</sub> log<sub>2</sub> p<sub>k</sub> ]{.math}
+[ Gini &nbsp; G = 1 &minus; &Sigma; p<sub>k</sub><sup>2</sup> &nbsp;&nbsp;&nbsp;&nbsp; Entropy &nbsp; H = &minus; &Sigma; p<sub>k</sub> log p<sub>k</sub> &nbsp; (natural log, as in the book: nats) ]{.math}
 :::
 
 Plotting all three measures (including the blunter misclassification error) against the class
@@ -56,12 +56,12 @@ import matplotlib.pyplot as plt
 # Binary node: p is the fraction of class-1 points it contains.
 p = np.linspace(0.001, 0.999, 200)
 gini     = 1 - p**2 - (1 - p)**2
-entropy  = -p * np.log2(p) - (1 - p) * np.log2(1 - p)
+entropy  = -p * np.log(p) - (1 - p) * np.log(1 - p)   # nats, as in the book
 misclass = 1 - np.maximum(p, 1 - p)
 
 fig, ax = plt.subplots(figsize=(7, 5))
 ax.plot(p, gini,        color="#076FA1", lw=2.5, label="Gini")
-ax.plot(p, entropy / 2, color="#31417A", lw=2.5, label="Entropy / 2")
+ax.plot(p, entropy / 2, color="#31417A", lw=2.5, label="Entropy / 2 (nats)")
 ax.plot(p, misclass,    color="#666666", lw=2.5, ls="--", label="Misclassification")
 ax.axvline(0.5, color="#666666", ls=":", alpha=0.5)
 ax.set_xlabel("Proportion of class 1 ($p$)")
@@ -85,7 +85,7 @@ for pv in [0.50, 0.70, 0.90, 0.99]:
 # Binary node: p is the fraction of class-1 points it contains.
 p <- seq(0.001, 0.999, length.out = 200)
 gini     <- 1 - p^2 - (1 - p)^2
-entropy  <- -p * log2(p) - (1 - p) * log2(1 - p)
+entropy  <- -p * log(p) - (1 - p) * log(1 - p)        # nats, as in the book
 misclass <- 1 - pmax(p, 1 - p)
 
 plot(p, gini, type = "l", lwd = 2.5, col = "#076FA1",
@@ -97,7 +97,7 @@ lines(p, entropy / 2, lwd = 2.5, col = "#31417A")
 lines(p, misclass, lwd = 2.5, lty = 2, col = "#666666")
 abline(v = 0.5, lty = 3, col = "#666666")
 legend("topright", bty = "n",
-       legend = c("Gini", "Entropy / 2", "Misclassification"),
+       legend = c("Gini", "Entropy / 2 (nats)", "Misclassification"),
        col = c("#076FA1", "#31417A", "#666666"), lwd = 2.5, lty = c(1, 1, 2))
 
 cat("Impurity of a node as it gets purer:\n")

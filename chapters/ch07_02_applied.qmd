@@ -266,14 +266,17 @@ import numpy as np
 from sklearn.datasets import make_regression
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LassoCV
+from sklearn.pipeline import make_pipeline
 
 X, y, coef_true = make_regression(n_samples=200, n_features=30, n_informative=8,
                                   noise=10.0, coef=True, random_state=0)
-X = StandardScaler().fit_transform(X)
 true_idx = set(np.flatnonzero(coef_true).tolist())
 
 # 5-fold cross-validation picks the penalty that predicts best on held-out folds.
-lasso = LassoCV(cv=5, random_state=0).fit(X, y)
+# The scaler goes inside the pipeline, so it is fitted on each training fold alone:
+# standardizing the whole matrix first would leak the held-out fold into the scale.
+pipe = make_pipeline(StandardScaler(), LassoCV(cv=5, random_state=0)).fit(X, y)
+lasso = pipe.named_steps["lassocv"]
 kept = set(np.flatnonzero(lasso.coef_).tolist())
 
 print(f"LASSO cross-validated penalty: alpha = {lasso.alpha_:.3f}")
@@ -287,7 +290,7 @@ print(f"spurious features kept:  {len(kept - true_idx)}")
 ```{webr}
 set.seed(0)
 m <- 200; n <- 30; k <- 8
-X <- scale(matrix(rnorm(m * n), m, n))
+X <- matrix(rnorm(m * n), m, n)           # raw: each fold does its own standardization
 true_idx <- sort(sample(n, k))
 theta_true <- numeric(n); theta_true[true_idx] <- runif(k, 10, 100)
 y <- as.vector(X %*% theta_true) + rnorm(m, 0, 10)
@@ -319,14 +322,19 @@ cv_mse <- sapply(lam_grid, function(l) {
   err <- 0
   for (f in 1:K) {
     tr <- folds != f; te <- folds == f
-    b <- lasso_cd(X[tr, , drop = FALSE], y[tr], l)
-    err <- err + sum((y[te] - X[te, , drop = FALSE] %*% b)^2)
+    # centre and scale on the training fold only, then apply that scale to the held-out
+    # fold: fitting the scaler on all the data would leak the held-out fold into it.
+    Xtr <- scale(X[tr, , drop = FALSE])
+    Xte <- scale(X[te, , drop = FALSE],
+                 center = attr(Xtr, "scaled:center"), scale = attr(Xtr, "scaled:scale"))
+    b <- lasso_cd(Xtr, y[tr], l)
+    err <- err + sum((y[te] - Xte %*% b)^2)
   }
   err / m
 })
 
 best_lambda <- lam_grid[which.min(cv_mse)]
-theta_hat <- lasso_cd(X, y, best_lambda)        # refit on all data at the chosen penalty
+theta_hat <- lasso_cd(scale(X), y, best_lambda) # refit on all data at the chosen penalty
 kept <- which(theta_hat != 0)
 
 cat(sprintf("LASSO cross-validated penalty: lambda = %.3f\n", best_lambda))
