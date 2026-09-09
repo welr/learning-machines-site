@@ -21,7 +21,7 @@ its four counts, and the [ROC curve]{.term} with its [AUC]{.term}.
 Both panels evaluate the same data: a representative 120-case subset of the Wisconsin
 breast-cancer measurements (mean radius, mean texture, and mean concave points for each tumor,
 labeled malignant or benign), inlined directly into the page so it runs offline in either
-language with nothing to download. Python and R fit the same logistic model to the same cases,
+language with nothing to download. Of the 120 cases, 45 are malignant and 75 benign. Python and R fit the same logistic model to the same cases,
 so the two columns report the same confusion matrix, the same precision, recall, and $F_1$, and
 the same AUC. Toggling the language switches the syntax, not the problem.
 
@@ -40,12 +40,10 @@ the same AUC. Toggling the language switches the syntax, not the problem.
 ## The confusion matrix, and the metrics built on it
 
 At a threshold of $0.5$ the [confusion matrix]{.term} tallies the four outcomes: true and
-false positives, true and false negatives. This page takes "benign" as the positive class,
-the opposite of the book's screening convention in Section 6.5, where the disease is
-positive; so the error the book counts as a false negative appears here as a false positive.
-With benign positive,
-[precision]{.term} asks what fraction of the cases flagged benign really are, and
-[recall]{.term} asks what fraction of the truly benign cases were caught. $F_1$ is their
+false positives, true and false negatives. Malignant is the positive class, following the
+screening convention of Section 6.5: the disease is what we are looking for.
+[precision]{.term} asks what fraction of the cases flagged malignant really are, and
+[recall]{.term} asks what fraction of the truly malignant cases were caught. $F_1$ is their
 harmonic mean, a single number that punishes a model for sacrificing one to inflate the other.
 The heatmap below is just the matrix, shaded by count.
 
@@ -85,7 +83,7 @@ concave_pts = np.array([
     0.0029, 0.028, 0.0228, 0.0507, 0.0195, 0.0093, 0.0288, 0.074, 0.0559, 0.0418, 0.1242, 0.0133, 0.1149, 0.0567, 0.0204,
     0.0218, 0.0835, 0.0042, 0.0232, 0.0232, 0.095, 0.0809, 0.0655, 0.0201, 0.0868, 0.0817, 0.0207, 0.0234, 0.0194, 0.0192,
     0.0356, 0.0137, 0.0205, 0.0246, 0.017, 0.0265, 0.0066, 0.097, 0.0581, 0.1255, 0.0326, 0.0216, 0.0649, 0.0526, 0.0798])
-y           = np.array([
+benign      = np.array([
     0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0,
     0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0,
     1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1,
@@ -94,6 +92,9 @@ y           = np.array([
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1,
     1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0])
+
+# Malignant is the positive class, as in Section 6.5: the disease is what we are screening for.
+y = 1 - benign
 
 # Fit the logistic model, then threshold its probabilities at 0.5.
 X = np.column_stack([np.ones(len(y)), radius, texture, concave_pts])
@@ -108,10 +109,10 @@ pred = (proba >= 0.5).astype(int)
 
 TN = int(((pred == 0) & (y == 0)).sum()); FP = int(((pred == 1) & (y == 0)).sum())
 FN = int(((pred == 0) & (y == 1)).sum()); TP = int(((pred == 1) & (y == 1)).sum())
-cm = np.array([[TP, FP], [FN, TN]])          # rows = predicted, cols = actual, benign (positive) first
+cm = np.array([[TP, FP], [FN, TN]])          # rows = predicted, cols = actual, malignant (positive) first
 precision = TP / (TP + FP); recall = TP / (TP + FN)
 f1 = 2 * precision * recall / (precision + recall)
-print("Confusion matrix [rows predicted, cols actual; benign first]:")
+print("Confusion matrix [rows predicted, cols actual; malignant first]:")
 print(cm)
 print(f"precision {precision:.3f} | recall {recall:.3f} | F1 {f1:.3f}")
 
@@ -123,8 +124,8 @@ for i in range(2):
         level = (cm[i, j] - cm.min()) / max(cm.max() - cm.min(), 1)
         shade = "white" if level > 0.65 else "#31417A"
         ax.text(j, i, cm[i, j], ha="center", va="center", fontsize=13, color=shade)
-ax.set_xticks([0, 1]); ax.set_xticklabels(["benign", "malignant"])
-ax.set_yticks([0, 1]); ax.set_yticklabels(["benign", "malignant"])
+ax.set_xticks([0, 1]); ax.set_xticklabels(["malignant", "benign"])
+ax.set_yticks([0, 1]); ax.set_yticklabels(["malignant", "benign"])
 ax.set_xlabel("actual"); ax.set_ylabel("predicted")
 for s in ["top", "right"]: ax.spines[s].set_visible(False)
 plt.tight_layout()
@@ -162,7 +163,7 @@ concave_pts <- c(
     0.0029, 0.028, 0.0228, 0.0507, 0.0195, 0.0093, 0.0288, 0.074, 0.0559, 0.0418, 0.1242, 0.0133, 0.1149, 0.0567, 0.0204,
     0.0218, 0.0835, 0.0042, 0.0232, 0.0232, 0.095, 0.0809, 0.0655, 0.0201, 0.0868, 0.0817, 0.0207, 0.0234, 0.0194, 0.0192,
     0.0356, 0.0137, 0.0205, 0.0246, 0.017, 0.0265, 0.0066, 0.097, 0.0581, 0.1255, 0.0326, 0.0216, 0.0649, 0.0526, 0.0798)
-y           <- c(
+benign      <- c(
     0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0,
     0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0,
     1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1,
@@ -172,14 +173,17 @@ y           <- c(
     1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0)
 
+# Malignant is the positive class, as in Section 6.5: the disease is what we screen for.
+y <- 1 - benign
+
 # Fit the logistic model, then threshold its probabilities at 0.5.
 fit   <- glm(y ~ radius + texture + concave_pts, family = binomial)
-proba <- as.numeric(predict(fit, type = "response"))   # P(benign), the MLE fit
+proba <- as.numeric(predict(fit, type = "response"))   # P(malignant), the MLE fit
 pred  <- as.integer(proba >= 0.5)
 
 cm <- table(predicted = factor(pred, levels = c(1, 0)),
             actual    = factor(y,    levels = c(1, 0)))
-cat("Confusion matrix [rows predicted, cols actual; benign first]:\n")
+cat("Confusion matrix [rows predicted, cols actual; malignant first]:\n")
 print(cm)
 
 TP <- cm["1","1"]; FP <- cm["1","0"]; FN <- cm["0","1"]; TN <- cm["0","0"]
@@ -188,9 +192,9 @@ recall    <- TP / (TP + FN)
 f1        <- 2 * precision * recall / (precision + recall)
 cat(sprintf("precision %.3f | recall %.3f | F1 %.3f\n", precision, recall, f1))
 
-# Confusion-matrix heatmap, blue identity (rows predicted, cols actual; benign first)
+# Confusion-matrix heatmap, blue identity (rows predicted, cols actual; malignant first)
 counts <- matrix(c(TP, FP, FN, TN), nrow = 2, byrow = TRUE)
-labels <- c("benign", "malignant")
+labels <- c("malignant", "benign")
 shade  <- counts / max(counts)
 plot(NA, xlim = c(0, 2), ylim = c(0, 2), axes = FALSE, asp = 1,
      xlab = "actual", ylab = "predicted")
@@ -211,10 +215,13 @@ correctly, and the off-diagonal counts are the errors. But every count here is a
 that one threshold of $0.5$. Move it, and the whole table shifts.
 
 So move it. The slider below re-tallies the same 120 cases at whatever cut-off you choose.
-Note which way the errors migrate. The positive class here is *benign*, so lowering the
-threshold calls more cases benign: recall rises, and the cost is paid in the top-right cell,
-where a malignancy is graded benign. That is the mistake a cancer screen can least afford,
-and it is the reason the threshold is a clinical decision rather than a default of $0.5$.
+Note which way the errors migrate. The positive class is *malignant*, so lowering the
+threshold calls more cases malignant: recall rises, fewer cancers are missed, and the cost is
+paid in the top-right cell, where a benign tumor is graded malignant and the patient is called
+back for a biopsy she did not need. Raise the threshold and the trade runs the other way, into
+the bottom-left cell, where a malignancy is graded benign. That is the mistake a cancer screen
+can least afford, and it is the reason the threshold is a clinical decision rather than a
+default of $0.5$.
 
 ```{ojs}
 //| echo: false
@@ -250,9 +257,10 @@ viewof cut = {
 import numpy as np
 import matplotlib.pyplot as plt
 
-# P(benign) from the IRLS fit above, and the labels, inlined so this cell stands on
+# P(benign) from the IRLS fit above, and the benign labels, inlined so this cell stands on
 # its own: thresholding is the point here, and refitting would only repeat the cell above.
-proba_fit = np.array([
+# Both are flipped below, so that malignant is the positive class throughout.
+proba_benign = np.array([
     0.2157, 0.9998, 0.0001, 0.9965, 0.0039, 1.0000, 0.0000, 0.9988, 0.9978, 0.0011,
     0.8954, 0.0000, 0.0001, 0.9957, 0.9243, 0.0000, 0.9941, 0.9998, 0.9987, 0.9946,
     0.9865, 0.9533, 0.9986, 0.9420, 0.9946, 0.0000, 0.9925, 0.8851, 1.0000, 0.0435,
@@ -265,7 +273,7 @@ proba_fit = np.array([
     0.9998, 0.0033, 0.9988, 0.9982, 0.9918, 0.0000, 0.1596, 0.0125, 0.9920, 0.0001,
     0.0219, 0.9993, 0.8357, 0.9498, 0.9987, 0.8253, 0.9934, 0.9983, 0.9902, 0.9979,
     0.9919, 0.9999, 0.0000, 0.0270, 0.0000, 0.3982, 0.9947, 0.3676, 0.3032, 0.0027])
-label = np.array([
+label_benign = np.array([
     0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0,
     1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1,
@@ -273,12 +281,15 @@ label = np.array([
     1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0,
     0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0])
 
+proba_fit = 1 - proba_benign                 # P(malignant)
+label = 1 - label_benign                     # 1 = malignant, the positive class
+
 t = float(cut)
 pred = (proba_fit >= t).astype(int)
 
 TN = int(((pred == 0) & (label == 0)).sum()); FP = int(((pred == 1) & (label == 0)).sum())
 FN = int(((pred == 0) & (label == 1)).sum()); TP = int(((pred == 1) & (label == 1)).sum())
-cm = np.array([[TP, FP], [FN, TN]])          # rows = predicted, cols = actual, benign first
+cm = np.array([[TP, FP], [FN, TN]])          # rows = predicted, cols = actual, malignant first
 
 precision = TP / (TP + FP) if (TP + FP) else float("nan")
 recall = TP / (TP + FN) if (TP + FN) else float("nan")
@@ -293,8 +304,8 @@ for i in range(2):
         level = (cm[i, j] - cm.min()) / max(cm.max() - cm.min(), 1)
         shade = "white" if level > 0.65 else "#31417A"
         ax.text(j, i, cm[i, j], ha="center", va="center", fontsize=13, color=shade)
-ax.set_xticks([0, 1]); ax.set_xticklabels(["benign", "malignant"])
-ax.set_yticks([0, 1]); ax.set_yticklabels(["benign", "malignant"])
+ax.set_xticks([0, 1]); ax.set_xticklabels(["malignant", "benign"])
+ax.set_yticks([0, 1]); ax.set_yticklabels(["malignant", "benign"])
 ax.set_xlabel("actual"); ax.set_ylabel("predicted")
 ax.set_title(f"threshold = {t:.2f}")
 for s in ["top", "right"]: ax.spines[s].set_visible(False)
@@ -302,8 +313,8 @@ plt.tight_layout()
 plt.show()
 
 print(f"threshold {t:.2f} | precision {precision:.3f} | recall {recall:.3f} | F1 {f1:.3f}")
-print(f"malignancies graded benign (top-right)    = {FP}   <- the costly error")
-print(f"benign cases graded malignant (bottom-left) = {FN}   <- the false alarm")
+print(f"benign graded malignant (top-right)      = {FP}   <- the false alarm")
+print(f"malignancy graded benign (bottom-left)   = {FN}   <- the costly error")
 ```
 
 ## ROC and AUC: every threshold at once
@@ -355,7 +366,7 @@ concave_pts = np.array([
     0.0029, 0.028, 0.0228, 0.0507, 0.0195, 0.0093, 0.0288, 0.074, 0.0559, 0.0418, 0.1242, 0.0133, 0.1149, 0.0567, 0.0204,
     0.0218, 0.0835, 0.0042, 0.0232, 0.0232, 0.095, 0.0809, 0.0655, 0.0201, 0.0868, 0.0817, 0.0207, 0.0234, 0.0194, 0.0192,
     0.0356, 0.0137, 0.0205, 0.0246, 0.017, 0.0265, 0.0066, 0.097, 0.0581, 0.1255, 0.0326, 0.0216, 0.0649, 0.0526, 0.0798])
-y           = np.array([
+benign      = np.array([
     0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0,
     0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0,
     1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1,
@@ -365,6 +376,8 @@ y           = np.array([
     1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0])
 
+y = 1 - benign                               # malignant is the positive class
+
 X = np.column_stack([np.ones(len(y)), radius, texture, concave_pts])
 beta = np.zeros(X.shape[1])
 for _ in range(50):                         # IRLS: the fit glm() also computes
@@ -372,7 +385,7 @@ for _ in range(50):                         # IRLS: the fit glm() also computes
     W = np.clip(p * (1 - p), 1e-9, None)
     z = X @ beta + (y - p) / W
     beta = np.linalg.solve((X * W[:, None]).T @ X, (X * W[:, None]).T @ z)
-proba = 1 / (1 + np.exp(-X @ beta))          # P(benign)
+proba = 1 / (1 + np.exp(-X @ beta))          # P(malignant)
 
 # Sweep the threshold from high to low; the TPR and FPR rise together, monotone.
 thr = np.unique(np.concatenate([[0.0], proba, [1.0]]))[::-1]
@@ -423,7 +436,7 @@ concave_pts <- c(
     0.0029, 0.028, 0.0228, 0.0507, 0.0195, 0.0093, 0.0288, 0.074, 0.0559, 0.0418, 0.1242, 0.0133, 0.1149, 0.0567, 0.0204,
     0.0218, 0.0835, 0.0042, 0.0232, 0.0232, 0.095, 0.0809, 0.0655, 0.0201, 0.0868, 0.0817, 0.0207, 0.0234, 0.0194, 0.0192,
     0.0356, 0.0137, 0.0205, 0.0246, 0.017, 0.0265, 0.0066, 0.097, 0.0581, 0.1255, 0.0326, 0.0216, 0.0649, 0.0526, 0.0798)
-y           <- c(
+benign      <- c(
     0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0,
     0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0,
     1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1,
@@ -433,8 +446,9 @@ y           <- c(
     1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0)
 
+y <- 1 - benign                                        # malignant is the positive class
 fit   <- glm(y ~ radius + texture + concave_pts, family = binomial)
-proba <- as.numeric(predict(fit, type = "response"))   # P(benign), the MLE fit
+proba <- as.numeric(predict(fit, type = "response"))   # P(malignant), the MLE fit
 yt <- y
 
 # Sweep the threshold from high to low; the TPR and FPR rise together, monotone.
