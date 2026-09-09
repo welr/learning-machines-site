@@ -310,6 +310,42 @@ where successive trees concentrate their corrections. The base-R pair shows the 
 this story directly: the stump can only cut once, while the kernel bends smoothly around both
 crescents.
 
+## Which model overfits, and why
+
+The boundaries above are drawn on all 300 points, which is the right thing for *seeing* a
+model's geometry and the wrong thing for judging it. Split the data and the differences
+become numbers. The cell holds out a third of the points, fits each model on the rest, and
+reports both accuracies. (The R column cannot join in here: webR ships no `randomForest`,
+`gbm` or `e1071`, as noted at the top of the page.)
+
+```{pyodide}
+from sklearn.model_selection import train_test_split
+
+Xtr, Xte, ytr, yte = train_test_split(
+    Xm, ym, test_size=0.33, random_state=RNG, stratify=ym)
+
+print(f"{'model':20s} {'train':>7s} {'test':>7s} {'gap':>7s}")
+for name, model in models:
+    model.fit(Xtr, ytr)
+    tr, te = model.score(Xtr, ytr), model.score(Xte, yte)
+    print(f"{name:20s} {tr:7.3f} {te:7.3f} {tr - te:7.3f}")
+```
+
+Three models reach a perfect training score, and they are the three built from trees. What
+separates them is the gap. The **single tree** has the widest, around $0.11$, and its
+settings say why: `DecisionTreeClassifier()` is left at its defaults, with no depth limit and
+no minimum leaf size, so it splits until every leaf is pure. On noisy data that means
+memorizing the noise, which is the same thing as those small islands in its boundary panel.
+The **random forest** and **gradient boosting** fit the training set just as perfectly and
+generalize better, because averaging over resampled trees and correcting residuals in small
+steps both damp what any one tree memorizes. The **kernel SVM** has by far the narrowest gap,
+under $0.02$: its shape was fixed by the choice of `gamma` before any data arrived, and `C`
+caps how hard it will work to classify an awkward point. The **linear** model shows a modest
+gap for the opposite reason, having too little capacity to overfit and too little to fit.
+
+A training score alone would have ranked three of these five as equal and perfect. The gap is
+what distinguishes them.
+
 Every one of these methods commits to a *fixed* geometry, a hyperplane, an RBF similarity,
 axis-aligned cuts, before seeing the data. A neural network, the next chapter's subject,
 instead *learns* a representation in which a problem like this becomes easy to separate,
