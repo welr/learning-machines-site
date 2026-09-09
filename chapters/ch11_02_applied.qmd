@@ -11,7 +11,9 @@ engine: markdown
 [Build the self-attention head and the transformer block, then train a one-head model and watch it learn where to look.]{.dek}
 :::
 
-This is the keystone rung toward the book's capstone. Here you build the two pieces a GPT assembles: a self-attention [Head]{.term} and a transformer [Block]{.term}. First you watch attention compute on a concrete input, seeing the causal mask make each position look only backward; then you train a one-head model on a tiny task and watch it learn where to look. The head you write here is the exact code the Chapter 12 capstone drops into its GPT.
+This is the keystone rung toward the book's capstone. Here you build the two pieces a GPT assembles: a self-attention [Head]{.term} and a transformer [Block]{.term}. First you watch attention compute on a concrete input, seeing the causal mask make each position look only backward; then you train a one-head model on a tiny task and watch it learn where to look. The head you write here is the same computation, in the same order, that the Chapter 12
+capstone runs inside its GPT; the capstone's version adds dropout and reads its sizes from
+the model's configuration.
 
 ```{=html}
 <figure class="lm-figure">
@@ -68,7 +70,8 @@ Feed a short random sequence through an untrained head and read its attention ma
 
 ## From a head to a transformer block
 
-[Multi-head attention]{.term} runs several heads in parallel and concatenates their outputs; a [transformer block]{.term} wraps multi-head attention and a position-wise feed-forward network in residual connections and layer normalization, the residual you built in Chapter 10. These are the same classes the capstone uses, unchanged.
+[Multi-head attention]{.term} runs several heads in parallel and concatenates their outputs; a [transformer block]{.term} wraps multi-head attention and a position-wise feed-forward network in residual connections and layer normalization, the residual you built in Chapter 10. These are the capstone's classes with the dropout and the configuration lookups stripped
+out, so that each one stands alone here.
 
 ```python
 class MultiHeadAttention(nn.Module):
@@ -102,6 +105,12 @@ class Block(nn.Module):
         x = x + self.ffwd(self.norm2(x))     # residual around feed-forward
         return x
 ```
+
+Look at the order. This block normalizes *before* each sublayer and adds the result to an
+untouched residual path: the *pre-LN* arrangement of Section 11.3. The block displayed in the
+book's Equations 11.4 and 11.5 does the opposite, normalizing after the addition. Exercise
+11(b) asks you to say how the two orders differ; the answer is in front of you, in the
+placement of `norm1` and `norm2` relative to the `+`.
 
 ## Does it learn where to look?
 
@@ -148,7 +157,7 @@ for step in range(601):
         print(f"step {step:3d} | loss {loss.item():.3f} | accuracy {acc:.3f}")
 ```
 
-Within a few hundred steps the accuracy climbs toward one, and the averaged attention matrix collapses onto a single column: every position has learned to look back to position $0$, where the answer lives. Give it a different task and the head would learn to look elsewhere. This is what neither the MLP of Chapter 9 nor the convolution of Chapter 10 can do, route information from one position to another in a content-dependent way.
+Within a few hundred steps the accuracy climbs toward one, and the averaged attention matrix collapses onto a single column: every position has learned to look back to position $0$, where the answer lives. Give it a different task and the head would learn to look elsewhere. This is what neither a position-wise MLP nor a local convolution whose receptive field excludes position $0$ can do, route information from one position to another in a content-dependent way. Chapter 11's Exercise 11(c) asks you to say why that restriction does not extend to a fully connected model with the whole sequence in view, or to a convolution with a large enough receptive field.
 
 **The capstone.** In Chapter 12 you stack these exact blocks into a GPT and train it on real text with the same loop you have now used three times. Only the scale and the data change; you have already written every part.
 

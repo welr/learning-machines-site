@@ -11,7 +11,7 @@ engine: markdown
 [Seal the labels away, look for structure in the pixels alone, and only then check how much of the answer was already there.]{.dek}
 :::
 
-The browser page worked on a data set small enough to hold in your head. This one runs the same experiment at scale, on the 10,000 Fashion-MNIST images you met in Chapter 9's applied exercise — with one change: the labels are locked away before anything begins, and stay locked until the last section. Everything up to that point sees nothing but pixels.
+The browser page worked on a data set small enough to hold in your head. This one runs the same experiment at scale, on 10,000 of the Fashion-MNIST images you met in Chapter 9's applied exercise — with one change: the labels are locked away before anything begins, and stay locked until the last section. Everything up to that point sees nothing but pixels.
 
 That constraint is the point. The question Chapter 13 asks is how much of the class structure is already present in $p(\mathbf{x})$, before any label is used, and you can only answer it honestly if you have not peeked. PCA finds the directions the images vary along; $K$-means proposes groups; a small autoencoder learns a code that can bend where PCA's cannot. Only then does the seal come off.
 

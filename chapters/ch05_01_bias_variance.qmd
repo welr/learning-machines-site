@@ -573,8 +573,8 @@ between Python and R at the same trailing-digit level, for the same reason as be
 The U-shaped curve is the classical picture, and it is the right one for the models in this
 book. In the heavily overparameterized regime of modern deep learning, researchers have
 observed a second descent: past the point where the model can interpolate the training data
-exactly, test error can fall *again*. That phenomenon is beyond our scope here, but it is
-worth knowing that the tidy U-shape is the beginning of the story, not the whole of it.
+exactly, test error can fall *again*. The book takes this up in Section 5.4 and Figure 5.4: the
+tidy U-shape is the beginning of the story, not the whole of it.
 
 The trade-off is the reason the next two chapters exist. Cross-validation (Chapter 6)
 estimates the test-error curve so we can find its minimum without peeking at held-out data,

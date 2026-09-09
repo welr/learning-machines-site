@@ -38,7 +38,7 @@ cross-product, leaving the intercept unpenalized. That one term tames the fit.
 
 ::: {.defbox}
 [Ridge Estimate]{.lbl}
-[ &theta;&#770;<sub>ridge</sub> = (X&#8868;X + &lambda;I)&#8722;&sup1; X&#8868;y ]{.math}
+[ &theta;&#770;<sub>ridge</sub> = (X&#8868;X + m&lambda;I)&#8722;&sup1; X&#8868;y ]{.math}
 :::
 
 ```{=html}
@@ -65,8 +65,8 @@ def poly(x, d):                       # design matrix [1, x, x^2, ..., x^d]
     return np.column_stack([x**k for k in range(d + 1)])
 
 def ridge(X, y, lam):
-    n = X.shape[1]
-    P = lam * np.eye(n); P[0, 0] = 0.0      # do not penalize the intercept
+    m, n = X.shape
+    P = lam * m * np.eye(n); P[0, 0] = 0.0  # do not penalize the intercept
     return np.linalg.solve(X.T @ X + P, X.T @ y)
 
 degree = 9
@@ -100,8 +100,8 @@ y <- c(0.5377, -0.582, -1.7774, -0.2958, 1.0756, 0.3734, 0.2285, -0.9679,
 poly_features <- function(x, d) outer(x, 0:d, `^`)   # [1, x, x^2, ..., x^d]
 
 ridge_fit <- function(X, y, lambda) {
-  n <- ncol(X)
-  P <- lambda * diag(n); P[1, 1] <- 0                # do not penalize the intercept
+  n <- ncol(X); m <- nrow(X)
+  P <- lambda * m * diag(n); P[1, 1] <- 0            # do not penalize the intercept
   solve(t(X) %*% X + P, t(X) %*% y)
 }
 
@@ -170,7 +170,7 @@ def poly(x, d):
     return np.column_stack([x**k for k in range(d + 1)])
 
 def ridge(X, y, lam):
-    n = X.shape[1]; P = lam * np.eye(n); P[0, 0] = 0.0
+    m, n = X.shape; P = lam * m * np.eye(n); P[0, 0] = 0.0
     return np.linalg.solve(X.T @ X + P, X.T @ y)
 
 def lasso(X, y, lam, iters=5000, tol=1e-7):
@@ -185,7 +185,7 @@ def lasso(X, y, lam, iters=5000, tol=1e-7):
             if j == 0:                                # intercept: no penalty
                 theta[j] = rho / col_sq[j]
             else:                                     # soft-threshold
-                theta[j] = np.sign(rho) * max(abs(rho) - lam * m, 0.0) / col_sq[j]
+                theta[j] = np.sign(rho) * max(abs(rho) - lam * m / 2, 0.0) / col_sq[j]
         if np.abs(theta - old).max() < tol:
             break
     return theta
@@ -231,7 +231,7 @@ y <- c(0.5377, -0.582, -1.7774, -0.2958, 1.0756, 0.3734, 0.2285, -0.9679,
 poly_features <- function(x, d) outer(x, 0:d, `^`)
 
 ridge_fit <- function(X, y, lambda) {
-  n <- ncol(X); P <- lambda * diag(n); P[1, 1] <- 0
+  n <- ncol(X); m <- nrow(X); P <- lambda * m * diag(n); P[1, 1] <- 0
   solve(t(X) %*% X + P, t(X) %*% y)
 }
 
@@ -246,7 +246,7 @@ lasso_fit <- function(X, y, lambda, iters = 5000, tol = 1e-7) {
       if (j == 1) {                                 # intercept: no penalty
         theta[j] <- rho / col_sq[j]
       } else {                                      # soft-threshold
-        theta[j] <- sign(rho) * max(abs(rho) - lambda * m, 0) / col_sq[j]
+        theta[j] <- sign(rho) * max(abs(rho) - lambda * m / 2, 0) / col_sq[j]
       }
     }
     if (max(abs(theta - old)) < tol) break
@@ -287,7 +287,7 @@ par(mfrow = c(1, 1))
 :::
 
 Both cells run the same fixed data through the same two algorithms, so the paths and the
-nonzero counts agree exactly: ridge $8/8$, LASSO $3/8$ at $\lambda = 0.05$.
+nonzero counts agree exactly: ridge $8/8$, LASSO $2/8$ at $\lambda = 0.05$.
 
 ## Why only LASSO selects
 
@@ -391,7 +391,7 @@ y  = 100*x1 + 0.001*x2 + np.array([0.02, -0.01, 0.015, -0.02, 0.01, -0.012, 0.01
                -0.003, 0.014, -0.016, 0.005, -0.009, 0.017, -0.006, 0.002])
 
 def ridge(X, y, lam):
-    n = X.shape[1]; P = lam * np.eye(n); P[0, 0] = 0.0
+    m, n = X.shape; P = lam * m * np.eye(n); P[0, 0] = 0.0
     return np.linalg.solve(X.T @ X + P, X.T @ y)
 
 def standardize(X):
@@ -418,7 +418,7 @@ y  <- 100*x1 + 0.001*x2 + c(0.02, -0.01, 0.015, -0.02, 0.01, -0.012, 0.018,
         -0.003, 0.014, -0.016, 0.005, -0.009, 0.017, -0.006, 0.002)
 
 ridge_fit <- function(X, y, lambda) {
-  n <- ncol(X); P <- lambda * diag(n); P[1, 1] <- 0
+  n <- ncol(X); m <- nrow(X); P <- lambda * m * diag(n); P[1, 1] <- 0
   solve(t(X) %*% X + P, t(X) %*% y)
 }
 
