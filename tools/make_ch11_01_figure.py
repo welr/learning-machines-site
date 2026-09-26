@@ -8,8 +8,8 @@ Everything between the two rule comments below is copied verbatim into the page'
 live `{pyodide}` cell, so a reader who clicks Run reproduces this picture.
 """
 
-import sys
-sys.path.insert(0, "/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/MLone book/notebooks")
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "notebooks"))
 
 import matplotlib
 matplotlib.use("Agg")
@@ -107,8 +107,7 @@ ax.set_xlabel("key — token attended to", fontsize=11)
 ax.set_ylabel("query — token attending", fontsize=11)
 # --- end shared block ----------------------------------------------------------
 
-out = ("/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/"
-       "MLone book/companion-site/figures/ch11_01_attention_transformers.png")
+out = pathlib.Path(__file__).resolve().parents[1] / "figures" / "ch11_01_attention_transformers.png"
 fig.savefig(out, dpi=150, bbox_inches="tight", facecolor="white", pad_inches=0.12)
 print("saved:", out)
 print("context vector for 'it':", np.round(context[6], 3))

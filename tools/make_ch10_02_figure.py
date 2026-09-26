@@ -13,8 +13,8 @@ non-zero without writing a PNG. Gaussian noise captioned with real Fashion-MNIST
 class names and confidences is worse than no figure at all.
 """
 
-import sys
-sys.path.insert(0, "/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/MLone book/notebooks")
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "notebooks"))
 
 import matplotlib
 matplotlib.use("Agg")
@@ -185,7 +185,6 @@ for i in range(n_show):
 fig.text(0.365, 0.94, "test predictions, with confidence (blue = correct, red = wrong)",
           fontsize=11.5, color=mt.FS_BLUE)
 
-out = ("/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/"
-       "MLone book/companion-site/figures/ch10_02_applied.png")
+out = pathlib.Path(__file__).resolve().parents[1] / "figures" / "ch10_02_applied.png"
 fig.savefig(out, dpi=150, bbox_inches="tight", facecolor="white", pad_inches=0.18)
 print("saved:", out)

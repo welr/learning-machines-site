@@ -7,8 +7,8 @@ those labels. Generated from the same computation as the companion notebook
 (ch13_02_applied.ipynb) — same source, same subsample, same K.
 """
 
-import sys
-sys.path.insert(0, "/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/MLone book/notebooks")
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "notebooks"))
 
 import matplotlib
 matplotlib.use("Agg")
@@ -97,7 +97,6 @@ cb.ax.tick_params(labelsize=9, colors="#666666")
 cb.outline.set_edgecolor(SPINE)
 
 fig.tight_layout()
-out = ("/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/"
-       "MLone book/companion-site/figures/ch13_02_applied.png")
+out = pathlib.Path(__file__).resolve().parents[1] / "figures" / "ch13_02_applied.png"
 fig.savefig(out, dpi=150, bbox_inches="tight", facecolor="white", pad_inches=0.12)
 print("saved:", out)

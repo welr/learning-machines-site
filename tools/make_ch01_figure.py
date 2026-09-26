@@ -5,8 +5,8 @@ gaps the baseline leaves drawn in. Generated from the page's own computation: th
 same twenty Frankfurt sales the page's live cells use.
 """
 
-import sys
-sys.path.insert(0, "/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/MLone book/notebooks")
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "notebooks"))
 
 import matplotlib
 matplotlib.use("Agg")
@@ -58,7 +58,6 @@ ax.set_ylabel("price, € thousands", fontsize=11)
 ax.legend(loc="upper left", frameon=False, fontsize=10.5, handlelength=1.7,
           labelspacing=0.35)
 
-out = ("/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/"
-       "MLone book/companion-site/figures/ch01_01_baseline.png")
+out = pathlib.Path(__file__).resolve().parents[1] / "figures" / "ch01_01_baseline.png"
 fig.savefig(out, dpi=150, bbox_inches="tight", facecolor="white", pad_inches=0.12)
 print("saved:", out)

@@ -14,9 +14,8 @@ The corpus is downloaded from the same URL the notebook uses and cached under th
 system temp directory; nothing is written into the repository except the PNG.
 """
 
-import sys
-sys.path.insert(0, "/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/"
-                   "Lecture NOTES/MLone book/notebooks")
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "notebooks"))
 
 import math
 import os
@@ -256,7 +255,6 @@ ax.set_xlim(-25, max_iters + 25)
 ax.legend(loc="lower left", frameon=False, fontsize=10.5, handlelength=1.7,
           labelspacing=0.35)
 
-out = ("/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/"
-       "MLone book/companion-site/figures/ch12_01_build_a_gpt.png")
+out = pathlib.Path(__file__).resolve().parents[1] / "figures" / "ch12_01_build_a_gpt.png"
 fig.savefig(out, dpi=150, bbox_inches="tight", facecolor="white", pad_inches=0.12)
 print("saved:", out)
