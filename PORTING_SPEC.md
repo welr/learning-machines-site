@@ -1,6 +1,6 @@
 # Notebook → companion-site porting spec
 
-Goal: turn each source notebook in `MLone book/notebooks/` into ONE Quarto page under
+Goal: turn each source notebook in `notebooks/` into ONE Quarto page under
 `companion-site/chapters/`, faithful to the notebook's content, runnable **live in the
 browser in both Python and R**. The site is an expository companion, not a 1:1 dump:
 keep the notebook's real ideas, examples, and key figures; condense repetition.

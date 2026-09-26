@@ -4,8 +4,8 @@ Reproduces the page's own `decompose` cell exactly -- same truth, same noise,
 same 100 datasets of 20 points, same clip -- so the caption's claim that this
 is what the code below produces is true. Treatment B per FIGURE_SPEC.md.
 """
-import sys
-sys.path.insert(0, "/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/MLone book/notebooks")
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "notebooks"))
 import warnings
 warnings.filterwarnings("ignore")
 import numpy as np
@@ -57,5 +57,5 @@ ax.tick_params(colors="#666666", labelsize=11)
 ax.set_xticks(degrees)
 ax.legend(loc="upper left", frameon=False, fontsize=10.5,
           handlelength=1.7, labelspacing=0.35)
-fig.savefig("/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/MLone book/companion-site/figures/ch05_01_bias_variance.png",
+fig.savefig(pathlib.Path(__file__).resolve().parents[1] / "figures" / "ch05_01_bias_variance.png",
             dpi=150, bbox_inches="tight", facecolor="white", pad_inches=0.12)

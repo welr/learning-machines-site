@@ -16,8 +16,8 @@ non-zero without writing a PNG, so the committed figure is never overwritten wit
 data the caption does not describe.
 """
 
-import sys
-sys.path.insert(0, "/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/MLone book/notebooks")
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "notebooks"))
 
 import matplotlib
 matplotlib.use("Agg")
@@ -132,7 +132,6 @@ for ax, title, ylabel in (
 
 fig.tight_layout()
 
-out = ("/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/"
-       "MLone book/companion-site/figures/ch09_02_applied.png")
+out = pathlib.Path(__file__).resolve().parents[1] / "figures" / "ch09_02_applied.png"
 fig.savefig(out, dpi=150, bbox_inches="tight", facecolor="white", pad_inches=0.12)
 print("saved:", out)

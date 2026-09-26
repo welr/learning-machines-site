@@ -20,7 +20,7 @@ Frame `#cfccc2`, grid `#e6e3da`. White background. NO green.
 
 Start every generator with:
 ```python
-import sys; sys.path.insert(0, "/Users/gregorywheeler/Dropbox/A_COURSES/Machine Learning I/Lecture NOTES/MLone book/notebooks")
+import sys, pathlib; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "notebooks"))
 import mlone_theme as mt, matplotlib.pyplot as plt, numpy as np
 mt.set_book_mode()
 SPINE, GRID = "#cfccc2", "#e6e3da"
