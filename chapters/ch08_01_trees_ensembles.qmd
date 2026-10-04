@@ -255,7 +255,8 @@ legend("topleft", legend = c("class 0", "class 1"),
 :::
 
 The search picks the split $x_1 \le -0.5$, with gain $0.222$ and training accuracy
-$83.3\%$.
+$83.3\%$. The split $x_2 \le -0.5$ cuts off the same six points and ties it; the scan keeps
+the first split it finds.
 
 ## Depth, and why a single tree overfits
 

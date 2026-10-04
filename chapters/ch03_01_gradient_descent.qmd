@@ -27,8 +27,8 @@ $\alpha$. The gradient points uphill; we go the other way.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch03_01_gradient_descent.png" alt="Contour plot of the MSE loss over the intercept and slope, with a red gradient-descent path stepping from a start point down into the valley to the marked optimum.">
-<figcaption><strong>Gradient descent on the loss surface.</strong> From a start far from the floor, each step follows the negative gradient down the blue MSE bowl in (&theta;<sub>0</sub>, &theta;<sub>1</sub>) until the walk settles on the optimum. This is the result the code below reproduces.</figcaption>
+<img src="../figures/ch03_01_gradient_descent.png" alt="Contour plot of the MSE loss over the intercept and slope, with a dark-blue gradient-descent path stepping from a start point down into the valley to the marked optimum.">
+<figcaption><strong>Gradient descent on the loss surface.</strong> From a start far from the floor, each step follows the negative gradient down the blue MSE bowl in (&theta;<sub>0</sub>, &theta;<sub>1</sub>) until the walk settles on the optimum. The path is the well-chosen step size of the code below, run until it settles.</figcaption>
 </figure>
 ```
 
@@ -316,7 +316,7 @@ cat(sprintf("optimal loss = %.4f\n", opt_loss))
 
 :::
 
-The slow run never reaches the floor in forty steps; the good run lands on the optimal loss, while the oscillating run is still about 0.05 above it after forty steps, having spent most of its motion zig-zagging.
+The slow run never reaches the floor in forty steps; the good run ends within 0.007 of the optimal loss (0.1478 against 0.1409), while the oscillating run is still about 0.05 above it after forty steps, having spent most of its motion zig-zagging.
 
 Three fixed rates make the argument; a fourth of your own choosing makes it stick. The slider
 below reruns the descent above, from the same start and for the same forty steps, at the step
@@ -645,12 +645,14 @@ descend <- function(X, n_steps = 400) {
 }
 
 cols <- c("#E3120B", "#31417A"); kappas <- numeric(2)
-plot(NA, xlim = c(1, 400), ylim = c(1e-17, 300), log = "y", bty = "l",
+runs <- lapply(designs, descend)
+positive <- unlist(lapply(runs, function(r) r$excess[r$excess > 0]))
+plot(NA, xlim = c(1, 400), ylim = range(positive), log = "y", bty = "l",
      xlab = "Iteration", ylab = "Loss above the optimum (log scale)",
      main = "The same regression, the same rule for alpha, different units")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 for (i in seq_along(designs)) {
-  r <- descend(designs[[i]])
+  r <- runs[[i]]
   lmax <- r$eigs[length(r$eigs)]
   kappas[i] <- lmax / r$eigs[1]
   cat(sprintf("%-14s lambda_max = %9.3g   kappa = %11.1f   largest stable alpha = %.3g\n",

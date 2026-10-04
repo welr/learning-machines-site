@@ -37,8 +37,8 @@ that comparison concrete.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch02_03_bayesian_regression.png" alt="Scatter of data with a posterior-mean regression line and a shaded 95% credible band that is narrow over the observed range of x and widens toward both plot edges.">
-<figcaption><strong>Uncertainty that grows with extrapolation.</strong> The posterior mean line with its 95% credible band, tight where the data cluster and flaring outward as the input leaves the observed range. This is the result the code below reproduces.</figcaption>
+<img src="../figures/ch02_03_bayesian_regression.png" alt="Scatter of data with a posterior-mean regression line and a shaded 95% predictive band that is narrow over the observed range of x and widens toward both plot edges.">
+<figcaption><strong>Uncertainty that grows with extrapolation.</strong> The posterior mean line with its 95% predictive band, tight where the data cluster and flaring outward as the input leaves the observed range. This is the result the code below reproduces.</figcaption>
 </figure>
 ```
 
@@ -51,8 +51,8 @@ posterior standard deviations report how sure we are of each coefficient, someth
 delivers only through a separate calculation.
 
 The two languages draw their noise from different random number generators, so their data
-sets are not identical and the last digits differ. Both posteriors sit near the true
-$(1, 2)$, and in each language the posterior mean tracks that language's OLS fit.
+sets and estimates differ noticeably; what both show is that under a broad prior the
+posterior mean coincides with that language's OLS fit to every printed digit.
 
 ::: {.panel-tabset group="lang"}
 
@@ -135,8 +135,8 @@ cat(sprintf("\nposterior sd    %7.3f %7.3f\n", post_sd[1], post_sd[2]))
 A point estimate predicts a single $y$ for each new $x$. The posterior predicts a
 distribution. For an input $x^\*$ the [posterior predictive]{.term} variance is
 $x^{\*\top}\boldsymbol{\Sigma}_m x^\* + \sigma^2$: parameter uncertainty plus observation
-noise. Plot the posterior mean line with its 95% [credible interval]{.term} and the band
-tells an honest story. It is tightest where the data cluster and flares outward where the
+noise. Plot the posterior mean line with a 95% predictive band, the range expected to hold 95%
+of new responses at each input, and the band tells an honest story. It is tightest where the data cluster and flares outward where the
 model is extrapolating, because the parameter-uncertainty term grows as $x^\*$ moves from
 the data center.
 
@@ -169,7 +169,7 @@ pred_sd   = np.sqrt(pred_var)
 
 fig, ax = plt.subplots(figsize=(8, 5))
 ax.fill_between(xs, pred_mean - 1.96 * pred_sd, pred_mean + 1.96 * pred_sd,
-                color="#076FA1", alpha=0.20, label="95% credible band")
+                color="#076FA1", alpha=0.20, label="95% predictive band")
 ax.plot(xs, pred_mean, color="#31417A", linewidth=2.5, label="posterior mean")
 ax.plot(xs, true_theta[0] + true_theta[1] * xs, color="#666666", linestyle="--",
         linewidth=2, label="true line")
@@ -217,7 +217,7 @@ lines(xs, pred_mean, col = "#31417A", lwd = 2.5)
 lines(xs, true_theta[1] + true_theta[2] * xs, col = "#666666", lty = 2, lwd = 2)
 points(x, y, pch = 19, col = "#076FA1")
 legend("topleft", bty = "n",
-       legend = c("data", "posterior mean", "true line", "95% band"),
+       legend = c("data", "posterior mean", "true line", "95% predictive band"),
        col = c("#076FA1", "#31417A", "#666666", "#076FA1"),
        pch = c(19, NA, NA, 15), lty = c(NA, 1, 2, NA))
 

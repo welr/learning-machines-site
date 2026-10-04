@@ -207,7 +207,7 @@ for (name in c("w1", "b1", "w2", "b2")) {
 
 :::
 
-The differences land near $10^{-10}$, the floor set by floating-point arithmetic, not by any error in the formulas. When you write your own layer, this check is the difference between a bug you find in thirty seconds and one you chase for a day.
+The differences land near $10^{-12}$, the floor set by floating-point arithmetic, not by any error in the formulas. When you write your own layer, this check is the difference between a bug you find in thirty seconds and one you chase for a day.
 
 ## One step, then fifty
 
@@ -299,14 +299,15 @@ for (step in seq_len(n_steps)) {
 
 # The loss falls by a near-constant factor per step, which only a log axis shows;
 # on a linear axis the whole run looks like one cliff followed by nothing.
+iter <- seq_len(n_steps) - 1        # count iterations from 0, as Python does
 nz <- which(losses > 0)
 
 par(mfrow = c(1, 2))
-plot(nz, losses[nz], type = "l", col = "#31417A", lwd = 2.5, bty = "l", log = "y",
-     xlim = c(1, n_steps), xlab = "Iteration", ylab = "Loss (log scale)",
+plot(iter[nz], losses[nz], type = "l", col = "#31417A", lwd = 2.5, bty = "l", log = "y",
+     xlim = c(0, n_steps), xlab = "Iteration", ylab = "Loss (log scale)",
      main = "Loss during training")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-plot(seq_len(n_steps), preds, type = "l", col = "#31417A", lwd = 2.5, bty = "l",
+plot(iter, preds, type = "l", col = "#31417A", lwd = 2.5, bty = "l",
      xlab = "Iteration", ylab = "Output", main = "Prediction converging to target")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 abline(h = y, col = "#E3120B", lty = 2, lwd = 2)
@@ -314,8 +315,8 @@ legend("bottomright", legend = c("prediction", sprintf("target y=%.1f", y)),
        col = c("#31417A", "#E3120B"), lty = c(1, 2), lwd = 2)
 
 last <- max(nz)
-cat(sprintf("Initial loss: %.6f   loss at iteration %d: %.3e\n", losses[1], last, losses[last]))
-cat(sprintf("Loss reaches exactly 0 at iteration %d\n", last + 1))
+cat(sprintf("Initial loss: %.6f   loss at iteration %d: %.3e\n", losses[1], iter[last], losses[last]))
+cat(sprintf("Loss reaches exactly 0 at iteration %d\n", iter[last] + 1))
 cat(sprintf("Final prediction: %.4f   (target %.1f)\n", preds[n_steps], y))
 ```
 

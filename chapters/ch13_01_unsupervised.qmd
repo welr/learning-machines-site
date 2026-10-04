@@ -273,7 +273,9 @@ iris = load_iris()
 X_raw, species_sealed = iris.data, iris.target
 X = (X_raw - X_raw.mean(axis=0)) / X_raw.std(axis=0)
 evals, evecs = np.linalg.eigh(X.T @ X / len(X))    # the projection from above
-Z = X @ evecs[:, ::-1]
+evecs = evecs[:, ::-1]
+evecs = evecs * np.sign(evecs[0, :])               # same signs as the first plot
+Z = X @ evecs
 
 rng = np.random.default_rng(1)                     # the clustering from above
 K = 3
@@ -312,7 +314,8 @@ X_raw <- as.matrix(iris[, 1:4])
 species_sealed <- iris$Species
 X <- scale(X_raw)
 e <- eigen(t(X) %*% X / nrow(X), symmetric = TRUE)  # the projection from above
-Z <- X %*% e$vectors
+V <- sweep(e$vectors, 2, sign(e$vectors[1, ]), "*") # same signs as the first plot
+Z <- X %*% V
 
 set.seed(1)                                        # the clustering from above
 K <- 3

@@ -37,6 +37,10 @@ S = Xc.T @ Xc / m                           # 784 x 784 sample covariance
 evals, evecs = np.linalg.eigh(S)            # ascending
 evals, evecs = evals[::-1], evecs[:, ::-1]  # largest first
 frac = evals / evals.sum()
+# eigh fixes each eigenvector only up to sign, so a rerun could mirror the figure.
+# Orient every component so its loadings sum negative: adding ink uniformly lowers the
+# score. This is the orientation of the published figure (footwear right, trousers top).
+evecs = evecs * np.where(evecs.sum(axis=0) > 0, -1.0, 1.0)
 
 Z = Xc @ evecs[:, :50]
 km = KMeans(n_clusters=10, n_init=10, random_state=0).fit(Z)   # notebook clusters on all 50

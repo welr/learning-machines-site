@@ -28,8 +28,8 @@ The chapter's Applied exercises name two larger sets: **California housing** (me
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch02_04_applied.png" alt="Scatter of miles per gallon against car weight for 32 cars, with a straight-line fit and a degree-10 polynomial that wriggles and dives at the sparse heavy end.">
-<figcaption><strong>Fitting real data.</strong> A straight line through the <code>mtcars</code> fuel-economy data tells an honest downward story, while a degree-10 polynomial fits the noise and wriggles violently where the heavy cars thin out. This is the result the code below reproduces.</figcaption>
+<img src="../figures/ch02_04_applied.png" alt="Scatter of miles per gallon against car weight for 32 cars, with a straight-line fit, a quadratic that flattens a little toward the heavy end, and a degree-10 polynomial that wriggles and dives at the sparse heavy end.">
+<figcaption><strong>Fitting real data.</strong> A straight line and a quadratic through the <code>mtcars</code> fuel-economy data tell the same honest downward story, while a degree-10 polynomial fits the noise and wriggles violently where the heavy cars thin out. This is the result the code below reproduces.</figcaption>
 </figure>
 ```
 
@@ -233,7 +233,7 @@ legend("topright", legend = paste("degree", degs), col = cols, lwd = 2, bty = "n
 
 :::
 
-The line and the quadratic tell the same honest story: more weight, less mileage, flattening a little where the cars get heavy. The degree-10 polynomial fits the training cars a shade better, but buys it by wriggling, diving and rising at the sparse heavy end where a few cars pull it around. On *new* cars that wriggle would cost it, because it has fit the noise, not the trend. We have no formal measure of that cost yet; Chapter 6 supplies one and Chapter 7 the tools to prevent it.
+The line and the quadratic tell the same honest story: more weight, less mileage, flattening a little where the cars get heavy. The degree-10 polynomial fits the training cars better, but buys it by wriggling, diving and rising at the sparse heavy end where a few cars pull it around. On *new* cars that wriggle would cost it, because it has fit the noise, not the trend. We have no formal measure of that cost yet; Chapter 6 supplies one and Chapter 7 the tools to prevent it.
 
 ::: {.explore}
 [Try it]{.lbl}

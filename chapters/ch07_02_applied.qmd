@@ -28,7 +28,7 @@ them all, while LASSO drives most of them to *exactly* zero and so performs
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch07_02_applied.png" alt="LASSO regularization path: thirty coefficients plotted against the penalty on a logarithmic axis; the eight blue informative-feature paths fall to exactly zero one at a time as the penalty grows, while the twenty-two gray spurious-feature paths sit on the zero line throughout.">
+<img src="../figures/ch07_02_applied.png" alt="LASSO regularization path: thirty coefficients plotted against the penalty on a logarithmic axis; the eight blue informative-feature paths fall to exactly zero one at a time as the penalty grows, while the twenty-two gray spurious-feature paths stay close to the zero line.">
 <figcaption><strong>The LASSO path.</strong> As the penalty &lambda; grows, each coefficient is driven to <em>exactly</em> zero one at a time; the eight informative features (blue) survive deepest into the penalty while the spurious ones (gray) hug zero and are the first driven out &mdash; LASSO selects variables by driving coefficients exactly to zero. (In this simulation the features are uncorrelated; with correlated predictors, survival depth is not a ranking of importance.) This is the result the code below reproduces.</figcaption>
 </figure>
 ```
@@ -97,8 +97,9 @@ features, eight of them real.
 ## The regularization path
 
 The [regularization path]{.term} traces every coefficient as the penalty sweeps from weak to
-strong. Read it from left to right, weak penalty to strong: ridge pulls all thirty coefficients
-toward zero together, smoothly, never quite reaching it. LASSO pulls them in too, but each one
+strong. Read it from left to right, weak penalty to strong: ridge shrinks the whole coefficient
+vector smoothly without setting any coefficient to zero, though individual coefficients may
+swell or change sign on the way. LASSO pulls them in too, but each one
 arrives at exactly zero at some finite penalty and stays there. The kinks in the LASSO panel are
 features leaving the model.
 

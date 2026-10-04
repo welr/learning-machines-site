@@ -45,7 +45,7 @@ HEROES = {
     "ch02_03_bayesian_regression":   dict(cell=1, figsize=(8.0, 5.0)),
     "ch02_04_applied":               dict(cell=2, figsize=(8.0, 5.0)),
     "ch04_01_logistic_regression":   dict(cell=0, figsize=(8.0, 5.0)),
-    "ch04_02_multiclass":            dict(cell=1, figsize=(7.6, 5.4)),
+    "ch04_02_multiclass":            dict(cell=2, figsize=(7.6, 5.4)),   # softmax, as the caption says
     "ch04_03_applied":               dict(cell=0, figsize=(8.0, 5.0)),
     "ch06_01_model_evaluation":      dict(cell=3, figsize=(8.0, 5.0)),
 }
@@ -54,9 +54,6 @@ HEROES = {
 # generator (or a decision to replace the hero with the cell's figure); until one
 # exists, the shipped PNG cannot be regenerated or checked against its page.
 NEEDS_BESPOKE = {
-    "ch03_01_gradient_descent": "hero is one contour panel; the matching cell draws three",
-    "ch06_02_applied":          "hero is a square ROC; the cell's figure is a different shape",
-    "ch07_01_regularization":   "hero is the ridge path alone; the cell draws ridge and LASSO",
 }
 
 
@@ -141,11 +138,48 @@ def _moons_svm(env, ax):                        # ch08_03: the RBF SVM panel
     _frame(ax, grid=None)
 
 
+def _descent(env, ax):                          # ch03_01: the well-chosen step size, run until it settles
+    path = env["descend"](0.10, 100, env["start"])
+    ax.contourf(env["g0"], env["g1"], env["Loss"], levels=env["levels"], cmap="Blues", alpha=0.85)
+    ax.plot(path[:, 0], path[:, 1], "o-", color=FS, ms=3.5, lw=1.6, label="descent path (α = 0.10)")
+    ax.scatter(*path[0], color=FS, s=70, zorder=5, edgecolors="white", linewidths=1.2, label="start")
+    ax.scatter(*env["theta_ols"], color=GRAY, marker="*", s=220, zorder=6, edgecolors="white",
+               linewidths=1.2, label="optimum (OLS)")
+    ax.set_xlabel(r"$\theta_0$  (intercept)"); ax.set_ylabel(r"$\theta_1$  (slope)")
+    ax.legend(loc="upper left", framealpha=0.9)
+
+
+def _roc(env, ax):                              # ch06_02: the ROC curve the page computes
+    ax.plot(env["fpr"], env["tpr"], color=FS, lw=2.6, drawstyle="steps-post",
+            label=f"ROC curve (AUC = {env['auc']:.3f})")
+    ax.plot([0, 1], [0, 1], color=GRAY, ls="--", lw=1.2, label="chance")
+    ax.set_xlim(0, 1); ax.set_ylim(0, 1.02); ax.set_aspect("equal")
+    ax.set_xlabel("false-positive rate"); ax.set_ylabel("true-positive rate")
+    ax.legend(loc="lower right", frameon=False)
+    _frame(ax, grid="both")
+
+
+def _ridge_path(env, ax):                       # ch07_01: the ridge panel, on the page's lambda scale
+    lams, P = np.asarray(env["lams"]), np.asarray(env["ridge_path"])
+    if P.shape[0] != len(lams):
+        P = P.T
+    cols = env.get("path_colors")
+    ax.axhline(0, color=GRAY, lw=0.9)
+    for j in range(P.shape[1]):
+        ax.plot(lams, P[:, j], lw=1.8, color=(cols[j % len(cols)] if cols is not None else BLUE))
+    ax.set_xscale("log")
+    ax.set_xlabel(r"penalty $\lambda$ (log scale)"); ax.set_ylabel("coefficient")
+    _frame(ax)
+
+
 PANELS = {
     "ch07_02_applied":         dict(cell=1, figsize=(8.0, 5.0), draw=_lasso_path),
     "ch08_01_trees_ensembles": dict(cell=2, figsize=(8.0, 5.0), draw=_tree_depth),
     "ch08_02_kernel_methods":  dict(cell=2, figsize=(6.6, 6.0), draw=_rings_svm),
     "ch08_03_applied":         dict(cell=1, figsize=(8.0, 5.6), draw=_moons_svm),
+    "ch03_01_gradient_descent": dict(cell=1, figsize=(8.0, 5.0), draw=_descent),
+    "ch06_02_applied":          dict(cell=2, figsize=(6.0, 6.0), draw=_roc),
+    "ch07_01_regularization":   dict(cell=1, figsize=(8.0, 5.0), draw=_ridge_path),
 }
 
 

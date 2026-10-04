@@ -358,7 +358,7 @@ rather than fixing the shape of the boundary in advance.
 ::: {.explore}
 [Try it]{.lbl}
 Raise the moons' `noise` to 0.5 and refit. In Python the single tree's islands multiply while
-the forest barely moves, variance reduction on screen. In R, push the kernel's `gamma` to 10
-and watch the smooth boundary tighten into overfitting islands of its own, the bias-variance
-dial turning the other way.
+the forest barely moves, variance reduction on screen. In R, leave the noise at 0.30 and push
+the kernel's `gamma` from 2 to 30: the smooth boundary tightens and breaks off small islands
+around single noisy points, the bias-variance dial turning the other way.
 :::

@@ -634,8 +634,11 @@ for (j in 1:k) {                        # canonical signs: topic loadings positi
 doc_coords  <- U[, 1:k] %*% diag(d[1:k])   # documents in the latent plane
 term_coords <- V[, 1:k] %*% diag(d[1:k])   # terms in the same plane
 
+all_coords <- rbind(doc_coords, term_coords)   # limits must hold the terms too
 plot(doc_coords, col = ifelse(topic == "finance", "#31417A", "#4F9E00"),
      pch = ifelse(topic == "finance", 19, 15),
+     xlim = extendrange(all_coords[, 1], f = c(0.04, 0.1)),   # room for labels
+     ylim = extendrange(all_coords[, 2]),
      xlab = "latent direction 1 (finance)",
      ylab = "latent direction 2 (cooking)")
 points(term_coords, col = "#E3120B", pch = 4, lwd = 2)
@@ -647,8 +650,11 @@ legend("topright", c("finance documents", "cooking documents", "terms"),
 :::
 
 *Loan* and *credit* lie on the same ray from the origin, as do *oven* and *stove* — identical
-in direction, which is all cosine similarity measures, differing only in length (*loan*'s
-documents carry slightly more count mass). The factorization recovered a small semantic fact
+in direction, which is all cosine similarity measures, differing only in length. Each topic's
+documents point the same way in the plane, so a term's length sums its counts, each weighted by
+how far out its document sits, and documents rich in the hub words sit farthest. *Loan* leads *credit* on both: 14 occurrences to 13, in documents
+that sit slightly farther out. *Oven* and *stove* occur 11 times each, but every cooking
+document with a third *flour* is an *oven* document, so *oven* is the longer. The factorization recovered a small semantic fact
 from co-occurrence alone. The learned embeddings of
 Chapters 11 and 12 are this idea's descendants — there too words become vectors and
 similarity becomes an inner product — with the coordinates no longer extracted from counts

@@ -506,7 +506,7 @@ stands at a right angle to the plane exactly when it has no average left and no 
       note.innerHTML = 'This is the least-squares line. The residuals sum to zero and show no trend in size, so the residual meets the plane at a right angle: the fitted values are the point on the plane closest to the prices. RSS is ' + fmt(rss, 3) + ', the smallest any line can reach.';
     } else {
       const parts = [];
-      if (Math.abs(d1) >= 0.02) parts.push('the residuals still have an average (' + fmt(d1) + '), so raising or lowering the line would help');
+      if (Math.abs(d1) >= 0.02) parts.push('the residuals still sum to ' + fmt(d1) + ', so raising or lowering the line would help');
       if (Math.abs(d2) >= 0.02) parts.push('they still trend with size (' + fmt(d2) + '), so tilting the line would help');
       note.innerHTML = 'Not yet the closest point: ' + parts.join('; and ') + '. In data space the residual leans along the plane instead of standing straight off it.';
     }
@@ -545,8 +545,10 @@ coefficients from the noisy data, and confirm them against the production fitter
 (`LinearRegression` in Python, `lm` in R). The residual plot checks the model: no pattern
 against the fitted values means roughly constant variance.
 
-The two languages draw their noise from different random number generators, so the recovered
-numbers differ in the last digits, but both land near the true $(20, 15, 25)$.
+The two languages draw their noise from different random number generators, so their recovered
+coefficients differ noticeably; what both show is the closed form matching the production
+fitter to every printed digit, with estimates scattered around the true $(20, 15, 25)$ by the
+noise in fifty houses.
 
 ::: {.panel-tabset group="lang"}
 
@@ -698,5 +700,5 @@ chapters that follow.
 [Try it]{.lbl}
 In the housing example, change one price to a clear outlier (say `202.26` becomes `702.26`) and
 re-run the fit and residual plot. Watch how the single point tugs the whole line and inflates
-every residual, a first look at why least squares is sensitive to outliers.
+most of the residuals, a first look at why least squares is sensitive to outliers.
 :::

@@ -36,7 +36,7 @@ is `nnet::multinom`.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch04_02_multiclass.png" alt="Two-dimensional feature space split into three decision regions, shaded blue, orange, and cyan, with the three classes of training points plotted on top and labeled by region.">
+<img src="../figures/ch04_02_multiclass.png" alt="Two-dimensional feature space split into three decision regions, shaded blue, orange, and cyan, with the training points of the three classes plotted on top in matching colors and identified in a legend.">
 <figcaption><strong>Three classes, three regions.</strong> The softmax classifier partitions the plane into one region per class, and almost every point falls in its own color. This is the result the code below reproduces.</figcaption>
 </figure>
 ```
@@ -91,8 +91,10 @@ legend("topright", legend = paste("Class", 0:2), col = cols, pch = 19)
 
 :::
 
-The two languages draw from different random number generators, so the point clouds, and the
-accuracies that follow, differ in the last digit. The shapes and conclusions match.
+Python and R draw different random samples, so the point clouds, accuracies and probabilities
+that follow differ noticeably (softmax accuracy is 98.0% in one and 99.3% in the other), but
+both show the same pattern: one-vs-all and softmax classify equally well, and only softmax
+probabilities sum to one at a point between the classes.
 
 ## One-vs-all
 

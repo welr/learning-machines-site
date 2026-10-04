@@ -137,18 +137,14 @@ print(f"the mean is          {price.mean():.1f}")
 
 # absolute error instead of squared error picks a different summary
 abs_err = np.array([np.abs(price - c).mean() for c in candidates])
-print(f"\nunder absolute error the minimum is at c = {candidates[abs_err.argmin()]:.1f}")
-print(f"  the median, the 26th of 51 sorted prices, is {np.median(price):.1f}")
+print(f"\nunder absolute error the scan bottoms out at c = {candidates[abs_err.argmin()]:.1f},")
+print(f"  the grid point nearest the median, the 26th of 51 sorted prices: {np.median(price):.1f}")
 
 # drop the largest sale: with 50 observations the count is even
 p50 = price[price != price.max()]
-abs_50 = np.array([np.abs(p50 - c).mean() for c in candidates])
-best = candidates[np.isclose(abs_50, abs_50.min())]
-
 srt = np.sort(p50)
-print(f"\nwith 50 sales the minimum is FLAT,")
-print(f"  from {best.min():.1f} to {best.max():.1f}")
-print(f"  between the two middle observations, {srt[24]:.2f} and {srt[25]:.2f}")
+print(f"\nwith 50 sales the minimum is FLAT:")
+print(f"  every c between the two middle observations, {srt[24]:.2f} and {srt[25]:.2f}")
 print(f"  the median, their midpoint, is {np.median(p50):.1f}")
 ```
 
@@ -180,19 +176,15 @@ cat(sprintf("the mean is          %.1f\n", mean(price)))
 
 # absolute error instead of squared error picks a different summary
 abs_err <- sapply(candidates, function(c) mean(abs(price - c)))
-cat(sprintf("\nunder absolute error the minimum is at c = %.1f\n",
+cat(sprintf("\nunder absolute error the scan bottoms out at c = %.1f,\n",
             candidates[which.min(abs_err)]))
-cat(sprintf("  the median, the 26th of 51 sorted prices, is %.1f\n", median(price)))
+cat(sprintf("  the grid point nearest the median, the 26th of 51 sorted prices: %.1f\n", median(price)))
 
 # drop the largest sale: with 50 observations the count is even
 p50 <- price[price != max(price)]
-abs_50 <- sapply(candidates, function(c) mean(abs(p50 - c)))
-best <- candidates[abs(abs_50 - min(abs_50)) <= 1e-5 * min(abs_50)]
-
 srt <- sort(p50)
-cat(sprintf("\nwith 50 sales the minimum is FLAT,\n"))
-cat(sprintf("  from %.1f to %.1f\n", min(best), max(best)))
-cat(sprintf("  between the two middle observations, %.2f and %.2f\n", srt[25], srt[26]))
+cat(sprintf("\nwith 50 sales the minimum is FLAT:\n"))
+cat(sprintf("  every c between the two middle observations, %.2f and %.2f\n", srt[25], srt[26]))
 cat(sprintf("  the median, their midpoint, is %.1f\n", median(p50)))
 ```
 
@@ -246,8 +238,8 @@ axR.axvline(np.median(price), color="#31417A", ls="--", lw=1.4,
 p50 = price[price != price.max()]
 abs_50 = np.array([np.abs(p50 - c).mean() for c in candidates])
 axR.plot(candidates, abs_50, color="#666666", lw=1.4, label="50 sales")
-flat = candidates[np.isclose(abs_50, abs_50.min())]
-axR.axvspan(flat.min(), flat.max(), color="#9E4F00", alpha=0.25,
+lo, hi = np.sort(p50)[[24, 25]]   # the two middle sales bound the flat floor
+axR.axvspan(lo, hi, color="#9E4F00", alpha=0.25,
             label="flat: all minimizers (50 sales)")
 axR.set_xlim(850, 1030); axR.set_ylim(268, 302)
 axR.set_title("Absolute error: a corner, or a flat floor")
@@ -274,7 +266,7 @@ abs_err <- sapply(candidates, function(c) mean(abs(price - c)))
 # drop the largest sale: with 50 the floor is flat, and every c on it is a minimizer
 p50     <- price[price != max(price)]
 abs_50  <- sapply(candidates, function(c) mean(abs(p50 - c)))
-best    <- candidates[abs(abs_50 - min(abs_50)) <= 1e-5 * min(abs_50)]
+best    <- sort(p50)[c(25, 26)]   # the two middle sales bound the flat floor
 
 op <- par(mfrow = c(1, 2))
 

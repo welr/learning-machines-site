@@ -17,7 +17,7 @@ SPINE, GRID = "#cfccc2", "#e6e3da"
 def true_f(x):
     return np.sin(2 * np.pi * x)
 
-def decompose(degree, n_datasets=100, n=20, noise=0.3):
+def decompose(degree, n_datasets=500, n=20, noise=0.3):
     grid = np.linspace(0, 1, 100)
     truth = true_f(grid)
     preds = []
@@ -28,8 +28,11 @@ def decompose(degree, n_datasets=100, n=20, noise=0.3):
         coef = np.polyfit(x, y, degree)
         preds.append(np.clip(np.polyval(coef, grid), -10, 10))
     preds = np.array(preds)
-    bias2 = ((preds.mean(0) - truth) ** 2).mean()
-    var = preds.var(0).mean()
+    var_pt = preds.var(0)
+    # The average of n noisy fits sits off the truth by chance, which adds
+    # variance/n to the squared gap; subtract that (unbiased) share.
+    bias2 = max(((preds.mean(0) - truth) ** 2 - var_pt / (n_datasets - 1)).mean(), 0)
+    var = var_pt.mean()
     return bias2, var, noise ** 2, bias2 + var + noise ** 2
 
 degrees = list(range(1, 13))
@@ -39,9 +42,12 @@ irr = rows[0][2];            total = [r[3] for r in rows]
 best = degrees[int(np.argmin(total))]
 print(f"minimum total error at degree {best}; irreducible {irr:.3f}; "
       f"total at degree 12 {total[-1]:.2f}")
+for d, r in zip(degrees, rows):
+    print(f"{d:>4}{r[0]:>9.4f}{r[1]:>9.4f}{r[3]:>9.4f}")
 
 fig, ax = plt.subplots(figsize=(7.0, 4.2))
-ax.plot(degrees, bias2, "o-", color=mt.BLUE,    lw=2, label="bias$^2$")
+# A zero estimate has no place on a log axis; leave a gap there.
+ax.plot(degrees, [b if b > 0 else np.nan for b in bias2], "o-", color=mt.BLUE,    lw=2, label="bias$^2$")
 ax.plot(degrees, var,   "s-", color=mt.FS_BLUE, lw=2, label="variance")
 ax.plot(degrees, total, "^-", color=mt.ORANGE,  lw=2, label="total error")
 ax.axhline(irr, color=mt.GRAY, ls="--", lw=1.2,
