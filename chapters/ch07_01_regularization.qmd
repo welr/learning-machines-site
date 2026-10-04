@@ -143,37 +143,29 @@ more than the direction that trades one against the other. Equation 7.2 of the b
 ridge solution in exactly these two directions, with the stretches as $d_j^2$.
 
 ```{=html}
-<div class="lm-ix" id="ix-ridge" role="figure" aria-label="Interactive figure: ridge regression traced through the matrix it inverts">
+<div class="lm-ix" id="ix-ridge" role="figure" aria-label="Interactive figure: the ridge formula carried out one direction at a time">
 <div class="ix-eyebrow">Interactive</div>
-<div class="ix-title">Ridge, one matrix at a time</div>
-<div class="ix-views even">
+<div class="ix-title">Ridge, one direction at a time</div>
+<div class="ix-views one">
   <div class="ix-card">
-    <div class="ix-ttl">The matrix</div>
-    <p class="ix-sub">How far <span class="sym">X</span><sup>⊤</sup><span class="sym">X</span> + <span class="sym">m</span>λ<span class="sym">I</span> stretches each direction. The shape is to scale; the size is fixed.</p>
-    <svg class="ix-fwd" viewBox="0 0 400 300"></svg>
+    <div class="ix-ttl">The formula, direction by direction</div>
+    <p class="ix-sub">In its two directions the matrix only stretches, so inverting it only divides. Each coefficient component is the data's evidence divided by the stretch.</p>
     <div class="ix-matrix m-fwd"></div>
-  </div>
-  <div class="ix-card">
-    <div class="ix-ttl">Its inverse</div>
-    <p class="ix-sub">Inverting divides by the same stretches, so the long and short axes swap.</p>
-    <svg class="ix-inv" viewBox="0 0 400 300"></svg>
-    <div class="ix-matrix m-inv"></div>
+    <div class="ix-steps"></div>
   </div>
 </div>
 <div class="ix-views one" style="margin-top:12px">
   <div class="ix-card">
     <div class="ix-ttl">The coefficients</div>
-    <p class="ix-sub">Training error over the two standardized coefficients, the ridge solution, and its path as λ grows. The dashed circle is the penalty's level set through the solution; the solid curve is the error contour that touches it there.</p>
+    <p class="ix-sub">The solution is the sum of its two components. The dashed circle is the penalty's level set through it; the solid curve is the error contour that touches it there.</p>
     <svg class="ix-coef" viewBox="0 0 560 362"></svg>
   </div>
 </div>
 <div class="lm-slider"><label>Penalty <span class="sym">λ</span></label><input class="ix-l" type="range" min="-4" max="1" step="0.01" value="-4"><output class="ix-lv"></output></div>
 <div class="ix-buttons"></div>
 <div class="ix-readout">
-  <div class="ix-stat t-ml"><div class="k"><span class="sym">m</span>λ, against the smallest stretch 0.148</div><div class="v"></div></div>
-  <div class="ix-stat t-k"><div class="k">Condition number of the matrix</div><div class="v"></div></div>
   <div class="ix-stat t-c"><div class="k">Price per m² · per room (thousand €)</div><div class="v"></div></div>
-  <div class="ix-stat t-f"><div class="k">Kept along both up · area against rooms</div><div class="v"></div></div>
+  <div class="ix-stat t-k"><div class="k">Condition number of the matrix</div><div class="v"></div></div>
 </div>
 <div class="ix-note"></div>
 <script src="../assets/lm-ix.js"></script>
@@ -193,69 +185,69 @@ ridge solution in exactly these two directions, with the stretches as $d_j^2$.
   const dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0);
   const G = [[dot(Z1, Z1), dot(Z1, Z2)], [dot(Z1, Z2), dot(Z2, Z2)]];   // X^T X, standardized
   const XTY = [dot(Z1, YC), dot(Z2, YC)];
-  // eigen-decomposition of the symmetric 2x2: stretches s1 >= s2 along unit directions v1, v2
+  // The two directions of X^T X and their stretches (eigenvalues, the book's d_j^2)
   const tr = G[0][0] + G[1][1], det = G[0][0] * G[1][1] - G[0][1] ** 2, rad = Math.sqrt(tr * tr / 4 - det);
-  const S1 = tr / 2 + rad, S2 = tr / 2 - rad;
   const unit = v => { const n = Math.hypot(v[0], v[1]); return [v[0] / n, v[1] / n]; };
-  const V1 = unit([G[0][1], S1 - G[0][0]]);                  // both coefficients up together
-  let V2 = unit([-V1[1], V1[0]]); if (V2[0] < 0) V2 = [-V2[0], -V2[1]];   // area up, rooms down
-  function solve(lam) {                                      // (X^T X + m lam I)^{-1} X^T y
-    const a = G[0][0] + m * lam, b = G[0][1], c = G[1][1] + m * lam, d = a * c - b * b;
-    return [(c * XTY[0] - b * XTY[1]) / d, (a * XTY[1] - b * XTY[0]) / d];
-  }
+  const S1 = tr / 2 + rad, S2 = tr / 2 - rad;
+  const V1 = unit([G[0][1], S1 - G[0][0]]);                                // both up
+  let V2 = unit([-V1[1], V1[0]]); if (V2[0] < 0) V2 = [-V2[0], -V2[1]];    // area up, rooms down
+  const E1 = V1[0] * XTY[0] + V1[1] * XTY[1], E2 = V2[0] * XTY[0] + V2[1] * XTY[1];   // the data's evidence
+  const comps = lam => [E1 / (S1 + m * lam), E2 / (S2 + m * lam)];
+  const solve = lam => { const k = comps(lam); return [k[0] * V1[0] + k[1] * V2[0], k[0] * V1[1] + k[1] * V2[1]]; };
   const mse = t => mean(YC.map((y, i) => (y - t[0] * Z1[i] - t[1] * Z2[i]) ** 2));
-  const OLS = solve(0), MSE0 = mse(OLS);
+  const OLS = solve(0), MSE0 = mse(OLS), K0 = comps(0), KMAX = Math.max(Math.abs(K0[0]), Math.abs(K0[1]));
   let lam = 0;
 
-  function ellipse(svg, C, along1, along2, lab1, lab2) {     // semi-axes along v1 and v2
-    svg.innerHTML = '';
-    const cx = 200, cy = 150, R = 118, big = Math.max(along1, along2);
-    const r1 = Math.max(R * along1 / big, 1.4), r2 = Math.max(R * along2 / big, 1.4);
-    const ang = Math.atan2(V1[1], V1[0]) * 180 / Math.PI;
-    const tip = (v, r) => [cx + v[0] * r, cy - v[1] * r];
-    [[V1, lab1], [V2, lab2]].forEach(([v, lab]) => {
-      const p = tip(v, -R - 8), q = tip(v, R + 8);
-      L.el('line', { x1: p[0], y1: p[1], x2: q[0], y2: q[1], stroke: C.axis, 'stroke-width': 1, 'stroke-dasharray': '3 4' }, svg);
-      const t = tip(v, R + 14);
-      L.el('text', { x: t[0], y: t[1], 'text-anchor': v[0] >= 0 ? 'start' : 'end', 'font-size': 18, fill: C.muted }, svg).textContent = lab;
-    });
-    L.el('ellipse', { cx, cy, rx: r1, ry: r2, transform: `rotate(${-ang} ${cx} ${cy})`, fill: C.plane, stroke: C.fs, 'stroke-width': 2 }, svg);
+  const f3 = v => Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : Math.abs(v) >= 1 ? v.toFixed(2) : v.toFixed(3);
+  const big = v => Math.abs(v) < 100 ? v.toFixed(1) : Math.round(v).toLocaleString('en-US');
+  const sf = v => v < 1 ? v.toFixed(3) : v.toFixed(2);              // stretches: 23.85, 0.148
+  function matrix(ml) {
+    const cell = (v, add) => add ? `<td>${f3(v)} <span class="add">+ ${f3(add)}</span></td>` : `<td>${L.fmt(v, 2)}</td>`;
+    $('.m-fwd').innerHTML = `<span class="lhs">X<sup>⊤</sup>X + mλI =</span><table><tr>${cell(G[0][0], ml)}${cell(G[0][1])}</tr><tr>${cell(G[1][0])}${cell(G[1][1], ml)}</tr></table>`;
   }
-  const f3 = v => v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : v.toFixed(3);
-  function matrix(el, lhs, M, addDiag) {
-    const cell = (v, add) => add ? `<td>${f3(v - add)} <span class="add">+ ${f3(add)}</span></td>` : `<td>${L.fmt(v, Math.abs(v) < 1 ? 3 : 2)}</td>`;
-    el.innerHTML = `<span class="lhs">${lhs}</span><table><tr>${cell(M[0][0], addDiag)}${cell(M[0][1])}</tr><tr>${cell(M[1][0])}${cell(M[1][1], addDiag)}</tr></table>`;
+  function steps(C, ml) {
+    const k = comps(lam), S = [S1, S2], E = [E1, E2], col = [C.blue, C.orange];
+    const bar = (j, frac) => `<div class="bar" style="color:${col[j]};width:${Math.max(0.3, 100 * Math.min(1, Math.abs(frac)))}%"></div>`;
+    const div = j => '÷ ' + (ml > 0 ? `(${sf(S[j])} <span style="color:${C.orange}">+ ${f3(ml)}</span>)` : sf(S[j]));
+    let h = `<div></div><div class="h" style="color:${C.blue}">both up</div><div class="h" style="color:${C.orange}">area against rooms</div>`;
+    h += `<div class="lab">The data's evidence along each direction (X<sup>⊤</sup>y)</div>` +
+         [0, 1].map(j => `<div><div class="num">${big(E[j])}</div>${bar(j, E[j] / E1)}</div>`).join('');
+    h += `<div class="lab">divided by the stretch, <i>d</i>² + <i>m</i>λ</div>` +
+         [0, 1].map(j => `<div><div class="num wrap">${div(j)}</div></div>`).join('');
+    h += `<div class="rule"></div><div class="lab">= the coefficient's component</div>` +
+         [0, 1].map(j => `<div><div class="num">${f3(k[j])}</div>${bar(j, k[j] / KMAX)}</div>`).join('');
+    h += `<div class="lab">kept, against least squares</div>` +
+         [0, 1].map(j => `<div><div class="num">${pct(S[j] / (S[j] + ml))}</div>${bar(j, S[j] / (S[j] + ml))}</div>`).join('');
+    $('.ix-steps').innerHTML = h;
   }
+  const pct = v => v === 1 ? '100%' : 100 * v >= 99.5 ? '>99%' : 100 * v < 1 ? '<1%' : (100 * v).toFixed(0) + '%';
 
-  const P = { x0: 56, x1: 548, y0: 12, y1: 310, X: [-45, 292], Y: [-124, 80] };   // 1.46 px per unit on both axes   // equal units on both axes
+  const P = { x0: 56, x1: 548, y0: 12, y1: 310, X: [-45, 292], Y: [-124, 80] };   // 1.46 px per unit on both axes
   const px = v => P.x0 + (v - P.X[0]) / (P.X[1] - P.X[0]) * (P.x1 - P.x0);
   const py = v => P.y1 - (v - P.Y[0]) / (P.Y[1] - P.Y[0]) * (P.y1 - P.y0);
   const PATH = [OLS].concat(Array.from({ length: 140 }, (_, i) => solve(10 ** (-4 + i * 6.5 / 139))));
-  const TRUTH = [4 * SA, 0];                                   // 4 per m², 0 per room, standardized
-  function coef(C, t) {
+  function coef(C, t, k) {
     const svg = $('.ix-coef'); svg.innerHTML = '';
     L.el('rect', { x: P.x0, y: P.y0, width: P.x1 - P.x0, height: P.y1 - P.y0 }, L.el('clipPath', { id: 'ixr-clip' }, svg));
     const g = L.el('g', { 'clip-path': 'url(#ixr-clip)' }, svg);
     [0, 50, 100, 150, 200, 250].forEach(v => L.el('line', { x1: px(v), x2: px(v), y1: P.y0, y2: P.y1, stroke: C.grid }, g));
     [-100, -50, 0, 50].forEach(v => L.el('line', { x1: P.x0, x2: P.x1, y1: py(v), y2: py(v), stroke: C.grid }, g));
-    L.contours((a, b) => mse([a, b]), P.X, P.Y, [30, 120, 400, 1200, 3000, 6000, 10000].map(d => MSE0 + d), 120)
-      .forEach((cl, k) => cl.segs.forEach(s => L.el('line', { x1: px(s[0]), y1: py(s[1]), x2: px(s[2]), y2: py(s[3]), stroke: k < 2 ? C.cyan : C.axis, 'stroke-width': k < 2 ? 1.5 : 1 }, g)));
-    [[V1, 'both up'], [V2, 'area against rooms']].forEach(([v, lab]) => {
-      L.arrow(g, [px(0), py(0)], [px(42 * v[0]), py(42 * v[1])], C.muted, 1.6);
-      L.el('text', { x: px(42 * v[0]) + (v[1] > 0 ? -8 : 6), y: py(42 * v[1]) + (v[1] < 0 ? 16 : -2), 'text-anchor': v[1] > 0 ? 'end' : 'start', 'font-size': 14, fill: C.muted }, g).textContent = lab;
-    });
-    L.el('polyline', { points: PATH.map(p => px(p[0]) + ',' + py(p[1])).join(' '), fill: 'none', stroke: C.fs, 'stroke-width': 1.4, 'stroke-dasharray': '5 4', opacity: 0.7 }, g);
-    if (lam > 0) L.contours((a, b) => mse([a, b]), P.X, P.Y, [mse(t)], 160)   // the error contour through the solution
-      .forEach(cl => cl.segs.forEach(sg => L.el('line', { x1: px(sg[0]), y1: py(sg[1]), x2: px(sg[2]), y2: py(sg[3]), stroke: C.fs, 'stroke-width': 1.6 }, g)));
-    const r = Math.hypot(t[0], t[1]);
-    if (lam > 0) L.el('circle', { cx: px(0), cy: py(0), r: r * (P.x1 - P.x0) / (P.X[1] - P.X[0]), fill: 'none', stroke: C.orange, 'stroke-width': 1.4, 'stroke-dasharray': '6 5' }, g);
-    L.el('line', { x1: px(TRUTH[0]) - 6, x2: px(TRUTH[0]) + 6, y1: py(0) - 6, y2: py(0) + 6, stroke: C.muted, 'stroke-width': 2 }, g);
-    L.el('line', { x1: px(TRUTH[0]) - 6, x2: px(TRUTH[0]) + 6, y1: py(0) + 6, y2: py(0) - 6, stroke: C.muted, 'stroke-width': 2 }, g);
-    L.el('text', { x: px(TRUTH[0]) + 9, y: py(0) - 9, 'font-size': 14, fill: C.muted }, g).textContent = 'generating values';
+    L.contours((a, b) => mse([a, b]), P.X, P.Y, [120, 1200, 6000].map(d => MSE0 + d), 120)
+      .forEach((cl, j) => cl.segs.forEach(s => L.el('line', { x1: px(s[0]), y1: py(s[1]), x2: px(s[2]), y2: py(s[3]), stroke: j === 0 ? C.cyan : C.axis, 'stroke-width': j === 0 ? 1.5 : 1 }, g)));
+    L.el('polyline', { points: PATH.map(p => px(p[0]) + ',' + py(p[1])).join(' '), fill: 'none', stroke: C.fs, 'stroke-width': 1.3, 'stroke-dasharray': '5 4', opacity: 0.55 }, g);
+    if (lam > 0) {
+      L.contours((a, b) => mse([a, b]), P.X, P.Y, [mse(t)], 160)
+        .forEach(cl => cl.segs.forEach(s => L.el('line', { x1: px(s[0]), y1: py(s[1]), x2: px(s[2]), y2: py(s[3]), stroke: C.fs, 'stroke-width': 1.5 }, g)));
+      L.el('circle', { cx: px(0), cy: py(0), r: Math.hypot(t[0], t[1]) * (P.x1 - P.x0) / (P.X[1] - P.X[0]), fill: 'none', stroke: C.muted, 'stroke-width': 1.3, 'stroke-dasharray': '6 5' }, g);
+    }
+    // the solution as the sum of its components: along "both up", then along "area against rooms"
+    const a = [k[0] * V1[0], k[0] * V1[1]];
+    L.arrow(g, [px(0), py(0)], [px(a[0]), py(a[1])], C.blue, 3);
+    if (Math.hypot(k[1] * V2[0], k[1] * V2[1]) > 4) L.arrow(g, [px(a[0]), py(a[1])], [px(t[0]), py(t[1])], C.orange, 3);
     L.el('circle', { cx: px(OLS[0]), cy: py(OLS[1]), r: 6, fill: '#fff', stroke: C.fs, 'stroke-width': 2.2 }, g);
-    L.el('text', { x: px(OLS[0]) - 10, y: py(OLS[1]) + 5, 'text-anchor': 'end', 'font-size': 14, fill: C.fs }, g).textContent = 'least squares';
+    L.el('text', { x: px(OLS[0]) - 10, y: py(OLS[1]) - 8, 'text-anchor': 'end', 'font-size': 15, fill: C.fs }, g).textContent = 'least squares';
     L.el('circle', { cx: px(t[0]), cy: py(t[1]), r: 6.5, fill: C.fs, stroke: '#fff', 'stroke-width': 1.5 }, g);
-    if (lam > 0) L.el('text', { x: px(t[0]) + 10, y: py(t[1]) - 9, 'font-size': 15, fill: C.fs }, g).textContent = 'ridge';
+    if (lam > 0) L.el('text', { x: px(t[0]) + 11, y: py(t[1]) + 5, 'font-size': 15, fill: C.fs }, g).textContent = 'ridge';
     L.el('line', { x1: P.x0, x2: P.x1, y1: P.y1, y2: P.y1, stroke: C.axis }, svg);
     L.el('line', { x1: P.x0, x2: P.x0, y1: P.y0, y2: P.y1, stroke: C.axis }, svg);
     [0, 50, 100, 150, 200, 250].forEach(v => L.el('text', { x: px(v), y: P.y1 + 19, 'text-anchor': 'middle', 'font-size': 15, fill: C.muted }, svg).textContent = v);
@@ -264,39 +256,28 @@ ridge solution in exactly these two directions, with the stretches as $d_j^2$.
     L.el('text', { x: 13, y: (P.y0 + P.y1) / 2, transform: `rotate(-90 13 ${(P.y0 + P.y1) / 2})`, 'text-anchor': 'middle', 'font-size': 15, fill: C.muted }, svg).textContent = 'rooms coefficient (standardized)';
   }
 
-  const pct = v => v === 1 ? '100%' : (100 * v >= 99.5 ? '>99' : 100 * v < 1 ? '<1' : (100 * v).toFixed(0)) + '%';
-  function note(t, k1, k2) {
+  function note(t, k) {
     const ml = m * lam, per = [t[0] / SA, t[1] / SR];
-    if (lam === 0) return 'Least squares. The matrix stretches “both up” ' + L.fmt(S1 / S2, 0) + ' times as far as “area against rooms”, so its inverse multiplies the area-against-rooms direction by ' + L.fmt(1 / S2, 1) + '. That is where the two large coefficients of opposite sign come from: ' + L.fmt(per[0]) + ' per m² and ' + L.fmt(per[1], 1) + ' per room, for houses generated at 4 per m² and nothing per room.';
-    if (ml < 0.5 * S2) return 'mλ = ' + f3(ml) + ' is still small next to the smallest stretch, 0.148, so the inverse barely changes: ridge keeps ' + pct(k2) + ' of the area-against-rooms component.';
-    if (ml <= 2 * S2) return 'mλ = ' + f3(ml) + ' is about the size of the smallest stretch. Adding it to 0.148 cuts what the inverse does along area against rooms to ' + pct(k2) + ', while “both up” keeps ' + pct(k1) + '. At mλ = 0.148 exactly, the factor is one half.';
-    if (ml < 0.25 * S1) return 'mλ = ' + f3(ml) + ' swamps the smallest stretch and barely touches the largest. Ridge keeps ' + pct(k2) + ' of the move the data barely see and ' + pct(k1) + ' of the move they pin down.' + (per[1] > 0 ? ' The price per room is now positive: pulling one direction toward zero moved a single coefficient away from it.' : '');
-    return 'mλ = ' + f3(ml) + ' is now large against both stretches, so both directions shrink and the whole coefficient vector heads toward zero.';
+    if (lam === 0) return 'Least squares. The data offer little evidence along area against rooms, ' + big(E2) + ' against ' + big(E1) + ', but the matrix stretches that direction only ' + sf(S2) + ', so the division makes it the larger component, ' + f3(k[1]) + '. That component is what turns houses generated at 4 per m² and nothing per room into ' + L.fmt(per[0]) + ' per m² and ' + L.fmt(per[1], 1) + ' per room.';
+    if (ml < 0.5 * S2) return 'mλ = ' + f3(ml) + ' is still small next to the stretch of ' + sf(S2) + ', so the division barely changes: the area-against-rooms component is ' + f3(k[1]) + '.';
+    if (ml <= 2 * S2) return 'mλ = ' + f3(ml) + ' is about the size of the small stretch, ' + sf(S2) + ', so it roughly doubles the divisor and halves the area-against-rooms component, to ' + f3(k[1]) + '. Next to ' + sf(S1) + ', the same mλ leaves “both up” at ' + f3(k[0]) + '.';
+    if (ml < 0.25 * S1) return 'mλ = ' + f3(ml) + ' dominates the small stretch and barely touches the large one. The component the data barely support falls to ' + f3(k[1]) + '; the one they pin down stays at ' + f3(k[0]) + '.' + (per[1] > 0 ? ' The price per room is now positive: shrinking one component moved a single coefficient away from zero.' : '');
+    return 'mλ = ' + f3(ml) + ' is now large against both stretches, so both components shrink and the solution heads toward zero.';
   }
 
   function update() {
-    const C = L.colors(root), ml = m * lam, t = solve(lam);
-    const F = [[G[0][0] + ml, G[0][1]], [G[1][0], G[1][1] + ml]], d = F[0][0] * F[1][1] - F[0][1] ** 2;
-    const Finv = [[F[1][1] / d, -F[0][1] / d], [-F[1][0] / d, F[0][0] / d]];
-    const s1 = S1 + ml, s2 = S2 + ml;
-    ellipse($('.ix-fwd'), C, s1, s2, '×' + f3(s1), '×' + f3(s2));
-    ellipse($('.ix-inv'), C, 1 / s1, 1 / s2, '×' + f3(1 / s1), '×' + f3(1 / s2));
-    matrix($('.m-fwd'), 'X<sup>⊤</sup>X + mλI =', F, ml > 0 ? ml : 0);
-    matrix($('.m-inv'), 'inverse =', Finv, 0);
-    coef(C, t);
-    const k1 = S1 / s1, k2 = S2 / s2;
-    L.stat($('.t-ml'), ml, ml >= 0.5 * S2 && ml <= 2 * S2, f3);
-    L.stat($('.t-k'), s1 / s2, false, v => L.fmt(v, 1));
+    const C = L.colors(root), ml = m * lam, t = solve(lam), k = comps(lam);
+    matrix(ml); steps(C, ml); coef(C, t, k);
     L.stat($('.t-c'), 0, false, () => L.fmt(t[0] / SA) + ' · ' + L.fmt(t[1] / SR, 1));
-    L.stat($('.t-f'), 0, false, () => pct(k1) + ' · ' + pct(k2));
-    $('.ix-note').textContent = note(t, k1, k2);
+    L.stat($('.t-k'), (S1 + ml) / (S2 + ml), false, v => L.fmt(v, 1));
+    $('.ix-note').textContent = note(t, k);
   }
 
   const showLam = v => v <= -3.995 ? '0' : (10 ** v) >= 1 ? (10 ** v).toFixed(1) : (10 ** v).toPrecision(2);
   const sl = L.slider($('.ix-l'), $('.ix-lv'), showLam, v => { lam = v <= -3.995 ? 0 : 10 ** v; update(); });
   L.presets($('.ix-buttons'), [
     { label: 'Least squares (λ = 0)', action: () => sl.set(-4) },
-    { label: 'mλ = smallest stretch', action: () => sl.set(Math.log10(S2 / m)) },
+    { label: 'mλ = small stretch', action: () => sl.set(Math.log10(S2 / m)) },
     { label: 'λ = 0.1', action: () => sl.set(-1) },
     { label: 'λ = 1', action: () => sl.set(0) },
   ]);
@@ -467,13 +448,8 @@ nonzero counts agree exactly: ridge $8/8$, LASSO $2/8$ at $\lambda = 0.05$.
 ## Why only LASSO selects
 
 The contrast is geometric. Minimizing the loss subject to a budget on the coefficients is the
-same as the penalized form, and the budget draws a constraint region. The squared loss has
-elliptical contours; the solution sits where the smallest ellipse that still reaches the
-region touches its boundary. Ridge's region is a circle, smooth everywhere, so the contact
-point lands almost anywhere. LASSO's region is a diamond, and its corners sit on the axes. An
-ellipse sliding in from outside tends to strike a corner first, and a corner means one
-coefficient is exactly zero. That is feature selection falling out of the shape of the
-penalty.
+same as the penalized form, and the budget draws a constraint region. The cells below draw
+both regions for two coefficients and find each solution by searching the region's boundary.
 
 ::: {.panel-tabset group="lang"}
 
@@ -483,61 +459,96 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Polygon
 
-g = np.linspace(-3, 3, 200)
-T1, T2 = np.meshgrid(g, g)
-ols = np.array([1.5, 2.0])                       # unconstrained optimum
-loss = (T1 - ols[0])**2 + 0.35 * (T2 - ols[1])**2
+ols = np.array([1.0, 2.2])                      # the least-squares solution
+def loss(t1, t2):                               # training error, up to a constant
+    return 0.35 * (t1 - ols[0])**2 + (t2 - ols[1])**2
 
-fig, axes = plt.subplots(1, 2, figsize=(10, 5), sharex=True, sharey=True)
-for ax in axes:
-    ax.contour(T1, T2, loss, levels=12, colors="#666666", alpha=0.6, linewidths=0.8)
+r = 1.3                                         # the budget on the coefficients
+# Least squares lies outside both regions, so each solution lies on the region's
+# boundary: walk the boundary and keep the point with the lowest loss.
+a = np.linspace(0, 2 * np.pi, 20001)
+circle = np.column_stack([r * np.cos(a), r * np.sin(a)])
+t = np.linspace(-r, r, 10001)
+diamond = np.vstack([np.column_stack([t, r - np.abs(t)]),
+                     np.column_stack([t, np.abs(t) - r])])
+ridge = circle[np.argmin(loss(circle[:, 0], circle[:, 1]))]
+lasso = diamond[np.argmin(loss(diamond[:, 0], diamond[:, 1]))]
+print(f"ridge: theta = ({ridge[0]:.2f}, {ridge[1]:.2f})")
+print(f"LASSO: theta = ({lasso[0]:.2f}, {lasso[1]:.2f})")
+
+T1, T2 = np.meshgrid(np.linspace(-3, 3, 300), np.linspace(-2, 3.8, 300))
+fig, axes = plt.subplots(1, 2, figsize=(10, 5.0))
+panels = [(axes[0], "Ridge: a circle", ridge, Circle((0, 0), r), "#076FA1"),
+          (axes[1], "LASSO: a diamond", lasso,
+           Polygon([(r, 0), (0, r), (-r, 0), (0, -r)]), "#2FC1D3")]
+for ax, title, sol, shape, col in panels:
+    ax.contour(T1, T2, loss(T1, T2), levels=[0.25, 2, 4, 7, 11],
+               colors="#cfccc2", linewidths=0.8)
+    ax.contour(T1, T2, loss(T1, T2), levels=[loss(*sol)],   # the contour through the solution
+               colors="#31417A", linewidths=1.6)
+    shape.set(fill=False, edgecolor=col, linewidth=2.5)
+    ax.add_patch(shape)
     ax.axhline(0, color="#666666", lw=0.8); ax.axvline(0, color="#666666", lw=0.8)
-    ax.scatter(*ols, color="#31417A", marker="*", s=180, zorder=5,
-               edgecolor="white", label="OLS")
-    ax.set_aspect("equal"); ax.set_xlim(-3, 3); ax.set_ylim(-3, 3)
-    ax.set_xlabel(r"$\theta_1$")
-    for s in ["top", "right"]: ax.spines[s].set_visible(False)
-axes[0].set_ylabel(r"$\theta_2$")
-
-r = 1.3
-axes[0].add_patch(Circle((0, 0), r, fill=False, edgecolor="#076FA1", lw=2.5))
-axes[0].scatter(0.78, 1.04, color="#076FA1", s=120, zorder=6, edgecolor="white", label="ridge")
-axes[0].set_title("Ridge (L2): circle", loc="left"); axes[0].legend(fontsize=8, loc="lower left")
-
-axes[1].add_patch(Polygon([(r, 0), (0, r), (-r, 0), (0, -r)], fill=False,
-                          edgecolor="#2FC1D3", lw=2.5))
-axes[1].scatter(0, r, color="#2FC1D3", s=120, zorder=6, edgecolor="white",
-                label="LASSO (corner)")
-axes[1].set_title("LASSO (L1): diamond", loc="left"); axes[1].legend(fontsize=8, loc="lower left")
-plt.tight_layout(); plt.show()
+    ax.scatter(*ols, marker="*", s=200, color="#31417A", zorder=5, label="least squares")
+    ax.scatter(*sol, s=110, color=col, edgecolor="white", zorder=6, label="solution")
+    ax.set_aspect("equal"); ax.set_xlim(-3, 3); ax.set_ylim(-2, 3.8)
+    ax.set_xlabel(r"$\theta_1$"); ax.set_ylabel(r"$\theta_2$")
+    ax.text(0.03, 0.97, title, transform=ax.transAxes, va="top", fontsize=11,
+            bbox=dict(facecolor="white", edgecolor="none", pad=2))
+    ax.legend(fontsize=8, loc="lower left")
+    for s in ["top", "right"]:
+        ax.spines[s].set_visible(False)
+fig.tight_layout()
+plt.show()
 ```
 
 ## R
 ```{webr}
-g <- seq(-3, 3, length.out = 200)
-loss <- outer(g, g, function(a, b) (a - 1.5)^2 + 0.35 * (b - 2.0)^2)
+ols <- c(1.0, 2.2)                                # the least-squares solution
+loss <- function(t1, t2) 0.35 * (t1 - ols[1])^2 + (t2 - ols[2])^2
 
-draw_panel <- function(shape, sol, title) {
-  contour(g, g, loss, nlevels = 12, col = "#666666", drawlabels = FALSE, asp = 1, bty = "l",
-          xlab = expression(theta[1]), ylab = expression(theta[2]), main = title)
+r <- 1.3                                          # the budget on the coefficients
+# Least squares lies outside both regions, so each solution lies on the region's
+# boundary: walk the boundary and keep the point with the lowest loss.
+a <- seq(0, 2 * pi, length.out = 20001)
+circle <- cbind(r * cos(a), r * sin(a))
+t <- seq(-r, r, length.out = 10001)
+diamond <- rbind(cbind(t, r - abs(t)), cbind(t, abs(t) - r))
+ridge <- circle[which.min(loss(circle[, 1], circle[, 2])), ]
+lasso <- diamond[which.min(loss(diamond[, 1], diamond[, 2])), ]
+cat(sprintf("ridge: theta = (%.2f, %.2f)\n", ridge[1], ridge[2]))
+cat(sprintf("LASSO: theta = (%.2f, %.2f)\n", lasso[1], lasso[2]))
+
+g1 <- seq(-3, 3, length.out = 300); g2 <- seq(-2, 3.8, length.out = 300)
+L <- outer(g1, g2, loss)
+draw_panel <- function(title, sol, col, shape) {
+  contour(g1, g2, L, levels = c(0.25, 2, 4, 7, 11), col = "#cfccc2", drawlabels = FALSE,
+          asp = 1, bty = "l", xlab = expression(theta[1]), ylab = expression(theta[2]))
+  contour(g1, g2, L, levels = loss(sol[1], sol[2]), col = "#31417A", lwd = 1.6,
+          drawlabels = FALSE, add = TRUE)            # the contour through the solution
   abline(h = 0, v = 0, col = "#666666")
-  if (shape == "circle") {
-    a <- seq(0, 2*pi, length.out = 200)
-    lines(1.3 * cos(a), 1.3 * sin(a), col = "#076FA1", lwd = 2.5)
-  } else {
-    polygon(c(1.3, 0, -1.3, 0), c(0, 1.3, 0, -1.3), border = "#2FC1D3", lwd = 2.5)
-  }
-  points(1.5, 2.0, pch = 8,  col = "#31417A", cex = 1.6)   # OLS solution
-  points(sol[1], sol[2], pch = 19, col = if (shape == "circle") "#076FA1" else "#2FC1D3", cex = 1.6)
+  if (shape == "circle") lines(r * cos(a), r * sin(a), col = col, lwd = 2.5)
+  else polygon(c(r, 0, -r, 0), c(0, r, 0, -r), border = col, lwd = 2.5)
+  points(ols[1], ols[2], pch = 8, col = "#31417A", cex = 1.6)
+  points(sol[1], sol[2], pch = 19, col = col, cex = 1.6)
+  title(title, adj = 0, line = 0.6, font.main = 1)
 }
-
 par(mfrow = c(1, 2))
-draw_panel("circle",  c(0.78, 1.04), "Ridge (L2): circle")
-draw_panel("diamond", c(0, 1.3),     "LASSO (L1): diamond")
+draw_panel("Ridge: a circle", ridge, "#076FA1", "circle")
+draw_panel("LASSO: a diamond", lasso, "#2FC1D3", "diamond")
 par(mfrow = c(1, 1))
 ```
 
 :::
+
+The star is the least-squares solution, and each gray ellipse joins coefficient pairs with
+equal training error, the error growing from one ellipse to the next away from the star. The
+solution sits where the smallest ellipse that still reaches the region touches its boundary:
+the dark one. Ridge's region is a circle, smooth everywhere, so the contact point lands almost
+anywhere; here it is $(0.32, 1.26)$, with both coefficients nonzero. LASSO's region is a
+diamond, and its corners sit on the axes. An ellipse sliding in from outside tends to strike a
+corner first, here at $(0, 1.30)$, and a corner means one coefficient is exactly zero. That is
+feature selection falling out of the shape of the penalty.
 
 ## Scale your features first
 
