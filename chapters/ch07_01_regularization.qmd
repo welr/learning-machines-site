@@ -132,6 +132,181 @@ languages agree to that figure, but their OLS maxima differ in the fifth signifi
 cross-product is so close to singular that two linear solvers round it differently. Adding
 $m\lambda I$ removes the pathology, and both report the same $1.4$.
 
+## What adding $m\lambda I$ does
+
+The ridge estimate changes one thing about least squares: before inverting
+$\mathbf{X}^\top\mathbf{X}$, it adds $m\lambda$ to each diagonal entry. The figure below follows
+that change through the book's example of floor area against number of rooms (Section 7.2),
+with twelve houses at about 25 square meters per room. On standardized features,
+$\mathbf{X}^\top\mathbf{X}$ stretches the direction in which both coefficients rise together far
+more than the direction that trades one against the other. Equation 7.2 of the book writes the
+ridge solution in exactly these two directions, with the stretches as $d_j^2$.
+
+```{=html}
+<div class="lm-ix" id="ix-ridge" role="figure" aria-label="Interactive figure: ridge regression traced through the matrix it inverts">
+<div class="ix-eyebrow">Interactive</div>
+<div class="ix-title">Ridge, one matrix at a time</div>
+<div class="ix-views even">
+  <div class="ix-card">
+    <div class="ix-ttl">The matrix</div>
+    <p class="ix-sub">How far <span class="sym">X</span><sup>⊤</sup><span class="sym">X</span> + <span class="sym">m</span>λ<span class="sym">I</span> stretches each direction. The shape is to scale; the size is fixed.</p>
+    <svg class="ix-fwd" viewBox="0 0 400 300"></svg>
+    <div class="ix-matrix m-fwd"></div>
+  </div>
+  <div class="ix-card">
+    <div class="ix-ttl">Its inverse</div>
+    <p class="ix-sub">Inverting divides by the same stretches, so the long and short axes swap.</p>
+    <svg class="ix-inv" viewBox="0 0 400 300"></svg>
+    <div class="ix-matrix m-inv"></div>
+  </div>
+</div>
+<div class="ix-views one" style="margin-top:12px">
+  <div class="ix-card">
+    <div class="ix-ttl">The coefficients</div>
+    <p class="ix-sub">Training error over the two standardized coefficients, the ridge solution, and its path as λ grows. The dashed circle is the penalty's level set through the solution; the solid curve is the error contour that touches it there.</p>
+    <svg class="ix-coef" viewBox="0 0 560 362"></svg>
+  </div>
+</div>
+<div class="lm-slider"><label>Penalty <span class="sym">λ</span></label><input class="ix-l" type="range" min="-4" max="1" step="0.01" value="-4"><output class="ix-lv"></output></div>
+<div class="ix-buttons"></div>
+<div class="ix-readout">
+  <div class="ix-stat t-ml"><div class="k"><span class="sym">m</span>λ, against the smallest stretch 0.148</div><div class="v"></div></div>
+  <div class="ix-stat t-k"><div class="k">Condition number of the matrix</div><div class="v"></div></div>
+  <div class="ix-stat t-c"><div class="k">Price per m² · per room (thousand €)</div><div class="v"></div></div>
+  <div class="ix-stat t-f"><div class="k">Kept along both up · area against rooms</div><div class="v"></div></div>
+</div>
+<div class="ix-note"></div>
+<script src="../assets/lm-ix.js"></script>
+<script>
+(function () {
+  const root = document.getElementById('ix-ridge'), L = window.LMIX, $ = s => root.querySelector(s);
+  // Twelve houses at about 25 m² per room, generated at 4 thousand € per m² and nothing per room
+  // (tools/ch07_ridge_houses.py, seed 1971). The book's Section 7.2 example, given numbers.
+  const AREA  = [117, 81, 144, 117, 146, 74, 155, 99, 148, 75, 86, 148];
+  const ROOMS = [5, 3, 6, 5, 6, 3, 6, 4, 6, 3, 3, 6];
+  const PRICE = [459, 339, 565, 388, 579, 309, 647, 390, 590, 304, 358, 627];
+  const m = AREA.length, mean = a => a.reduce((s, v) => s + v, 0) / a.length;
+  const sd = a => { const u = mean(a); return Math.sqrt(mean(a.map(v => (v - u) ** 2))); };
+  const SA = sd(AREA), SR = sd(ROOMS);
+  const Z1 = AREA.map(v => (v - mean(AREA)) / SA), Z2 = ROOMS.map(v => (v - mean(ROOMS)) / SR);
+  const YC = PRICE.map(v => v - mean(PRICE));
+  const dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0);
+  const G = [[dot(Z1, Z1), dot(Z1, Z2)], [dot(Z1, Z2), dot(Z2, Z2)]];   // X^T X, standardized
+  const XTY = [dot(Z1, YC), dot(Z2, YC)];
+  // eigen-decomposition of the symmetric 2x2: stretches s1 >= s2 along unit directions v1, v2
+  const tr = G[0][0] + G[1][1], det = G[0][0] * G[1][1] - G[0][1] ** 2, rad = Math.sqrt(tr * tr / 4 - det);
+  const S1 = tr / 2 + rad, S2 = tr / 2 - rad;
+  const unit = v => { const n = Math.hypot(v[0], v[1]); return [v[0] / n, v[1] / n]; };
+  const V1 = unit([G[0][1], S1 - G[0][0]]);                  // both coefficients up together
+  let V2 = unit([-V1[1], V1[0]]); if (V2[0] < 0) V2 = [-V2[0], -V2[1]];   // area up, rooms down
+  function solve(lam) {                                      // (X^T X + m lam I)^{-1} X^T y
+    const a = G[0][0] + m * lam, b = G[0][1], c = G[1][1] + m * lam, d = a * c - b * b;
+    return [(c * XTY[0] - b * XTY[1]) / d, (a * XTY[1] - b * XTY[0]) / d];
+  }
+  const mse = t => mean(YC.map((y, i) => (y - t[0] * Z1[i] - t[1] * Z2[i]) ** 2));
+  const OLS = solve(0), MSE0 = mse(OLS);
+  let lam = 0;
+
+  function ellipse(svg, C, along1, along2, lab1, lab2) {     // semi-axes along v1 and v2
+    svg.innerHTML = '';
+    const cx = 200, cy = 150, R = 118, big = Math.max(along1, along2);
+    const r1 = Math.max(R * along1 / big, 1.4), r2 = Math.max(R * along2 / big, 1.4);
+    const ang = Math.atan2(V1[1], V1[0]) * 180 / Math.PI;
+    const tip = (v, r) => [cx + v[0] * r, cy - v[1] * r];
+    [[V1, lab1], [V2, lab2]].forEach(([v, lab]) => {
+      const p = tip(v, -R - 8), q = tip(v, R + 8);
+      L.el('line', { x1: p[0], y1: p[1], x2: q[0], y2: q[1], stroke: C.axis, 'stroke-width': 1, 'stroke-dasharray': '3 4' }, svg);
+      const t = tip(v, R + 14);
+      L.el('text', { x: t[0], y: t[1], 'text-anchor': v[0] >= 0 ? 'start' : 'end', 'font-size': 18, fill: C.muted }, svg).textContent = lab;
+    });
+    L.el('ellipse', { cx, cy, rx: r1, ry: r2, transform: `rotate(${-ang} ${cx} ${cy})`, fill: C.plane, stroke: C.fs, 'stroke-width': 2 }, svg);
+  }
+  const f3 = v => v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : v.toFixed(3);
+  function matrix(el, lhs, M, addDiag) {
+    const cell = (v, add) => add ? `<td>${f3(v - add)} <span class="add">+ ${f3(add)}</span></td>` : `<td>${L.fmt(v, Math.abs(v) < 1 ? 3 : 2)}</td>`;
+    el.innerHTML = `<span class="lhs">${lhs}</span><table><tr>${cell(M[0][0], addDiag)}${cell(M[0][1])}</tr><tr>${cell(M[1][0])}${cell(M[1][1], addDiag)}</tr></table>`;
+  }
+
+  const P = { x0: 56, x1: 548, y0: 12, y1: 310, X: [-45, 292], Y: [-124, 80] };   // 1.46 px per unit on both axes   // equal units on both axes
+  const px = v => P.x0 + (v - P.X[0]) / (P.X[1] - P.X[0]) * (P.x1 - P.x0);
+  const py = v => P.y1 - (v - P.Y[0]) / (P.Y[1] - P.Y[0]) * (P.y1 - P.y0);
+  const PATH = [OLS].concat(Array.from({ length: 140 }, (_, i) => solve(10 ** (-4 + i * 6.5 / 139))));
+  const TRUTH = [4 * SA, 0];                                   // 4 per m², 0 per room, standardized
+  function coef(C, t) {
+    const svg = $('.ix-coef'); svg.innerHTML = '';
+    L.el('rect', { x: P.x0, y: P.y0, width: P.x1 - P.x0, height: P.y1 - P.y0 }, L.el('clipPath', { id: 'ixr-clip' }, svg));
+    const g = L.el('g', { 'clip-path': 'url(#ixr-clip)' }, svg);
+    [0, 50, 100, 150, 200, 250].forEach(v => L.el('line', { x1: px(v), x2: px(v), y1: P.y0, y2: P.y1, stroke: C.grid }, g));
+    [-100, -50, 0, 50].forEach(v => L.el('line', { x1: P.x0, x2: P.x1, y1: py(v), y2: py(v), stroke: C.grid }, g));
+    L.contours((a, b) => mse([a, b]), P.X, P.Y, [30, 120, 400, 1200, 3000, 6000, 10000].map(d => MSE0 + d), 120)
+      .forEach((cl, k) => cl.segs.forEach(s => L.el('line', { x1: px(s[0]), y1: py(s[1]), x2: px(s[2]), y2: py(s[3]), stroke: k < 2 ? C.cyan : C.axis, 'stroke-width': k < 2 ? 1.5 : 1 }, g)));
+    [[V1, 'both up'], [V2, 'area against rooms']].forEach(([v, lab]) => {
+      L.arrow(g, [px(0), py(0)], [px(42 * v[0]), py(42 * v[1])], C.muted, 1.6);
+      L.el('text', { x: px(42 * v[0]) + (v[1] > 0 ? -8 : 6), y: py(42 * v[1]) + (v[1] < 0 ? 16 : -2), 'text-anchor': v[1] > 0 ? 'end' : 'start', 'font-size': 14, fill: C.muted }, g).textContent = lab;
+    });
+    L.el('polyline', { points: PATH.map(p => px(p[0]) + ',' + py(p[1])).join(' '), fill: 'none', stroke: C.fs, 'stroke-width': 1.4, 'stroke-dasharray': '5 4', opacity: 0.7 }, g);
+    if (lam > 0) L.contours((a, b) => mse([a, b]), P.X, P.Y, [mse(t)], 160)   // the error contour through the solution
+      .forEach(cl => cl.segs.forEach(sg => L.el('line', { x1: px(sg[0]), y1: py(sg[1]), x2: px(sg[2]), y2: py(sg[3]), stroke: C.fs, 'stroke-width': 1.6 }, g)));
+    const r = Math.hypot(t[0], t[1]);
+    if (lam > 0) L.el('circle', { cx: px(0), cy: py(0), r: r * (P.x1 - P.x0) / (P.X[1] - P.X[0]), fill: 'none', stroke: C.orange, 'stroke-width': 1.4, 'stroke-dasharray': '6 5' }, g);
+    L.el('line', { x1: px(TRUTH[0]) - 6, x2: px(TRUTH[0]) + 6, y1: py(0) - 6, y2: py(0) + 6, stroke: C.muted, 'stroke-width': 2 }, g);
+    L.el('line', { x1: px(TRUTH[0]) - 6, x2: px(TRUTH[0]) + 6, y1: py(0) + 6, y2: py(0) - 6, stroke: C.muted, 'stroke-width': 2 }, g);
+    L.el('text', { x: px(TRUTH[0]) + 9, y: py(0) - 9, 'font-size': 14, fill: C.muted }, g).textContent = 'generating values';
+    L.el('circle', { cx: px(OLS[0]), cy: py(OLS[1]), r: 6, fill: '#fff', stroke: C.fs, 'stroke-width': 2.2 }, g);
+    L.el('text', { x: px(OLS[0]) - 10, y: py(OLS[1]) + 5, 'text-anchor': 'end', 'font-size': 14, fill: C.fs }, g).textContent = 'least squares';
+    L.el('circle', { cx: px(t[0]), cy: py(t[1]), r: 6.5, fill: C.fs, stroke: '#fff', 'stroke-width': 1.5 }, g);
+    if (lam > 0) L.el('text', { x: px(t[0]) + 10, y: py(t[1]) - 9, 'font-size': 15, fill: C.fs }, g).textContent = 'ridge';
+    L.el('line', { x1: P.x0, x2: P.x1, y1: P.y1, y2: P.y1, stroke: C.axis }, svg);
+    L.el('line', { x1: P.x0, x2: P.x0, y1: P.y0, y2: P.y1, stroke: C.axis }, svg);
+    [0, 50, 100, 150, 200, 250].forEach(v => L.el('text', { x: px(v), y: P.y1 + 19, 'text-anchor': 'middle', 'font-size': 15, fill: C.muted }, svg).textContent = v);
+    [-100, -50, 0, 50].forEach(v => L.el('text', { x: P.x0 - 7, y: py(v) + 5, 'text-anchor': 'end', 'font-size': 15, fill: C.muted }, svg).textContent = v);
+    L.el('text', { x: (P.x0 + P.x1) / 2, y: 356, 'text-anchor': 'middle', 'font-size': 15, fill: C.muted }, svg).textContent = 'area coefficient (standardized)';
+    L.el('text', { x: 13, y: (P.y0 + P.y1) / 2, transform: `rotate(-90 13 ${(P.y0 + P.y1) / 2})`, 'text-anchor': 'middle', 'font-size': 15, fill: C.muted }, svg).textContent = 'rooms coefficient (standardized)';
+  }
+
+  const pct = v => v === 1 ? '100%' : (100 * v >= 99.5 ? '>99' : 100 * v < 1 ? '<1' : (100 * v).toFixed(0)) + '%';
+  function note(t, k1, k2) {
+    const ml = m * lam, per = [t[0] / SA, t[1] / SR];
+    if (lam === 0) return 'Least squares. The matrix stretches “both up” ' + L.fmt(S1 / S2, 0) + ' times as far as “area against rooms”, so its inverse multiplies the area-against-rooms direction by ' + L.fmt(1 / S2, 1) + '. That is where the two large coefficients of opposite sign come from: ' + L.fmt(per[0]) + ' per m² and ' + L.fmt(per[1], 1) + ' per room, for houses generated at 4 per m² and nothing per room.';
+    if (ml < 0.5 * S2) return 'mλ = ' + f3(ml) + ' is still small next to the smallest stretch, 0.148, so the inverse barely changes: ridge keeps ' + pct(k2) + ' of the area-against-rooms component.';
+    if (ml <= 2 * S2) return 'mλ = ' + f3(ml) + ' is about the size of the smallest stretch. Adding it to 0.148 cuts what the inverse does along area against rooms to ' + pct(k2) + ', while “both up” keeps ' + pct(k1) + '. At mλ = 0.148 exactly, the factor is one half.';
+    if (ml < 0.25 * S1) return 'mλ = ' + f3(ml) + ' swamps the smallest stretch and barely touches the largest. Ridge keeps ' + pct(k2) + ' of the move the data barely see and ' + pct(k1) + ' of the move they pin down.' + (per[1] > 0 ? ' The price per room is now positive: pulling one direction toward zero moved a single coefficient away from it.' : '');
+    return 'mλ = ' + f3(ml) + ' is now large against both stretches, so both directions shrink and the whole coefficient vector heads toward zero.';
+  }
+
+  function update() {
+    const C = L.colors(root), ml = m * lam, t = solve(lam);
+    const F = [[G[0][0] + ml, G[0][1]], [G[1][0], G[1][1] + ml]], d = F[0][0] * F[1][1] - F[0][1] ** 2;
+    const Finv = [[F[1][1] / d, -F[0][1] / d], [-F[1][0] / d, F[0][0] / d]];
+    const s1 = S1 + ml, s2 = S2 + ml;
+    ellipse($('.ix-fwd'), C, s1, s2, '×' + f3(s1), '×' + f3(s2));
+    ellipse($('.ix-inv'), C, 1 / s1, 1 / s2, '×' + f3(1 / s1), '×' + f3(1 / s2));
+    matrix($('.m-fwd'), 'X<sup>⊤</sup>X + mλI =', F, ml > 0 ? ml : 0);
+    matrix($('.m-inv'), 'inverse =', Finv, 0);
+    coef(C, t);
+    const k1 = S1 / s1, k2 = S2 / s2;
+    L.stat($('.t-ml'), ml, ml >= 0.5 * S2 && ml <= 2 * S2, f3);
+    L.stat($('.t-k'), s1 / s2, false, v => L.fmt(v, 1));
+    L.stat($('.t-c'), 0, false, () => L.fmt(t[0] / SA) + ' · ' + L.fmt(t[1] / SR, 1));
+    L.stat($('.t-f'), 0, false, () => pct(k1) + ' · ' + pct(k2));
+    $('.ix-note').textContent = note(t, k1, k2);
+  }
+
+  const showLam = v => v <= -3.995 ? '0' : (10 ** v) >= 1 ? (10 ** v).toFixed(1) : (10 ** v).toPrecision(2);
+  const sl = L.slider($('.ix-l'), $('.ix-lv'), showLam, v => { lam = v <= -3.995 ? 0 : 10 ** v; update(); });
+  L.presets($('.ix-buttons'), [
+    { label: 'Least squares (λ = 0)', action: () => sl.set(-4) },
+    { label: 'mλ = smallest stretch', action: () => sl.set(Math.log10(S2 / m)) },
+    { label: 'λ = 0.1', action: () => sl.set(-1) },
+    { label: 'λ = 1', action: () => sl.set(0) },
+  ]);
+  sl.refresh();
+})();
+</script>
+</div>
+```
+
+
 ## Two penalties, two paths
 
 A [coefficient path]{.term} plots each coefficient as $\lambda$ sweeps from small to large.
