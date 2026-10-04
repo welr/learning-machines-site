@@ -226,13 +226,16 @@ $p > c_{\text{FP}}/(c_{\text{FP}} + c_{\text{FN}})$, where $c_{\text{FP}}$ and
 $c_{\text{FN}}$ are the costs you assign to a false positive and a false negative, and $0.5$
 is the case of equal costs.
 
+The slider below moves the threshold on the same fitted probabilities, and the matrix beneath
+it is re-tallied when you release the slider.
+
 ```{ojs}
 //| echo: false
 viewof cut = {
   const wrap = document.createElement("div");
   wrap.className = "lm-slider";
   const label = document.createElement("label");
-  label.textContent = "threshold";
+  label.textContent = "Threshold";
   const range = document.createElement("input");
   range.type = "range";
   range.min = 0.05; range.max = 0.95; range.step = 0.05; range.value = 0.50;
@@ -257,6 +260,7 @@ viewof cut = {
 #| input:
 #|   - cut
 #| autorun: true
+#| echo: false
 import numpy as np
 import matplotlib.pyplot as plt
 

@@ -101,7 +101,7 @@ abline(h = 0, col = "#666666"); abline(h = 1, col = "#666666")
 
 :::
 
-Both languages fit the identical data, so the line is the same: it predicts about $-0.41$ at
+The fitted line predicts about $-0.41$ at
 zero hours and $1.51$ at ten. We need a model that lives inside $(0, 1)$ by construction.
 
 ## The sigmoid and the model it builds
@@ -113,7 +113,7 @@ $g(0) = 0.5$ marks the crossover.
 
 ::: {.defbox}
 [Logistic Regression Model]{.lbl}
-[ P(y=1 &#8739; x) = g(&theta;&#8868;x) = 1 &#8725; (1 + e<sup>&#8722;&theta;&#8868;x</sup>) ]{.math}
+[ P(y=1 &#8739; x) = g(&theta;<sup>&#8868;</sup>x) = 1 &#8725; (1 + e<sup>&#8722;&theta;<sup>&#8868;</sup>x</sup>) ]{.math}
 :::
 
 We cannot fit this by least squares, because squared error against a sigmoid is non-convex.

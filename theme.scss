@@ -189,7 +189,7 @@ div.sourceCode{ border:1px solid $rule; border-radius:6px; }
   --ix-plane:rgba(47,193,211,0.13);
   max-width:42rem; min-width:0; margin:26px 0 30px; color:$ink;
 }
-.lm-ix .sym{ text-transform:none; letter-spacing:0; font-family:"Source Serif 4"; font-style:italic; font-weight:400; font-size:1.35em; }
+.lm-ix .sym, .lm-slider .sym{ text-transform:none; letter-spacing:0; font-family:"Source Serif 4"; font-style:italic; font-weight:400; font-size:1.35em; }
 .lm-ix .ix-eyebrow{ font-family:"Inconsolata"; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:$red; font-weight:700; margin:0 0 2px; }
 .lm-ix .ix-title{ font-family:"Source Serif 4"; font-weight:600; font-size:19px; color:$ink; margin:0 0 12px; }
 .lm-ix .ix-views{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:12px; }
@@ -206,7 +206,10 @@ div.sourceCode{ border:1px solid $rule; border-radius:6px; }
 .lm-ix .ix-buttons button{ font-family:"Inconsolata"; font-size:13.5px; font-weight:600; letter-spacing:.03em; padding:6px 13px;
   border-radius:5px; cursor:pointer; border:1px solid $rule; background:#fff; color:#3f4450; }
 .lm-ix .ix-buttons button:hover{ border-color:$fs-blue; color:$fs-blue; }
+.lm-ix .ix-buttons button.on{ border-color:$fs-blue; background:$fs-blue; color:#fff; }
+.lm-ix .ix-buttons .gap{ flex-basis:100%; height:0; }
 .lm-ix .ix-readout{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:14px; }
+.lm-ix .ix-readout.three{ grid-template-columns:repeat(3,minmax(0,1fr)); }
 .lm-ix .ix-stat{ border:1px solid $rule; border-radius:6px; padding:9px 12px; background:#fff; }
 .lm-ix .ix-stat .k{ font-family:"Inconsolata"; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:$gray; line-height:1.35; }
 .lm-ix .ix-stat .v{ font-family:"Inconsolata"; font-size:19px; font-weight:700; color:$ink; font-variant-numeric:tabular-nums; }

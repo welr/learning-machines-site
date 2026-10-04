@@ -109,8 +109,7 @@ for (pv in c(0.50, 0.70, 0.90, 0.99)) {
 
 :::
 
-The two languages evaluate the same closed-form impurities, so the printed Gini values agree
-to every digit: $0.500$ at an even split, falling to $0.020$ once the node is $99\%$ one
+The Gini impurity is $0.500$ at an even split, falling to $0.020$ once the node is $99\%$ one
 class.
 
 ## One split: the decision stump
@@ -255,8 +254,8 @@ legend("topleft", legend = c("class 0", "class 1"),
 
 :::
 
-Both languages search the same fixed data and report the same answer: split $x_1 \le -0.5$,
-gain $0.222$, training accuracy $83.3\%$.
+The search picks the split $x_1 \le -0.5$, with gain $0.222$ and training accuracy
+$83.3\%$.
 
 ## Depth, and why a single tree overfits
 
@@ -651,8 +650,7 @@ $F_0 = \bar{y}$, the mean of the targets.
 :::
 
 Each stump is too weak to fit a sine on its own, but the additive sequence drives the error
-down round after round. Here we boost on the noise-free curve so the two languages can be
-compared digit for digit: the mean squared error falls from $0.298$ after one stump to
+down round after round. Here we boost on the noise-free curve, and the mean squared error falls from $0.298$ after one stump to
 $0.006$ after forty.
 
 ::: {.panel-tabset group="lang"}
@@ -662,7 +660,7 @@ $0.006$ after forty.
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Deterministic target so the two languages can be compared digit for digit.
+# Noise-free target.
 x = np.linspace(0, 6, 80)
 y = np.sin(x)
 
@@ -710,7 +708,7 @@ plt.show()
 
 ## R
 ```{webr}
-# Deterministic target so the two languages can be compared digit for digit.
+# Noise-free target.
 x <- seq(0, 6, length.out = 80)
 y <- sin(x)
 
@@ -762,7 +760,7 @@ legend("topright", bty = "n",
 
 :::
 
-The MSE sequence is identical in both languages, falling monotonically as the stumps stack up.
+The MSE falls monotonically as the stumps stack up.
 Production gradient boosters, `gbm` in R and scikit-learn's `GradientBoostingClassifier`,
 follow this same logic; `XGBoost` and `LightGBM` add second-order updates and histogram splits
 and are the standard tools for tabular data.

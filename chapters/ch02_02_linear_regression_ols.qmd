@@ -21,7 +21,7 @@ with no iteration.
 
 ::: {.defbox}
 [Ordinary Least Squares Estimate]{.lbl}
-[ &theta;&#770; = (X&#8868;X)&#8722;&sup1; X&#8868;y ]{.math}
+[ &theta;&#770; = (X<sup>&#8868;</sup>X)<sup>&#8722;1</sup> X<sup>&#8868;</sup>y ]{.math}
 :::
 
 The book states this in a single equation. Below we unpack it: build the
@@ -91,9 +91,6 @@ cat(sprintf("\nPrice ~ %.0f + %.1f * area\n", theta[1], theta[2]))
 ```
 
 :::
-
-The two languages compute the same quantity from the same fixed data, so the coefficients
-agree to the printed digits.
 
 ## The fit and the residuals it minimizes
 
@@ -691,123 +688,6 @@ cat(sprintf("  svd:     %.3f\n", theta_svd[2] + theta_svd[3]))
 ```
 
 :::
-
-The condition number also sets the shape of the cost surface that gradient descent walks in
-Chapter 3. The figure below uses the three houses of Section 2.3 of the book, with their sizes
-measured from a shifted origin. The fitted line stays put while the valley stretches, and the
-stretch, $\kappa$, is the condition number of $\mathbf{X}^\top\mathbf{X}$.
-
-```{=html}
-<div class="lm-ix" id="ix-valley" role="figure" aria-label="Interactive figure: same line, different valley">
-<div class="ix-eyebrow">Interactive</div>
-<div class="ix-title">Same line, different valley</div>
-<div class="ix-views even">
-  <div class="ix-card">
-    <div class="ix-ttl">The line</div>
-    <p class="ix-sub">The same three houses, with sizes measured from a different origin.</p>
-    <svg class="ix-line" viewBox="0 0 400 332"></svg>
-  </div>
-  <div class="ix-card">
-    <div class="ix-ttl">The cost valley</div>
-    <p class="ix-sub">Contours of RSS over intercept and slope. Drag the point.</p>
-    <svg class="ix-cost" viewBox="0 0 400 320"></svg>
-  </div>
-</div>
-<div class="lm-slider"><label>Size origin shift <span class="sym">c</span></label><input class="ix-c" type="range" min="0" max="3" step="any" value="0"><output class="ix-cv"></output></div>
-<div class="ix-buttons"></div>
-<div class="ix-readout">
-  <div class="ix-stat s-kappa"><div class="k">Valley stretch <span class="sym">κ</span></div><div class="v"></div></div>
-  <div class="ix-stat s-rss"><div class="k">RSS of the drawn line</div><div class="v"></div></div>
-  <div class="ix-stat s-icpt"><div class="k">Least-squares intercept</div><div class="v"></div></div>
-  <div class="ix-stat s-slope"><div class="k">Least-squares slope</div><div class="v"></div></div>
-</div>
-<div class="ix-note"></div>
-<script src="../assets/lm-ix.js"></script>
-<script>
-(function () {
-  const root = document.getElementById('ix-valley'), L = window.LMIX, $ = s => root.querySelector(s);
-  const Y = [2, 3, 5], U = [-1, 0, 1];               // sizes relative to the mean
-  let c = 0, pt = null;                               // pt: dragged (theta0, theta1)
-  const lineSvg = $('.ix-line'), costSvg = $('.ix-cost');
-  const xs = () => U.map(u => u + c);
-  const ls = () => ({ t1: 1.5, t0: 10 / 3 - 1.5 * c }); // slope unchanged; intercept moves
-  const rss = (t0, t1) => xs().reduce((s, x, i) => s + (Y[i] - t0 - t1 * x) ** 2, 0);
-  function kappa() {                                   // eigenvalues of X^T X = [[3, 3c], [3c, 2 + 3c^2]]
-    const a = 3, b = 3 * c, d = 2 + 3 * c * c, tr = a + d, det = a * d - b * b;
-    const r = Math.sqrt(tr * tr / 4 - det); return (tr / 2 + r) / (tr / 2 - r);
-  }
-  // cost-card window: centered on the least-squares point
-  const W = { t0: [-3, 3], t1: [-1.5, 4.5] };
-  const box = { x0: 46, x1: 380, y0: 16, y1: 284 };
-  const sx = t0 => { const o = ls().t0; return box.x0 + (t0 - (o + W.t0[0])) / (W.t0[1] - W.t0[0]) * (box.x1 - box.x0); };
-  const sy = t1 => box.y1 - (t1 - W.t1[0]) / (W.t1[1] - W.t1[0]) * (box.y1 - box.y0);
-  const ix = px => ls().t0 + W.t0[0] + (px - box.x0) / (box.x1 - box.x0) * (W.t0[1] - W.t0[0]);
-  const iy = py => W.t1[0] + (box.y1 - py) / (box.y1 - box.y0) * (W.t1[1] - W.t1[0]);
-
-  function drawLine(C) {
-    lineSvg.innerHTML = '';
-    const X0 = c - 1.6, X1 = c + 1.6, fx = x => 46 + (x - X0) / (X1 - X0) * 334, fy = y => 284 - y / 7 * 268;
-    for (let y = 0; y <= 7; y++) {
-      L.el('line', { x1: 46, x2: 380, y1: fy(y), y2: fy(y), stroke: C.grid }, lineSvg);
-      L.el('text', { x: 40, y: fy(y) + 4, 'text-anchor': 'end', 'font-size': 18, fill: C.muted }, lineSvg).textContent = y;
-    }
-    L.el('line', { x1: 46, x2: 380, y1: 284, y2: 284, stroke: C.axis }, lineSvg);
-    xs().forEach(x => L.el('text', { x: fx(x), y: 304, 'text-anchor': 'middle', 'font-size': 18, fill: C.muted }, lineSvg).textContent = L.fmt(x, 1));
-    L.el('text', { x: 213, y: 326, 'text-anchor': 'middle', 'font-size': 18, fill: C.muted }, lineSvg).textContent = 'size, measured from the new origin';
-    const t = pt || ls();
-    L.el('line', { x1: fx(X0), y1: fy(t.t0 + t.t1 * X0), x2: fx(X1), y2: fy(t.t0 + t.t1 * X1), stroke: C.fs, 'stroke-width': 2.6 }, lineSvg);
-    xs().forEach((x, i) => {
-      L.el('line', { x1: fx(x), x2: fx(x), y1: fy(Y[i]), y2: fy(t.t0 + t.t1 * x), stroke: C.red, 'stroke-width': 2, 'stroke-dasharray': '4 3' }, lineSvg);
-      L.el('circle', { cx: fx(x), cy: fy(Y[i]), r: 6, fill: C.blue, stroke: '#fff', 'stroke-width': 2 }, lineSvg);
-    });
-  }
-
-  function drawCost(C) {
-    costSvg.innerHTML = '';
-    L.el('rect', { x: box.x0, y: box.y0, width: box.x1 - box.x0, height: box.y1 - box.y0 }, L.el('clipPath', { id: 'ixv-clip' }, costSvg));
-    const g = L.el('g', { 'clip-path': 'url(#ixv-clip)' }, costSvg);
-    const o = ls(), min = rss(o.t0, o.t1);
-    const lv = [0.25, 1, 2.5, 5, 10, 20, 40].map(d => min + d);
-    const cs = L.contours((a, b) => rss(a, b), [o.t0 + W.t0[0], o.t0 + W.t0[1]], W.t1, lv, 70);
-    cs.forEach((cl, k) => cl.segs.forEach(s => L.el('line', { x1: sx(s[0]), y1: sy(s[1]), x2: sx(s[2]), y2: sy(s[3]), stroke: k < 2 ? C.cyan : C.axis, 'stroke-width': k < 2 ? 1.6 : 1 }, g)));
-    L.el('line', { x1: box.x0, x2: box.x1, y1: box.y1, y2: box.y1, stroke: C.axis }, costSvg);
-    L.el('line', { x1: box.x0, x2: box.x0, y1: box.y0, y2: box.y1, stroke: C.axis }, costSvg);
-    L.el('text', { x: 213, y: 308, 'text-anchor': 'middle', 'font-size': 18, fill: C.muted }, costSvg).textContent = 'intercept θ₀';
-    L.el('text', { x: 14, y: 150, 'font-size': 18, fill: C.muted, transform: 'rotate(-90 14 150)', 'text-anchor': 'middle' }, costSvg).textContent = 'slope θ₁';
-    L.el('circle', { cx: sx(o.t0), cy: sy(o.t1), r: 5, fill: C.fs }, costSvg);
-    L.el('text', { x: sx(o.t0) + 8, y: sy(o.t1) - 8, 'font-size': 18, fill: C.fs }, costSvg).textContent = 'least squares';
-    if (pt) L.el('circle', { cx: sx(pt.t0), cy: sy(pt.t1), r: 6.5, fill: '#fff', stroke: C.red, 'stroke-width': 2.5 }, costSvg);
-  }
-
-  function update() {
-    const C = L.colors(root), o = ls();
-    drawLine(C); drawCost(C);
-    const k = kappa(), t = pt || o, r = rss(t.t0, t.t1);
-    L.stat($('.s-kappa'), k, false, v => L.fmt(v, 1));
-    L.stat($('.s-rss'), r, Math.abs(r - rss(o.t0, o.t1)) < 1e-3, v => L.fmt(v, 3));
-    L.stat($('.s-icpt'), o.t0, false); L.stat($('.s-slope'), o.t1, false);
-    $('.ix-note').textContent = c < 0.05
-      ? 'Sizes measured from their mean: the valley is a nearly round bowl (κ = 1.5), so the intercept and slope can be adjusted almost independently.'
-      : 'Shifting the origin by ' + L.fmt(c, 1) + ' leaves the least-squares line where it was: same slope, same fitted prices. The intercept now gives the price at the new origin, outside the range of the data, so raising the slope while lowering the intercept barely changes the fit. The valley stretches along that trade-off, to κ = ' + L.fmt(k, 1) + '. Section 3.5 of the book shows why gradient descent is slow in a valley like this.';
-  }
-
-  const sl = L.slider($('.ix-c'), $('.ix-cv'), v => L.fmt(v, 1), v => { c = v; pt = null; update(); });
-  L.presets($('.ix-buttons'), [
-    { label: 'Sizes from the mean (c = 0)', action: () => sl.set(0) },
-    { label: 'Shift by 2 (κ ≈ 46)', action: () => sl.set(2) },
-    { label: 'Back to least squares', action: () => { pt = null; update(); } },
-  ]);
-  // drag on the cost card
-  let dragging = false;
-  const toSvg = e => { const r = costSvg.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * 400, (e.clientY - r.top) / r.height * 320]; };
-  costSvg.addEventListener('pointerdown', e => { dragging = true; costSvg.setPointerCapture(e.pointerId); const [px, py] = toSvg(e); pt = { t0: ix(px), t1: iy(py) }; update(); });
-  costSvg.addEventListener('pointermove', e => { if (!dragging) return; const [px, py] = toSvg(e); pt = { t0: ix(px), t1: iy(py) }; update(); });
-  costSvg.addEventListener('pointerup', () => { dragging = false; });
-  sl.refresh();
-})();
-</script>
-</div>
-```
 
 The closed form is exact, direct, and the right mental model for what regression does. Its
 costs (an invertible cross-product, an $\mathcal{O}(n^3)$ inversion, no easy room for

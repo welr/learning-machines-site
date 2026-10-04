@@ -36,8 +36,7 @@ Throughout we fit a simple line $\hat{y} = \theta_0 + \theta_1 x$ under mean squ
 $J(\theta_0, \theta_1) = \frac{1}{m}\sum_{i=1}^{m} (y^{(i)} - \theta_0 - \theta_1 x^{(i)})^2$. The book's
 Equation 3.4 carries a factor of $\tfrac{1}{2}$ that we drop here; that doubles every gradient
 and halves every step size on this page, and changes nothing else. The data are defined
-inline, identical in both languages, so every deterministic result below agrees digit for
-digit across Python and R.
+inline.
 
 ## The loss surface and the downhill direction
 
@@ -54,7 +53,7 @@ negative gradients, normalized to a common length so direction reads clearly.
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Fixed linear data: y ~ 1 + 2x + noise (inline, so Python and R match exactly)
+# Fixed linear data: y ~ 1 + 2x + noise
 x = np.array([-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
               1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18])
 y = np.array([0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
@@ -107,7 +106,7 @@ plt.show()
 
 ## R
 ```{webr}
-# Fixed linear data: y ~ 1 + 2x + noise (inline, so Python and R match exactly)
+# Fixed linear data: y ~ 1 + 2x + noise
 x <- c(-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
        1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18)
 y <- c(0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
@@ -319,8 +318,9 @@ cat(sprintf("optimal loss = %.4f\n", opt_loss))
 
 The slow run never reaches the floor in forty steps; the good run lands on the optimal loss, while the oscillating run is still about 0.05 above it after forty steps, having spent most of its motion zig-zagging.
 
-Three fixed rates make the argument; a fourth of your own choosing makes it stick. Drag the
-slider and the descent path below is recomputed from scratch. The region worth exploring is
+Three fixed rates make the argument; a fourth of your own choosing makes it stick. The slider
+below reruns the descent above, from the same start and for the same forty steps, at the step
+size you set; the plot beneath it redraws when you release the slider. The region worth exploring is
 just above $\alpha = 0.25$: step across it and the run stops merely zig-zagging and starts to
 blow up, the loss growing by a fixed factor every iteration. The boundary is sharp and it is
 not a matter of luck — the next section computes exactly where it lies.
@@ -331,7 +331,7 @@ viewof lr = {
   const wrap = document.createElement("div");
   wrap.className = "lm-slider";
   const label = document.createElement("label");
-  label.textContent = "step size α";
+  label.innerHTML = 'Step size <span class="sym">α</span>';
   const range = document.createElement("input");
   range.type = "range";
   range.min = 0.02; range.max = 0.40; range.step = 0.01; range.value = 0.15;
@@ -356,6 +356,7 @@ viewof lr = {
 #| input:
 #|   - lr
 #| autorun: true
+#| echo: false
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -679,6 +680,151 @@ changes what an *iterative* solver has to climb. That distinction matters again 
 where the penalty is not equivariant, and standardizing stops being a convenience and becomes
 part of the model's definition.
 
+Standardizing does two things: it subtracts each feature's mean and divides by its spread.
+The figure below isolates the first. It uses the three houses of Section 2.3 of the book, whose
+sizes the book measures from their mean, and records them instead as 2, 3 and 4 hundred square
+meters.
+
+```{=html}
+<div class="lm-ix" id="ix-center" role="figure" aria-label="Interactive figure: gradient descent on recorded and on centered sizes">
+<div class="ix-eyebrow">Interactive</div>
+<div class="ix-title">Why center the sizes?</div>
+<div class="ix-views even">
+  <div class="ix-card">
+    <div class="ix-ttl">The line</div>
+    <p class="ix-sub">The current line, its residuals, and the least-squares line (dashed).</p>
+    <svg class="ix-line" viewBox="0 0 400 332"></svg>
+  </div>
+  <div class="ix-card">
+    <div class="ix-ttl">The cost valley</div>
+    <p class="ix-sub">Cost <span class="sym">J</span> over intercept and slope. Each dot is one step, starting from the flat line at zero.</p>
+    <svg class="ix-cost" viewBox="0 0 400 332"></svg>
+  </div>
+</div>
+<div class="ix-buttons">
+  <button type="button" class="m-raw on">Sizes as recorded: 2, 3, 4</button>
+  <button type="button" class="m-ctr">Sizes from their mean: −1, 0, 1</button>
+  <span class="gap"></span>
+  <button type="button" class="s-1">Take 1 step</button>
+  <button type="button" class="s-10">Take 10 steps</button>
+  <button type="button" class="s-0">Start again</button>
+</div>
+<div class="ix-readout three">
+  <div class="ix-stat t-k"><div class="k">Steps taken</div><div class="v"></div></div>
+  <div class="ix-stat t-j"><div class="k">Cost <span class="sym">J</span> (minimum 0.056)</div><div class="v"></div></div>
+  <div class="ix-stat t-s"><div class="k">Slope (least squares 1.50)</div><div class="v"></div></div>
+</div>
+<div class="ix-note"></div>
+<script src="../assets/lm-ix.js"></script>
+<script>
+(function () {
+  const root = document.getElementById('ix-center'), L = window.LMIX, $ = s => root.querySelector(s);
+  // The book's three houses (Section 2.3): prices 2, 3, 5 (hundreds of thousands of euros).
+  // The book measures sizes from their mean (-1, 0, 1); recorded, they are 2, 3, 4 (hundreds of m^2).
+  const Y = [2, 3, 5], MEAN = 3, ALPHA = 0.08, JMIN = 1 / 18;
+  const MODES = {
+    raw: { xs: [2, 3, 4], ls: [-7 / 6, 1.5], kappa: '169', icpt: 'intercept θ₀ (price at size 0)' },
+    ctr: { xs: [-1, 0, 1], ls: [10 / 3, 1.5], kappa: '1.5', icpt: 'intercept θ₀ (price at the mean size)' },
+  };
+  let mode = 'raw', path = [[0, 0]], timer = null;
+  const M = () => MODES[mode], cur = () => path[path.length - 1];
+  const J = t => M().xs.reduce((s, x, i) => s + (Y[i] - t[0] - t[1] * x) ** 2, 0) / 3;
+  function step() {                                   // gradient of J = (1/m) RSS
+    const t = cur(); let g0 = 0, g1 = 0;
+    M().xs.forEach((x, i) => { const r = t[0] + t[1] * x - Y[i]; g0 += 2 * r / 3; g1 += 2 * r * x / 3; });
+    path.push([t[0] - ALPHA * g0, t[1] - ALPHA * g1]);
+  }
+  const priceAt = (t, size) => t[0] + t[1] * (mode === 'raw' ? size : size - MEAN);   // size as recorded
+
+  function drawLine(C) {
+    const svg = $('.ix-line'); svg.innerHTML = '';
+    const X0 = 1.5, X1 = 4.5, fx = x => 46 + (x - X0) / (X1 - X0) * 334, fy = y => 284 - y / 7 * 268;
+    for (let y = 0; y <= 7; y++) {
+      L.el('line', { x1: 46, x2: 380, y1: fy(y), y2: fy(y), stroke: C.grid }, svg);
+      L.el('text', { x: 40, y: fy(y) + 5, 'text-anchor': 'end', 'font-size': 16, fill: C.muted }, svg).textContent = y;
+    }
+    L.el('line', { x1: 46, x2: 380, y1: 284, y2: 284, stroke: C.axis }, svg);
+    [2, 3, 4].forEach(x => L.el('text', { x: fx(x), y: 304, 'text-anchor': 'middle', 'font-size': 16, fill: C.muted }, svg).textContent = x);
+    L.el('text', { x: 213, y: 326, 'text-anchor': 'middle', 'font-size': 16, fill: C.muted }, svg).textContent = 'size as recorded (100 m²)';
+    L.el('rect', { x: 46, y: 10, width: 334, height: 274 }, L.el('clipPath', { id: 'ixc-clip1' }, svg));
+    const g = L.el('g', { 'clip-path': 'url(#ixc-clip1)' }, svg);
+    const ls = MODES.raw.ls;
+    L.el('line', { x1: fx(X0), y1: fy(ls[0] + ls[1] * X0), x2: fx(X1), y2: fy(ls[0] + ls[1] * X1), stroke: C.muted, 'stroke-width': 1.4, 'stroke-dasharray': '6 5' }, g);
+    const t = cur();
+    L.el('line', { x1: fx(X0), y1: fy(priceAt(t, X0)), x2: fx(X1), y2: fy(priceAt(t, X1)), stroke: C.fs, 'stroke-width': 2.6 }, g);
+    [2, 3, 4].forEach((x, i) => {
+      L.el('line', { x1: fx(x), x2: fx(x), y1: fy(Y[i]), y2: fy(priceAt(t, x)), stroke: C.red, 'stroke-width': 2, 'stroke-dasharray': '4 3' }, g);
+      L.el('circle', { cx: fx(x), cy: fy(Y[i]), r: 6, fill: C.blue, stroke: '#fff', 'stroke-width': 2 }, g);
+    });
+  }
+
+  const W = { x0: 52, x1: 385, y0: 12, y1: 278, T0: [-2, 4.5], T1: [-1.2, 4.0] };   // equal units per pixel on both axes, so shapes are true
+  const sx = v => W.x0 + (v - W.T0[0]) / (W.T0[1] - W.T0[0]) * (W.x1 - W.x0);
+  const sy = v => W.y1 - (v - W.T1[0]) / (W.T1[1] - W.T1[0]) * (W.y1 - W.y0);
+  function drawCost(C) {
+    const svg = $('.ix-cost'); svg.innerHTML = '';
+    L.el('rect', { x: W.x0, y: W.y0, width: W.x1 - W.x0, height: W.y1 - W.y0 }, L.el('clipPath', { id: 'ixc-clip2' }, svg));
+    const g = L.el('g', { 'clip-path': 'url(#ixc-clip2)' }, svg);
+    [-2, 0, 2, 4].forEach(v => L.el('line', { x1: sx(v), x2: sx(v), y1: W.y0, y2: W.y1, stroke: C.grid }, g));
+    [-1, 0, 1, 2, 3, 4].forEach(v => L.el('line', { x1: W.x0, x2: W.x1, y1: sy(v), y2: sy(v), stroke: C.grid }, g));
+    L.contours((a, b) => J([a, b]), W.T0, W.T1, [0.03, 0.1, 0.3, 0.8, 2, 4, 8].map(d => JMIN + d), 110)
+      .forEach((cl, k) => cl.segs.forEach(s => L.el('line', { x1: sx(s[0]), y1: sy(s[1]), x2: sx(s[2]), y2: sy(s[3]), stroke: k < 2 ? C.cyan : C.axis, 'stroke-width': k < 2 ? 1.6 : 1 }, g)));
+    const ls = M().ls;
+    L.el('circle', { cx: sx(ls[0]), cy: sy(ls[1]), r: 5, fill: C.fs }, g);
+    L.el('text', { x: sx(ls[0]) + (mode === 'raw' ? 8 : -8), y: sy(ls[1]) - 9, 'text-anchor': mode === 'raw' ? 'start' : 'end', 'font-size': 15, fill: C.fs }, g).textContent = 'least squares';
+    L.el('polyline', { points: path.map(p => sx(p[0]) + ',' + sy(p[1])).join(' '), fill: 'none', stroke: C.blue, 'stroke-width': 1.6, 'stroke-linejoin': 'round' }, g);
+    path.forEach(p => L.el('circle', { cx: sx(p[0]), cy: sy(p[1]), r: 2.6, fill: C.blue }, g));
+    const t = cur();
+    L.el('circle', { cx: sx(t[0]), cy: sy(t[1]), r: 6.5, fill: '#fff', stroke: C.fs, 'stroke-width': 2.5 }, g);
+    L.el('line', { x1: W.x0, x2: W.x1, y1: W.y1, y2: W.y1, stroke: C.axis }, svg);
+    L.el('line', { x1: W.x0, x2: W.x0, y1: W.y0, y2: W.y1, stroke: C.axis }, svg);
+    [-2, 0, 2, 4].forEach(v => L.el('text', { x: sx(v), y: W.y1 + 19, 'text-anchor': 'middle', 'font-size': 16, fill: C.muted }, svg).textContent = v);
+    [-1, 0, 1, 2, 3, 4].forEach(v => L.el('text', { x: W.x0 - 7, y: sy(v) + 5, 'text-anchor': 'end', 'font-size': 16, fill: C.muted }, svg).textContent = v);
+    L.el('text', { x: (W.x0 + W.x1) / 2, y: 326, 'text-anchor': 'middle', 'font-size': 15, fill: C.muted }, svg).textContent = M().icpt;
+    L.el('text', { x: 14, y: (W.y0 + W.y1) / 2, 'font-size': 16, fill: C.muted, transform: `rotate(-90 14 ${(W.y0 + W.y1) / 2})`, 'text-anchor': 'middle' }, svg).textContent = 'slope θ₁';
+  }
+
+  function note() {
+    const k = path.length - 1, t = cur(), done = J(t) - JMIN < 0.003;
+    if (mode === 'raw') {
+      if (k === 0) return 'Sizes as recorded. A steeper slope with a lower intercept fits these houses almost as well, so the valley is a long, narrow trench, about 169 times more curved across than along (κ ≈ 169). Take ten steps.';
+      if (done) return 'After ' + k + ' steps the recorded sizes get there too.';
+      if (k < 4) return 'The first steps cross the trench, overshooting from wall to wall.';
+      return 'After ' + k + ' steps the path has fallen into the trench, and each step now moves it only a little along the nearly level floor. The slope is ' + L.fmt(t[1]) + ', against 1.50 for least squares. Now switch to sizes from their mean and take the same steps.';
+    }
+    if (k === 0) return 'Sizes measured from their mean. Slope and intercept no longer trade off against each other, and the valley is a nearly round bowl (κ = 1.5). Take ten steps.';
+    if (done) return 'After ' + k + ' steps the line sits almost on the least-squares line, the same one the recorded sizes crawl toward: centering changes the coordinates and leaves the fit alone. Both runs take the same step, α = 0.08. The bowl would stay stable with a step more than ten times larger; the trench would not.';
+    return 'After ' + k + ' steps the path is closing in on the bottom.';
+  }
+
+  function update() {
+    const C = L.colors(root), t = cur(), j = J(t);
+    drawLine(C); drawCost(C);
+    L.stat($('.t-k'), path.length - 1, false, v => String(v));
+    L.stat($('.t-j'), j, j - JMIN < 0.003, v => L.fmt(v, 3));
+    L.stat($('.t-s'), t[1], Math.abs(t[1] - 1.5) < 0.06);
+    $('.ix-note').textContent = note();
+  }
+  function take(n) {
+    clearInterval(timer); let left = n;
+    timer = setInterval(() => { if (path.length > 500) left = 0; if (left-- <= 0) return clearInterval(timer); step(); update(); }, 70);
+  }
+  function setMode(m) {
+    clearInterval(timer); mode = m; path = [[0, 0]];
+    $('.m-raw').classList.toggle('on', m === 'raw'); $('.m-ctr').classList.toggle('on', m === 'ctr');
+    update();
+  }
+  $('.m-raw').addEventListener('click', () => setMode('raw'));
+  $('.m-ctr').addEventListener('click', () => setMode('ctr'));
+  $('.s-1').addEventListener('click', () => take(1));
+  $('.s-10').addEventListener('click', () => take(10));
+  $('.s-0').addEventListener('click', () => setMode(mode));
+  update();
+})();
+</script>
+</div>
+```
+
 ## Stochastic gradient descent
 
 The full gradient averages over all $m$ points. [Stochastic gradient descent]{.term} estimates
@@ -982,9 +1128,8 @@ cat(sprintf("optimal loss %.4f\n", opt_loss))
 :::
 
 The figure below runs both methods on the valley of the book's Figure 3.3, where the curvature
-across the valley is 50 times the curvature along it. The three houses of the Chapter 2 page,
-with sizes measured from an origin two units away, give a valley almost as stretched
-($\kappa \approx 46$). Set $\gamma$ to zero and the two runs coincide.
+across the valley is 50 times the curvature along it. The recorded sizes in the centering figure above
+give a trench more than three times as stretched ($\kappa \approx 169$). Set $\gamma$ to zero and the two runs coincide.
 
 ```{=html}
 <div class="lm-ix" id="ix-momentum" role="figure" aria-label="Interactive figure: gradient descent with and without momentum on an elongated valley">

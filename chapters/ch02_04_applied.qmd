@@ -23,7 +23,7 @@ The chapter's Applied exercises name two larger sets: **California housing** (me
 
 ::: {.defbox}
 [Ordinary Least Squares Estimate]{.lbl}
-[ &theta;&#770; = (X&#8868;X)&#8722;&sup1; X&#8868;y ]{.math}
+[ &theta;&#770; = (X<sup>&#8868;</sup>X)<sup>&#8722;1</sup> X<sup>&#8868;</sup>y ]{.math}
 :::
 
 ```{=html}
@@ -94,7 +94,7 @@ cat("\nlm agrees:", all(abs(coef(fit) - theta) < 1e-6), "\n")
 
 :::
 
-Both languages read the same fixed numbers and solve the same linear system, so the coefficients match to every printed digit. A heavier car loses about 3.8 mpg per extra thousand pounds; horsepower and displacement add little once weight is in the model. That last fact is the thread we pull next.
+A heavier car loses about 3.8 mpg per extra thousand pounds; horsepower and displacement add little once weight is in the model. That last fact is the thread we pull next.
 
 ## What a coefficient means: scale and collinearity
 

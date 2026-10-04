@@ -339,7 +339,7 @@ legend("top", c("total error", "bias^2", "variance", "irreducible"),
 
 :::
 
-Both languages locate the minimum at degree three. Bias falls off a cliff once the model is
+The minimum is at degree three. Bias falls off a cliff once the model is
 flexible enough to bend (degrees one and two are starved), and from there variance climbs
 steadily, dragging the total back up. The best model is not the one that fits the training
 data best; it is the one that balances the two errors. Notice also that the total never
@@ -354,7 +354,9 @@ data are sparse and a high-degree polynomial has the least to anchor it, varianc
 sharply; in the well-sampled interior it stays small. This is why extrapolation is
 dangerous: the same fit that is trustworthy in the middle is wild at the boundary.
 
-The noise level $\sigma$ is fixed at 0.3 above. Move it and watch two things separately:
+The noise level $\sigma$ is fixed at 0.3 above. The slider below reruns the decomposition at
+the noise level you set, and the plot beneath it redraws a few seconds after you release the
+slider. Watch two things separately:
 where the dashed irreducible line sits, and which degree wins.
 
 ```{ojs}
@@ -363,7 +365,7 @@ viewof sigma = {
   const wrap = document.createElement("div");
   wrap.className = "lm-slider";
   const label = document.createElement("label");
-  label.textContent = "noise σ";
+  label.innerHTML = 'Noise <span class="sym">σ</span>';
   const range = document.createElement("input");
   range.type = "range";
   range.min = 0.05; range.max = 0.80; range.step = 0.05; range.value = 0.30;
@@ -388,6 +390,7 @@ viewof sigma = {
 #| input:
 #|   - sigma
 #| autorun: true
+#| echo: false
 import numpy as np
 import matplotlib.pyplot as plt
 import warnings

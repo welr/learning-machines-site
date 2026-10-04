@@ -38,7 +38,7 @@ cross-product, leaving the intercept unpenalized. That one term tames the fit.
 
 ::: {.defbox}
 [Ridge Estimate]{.lbl}
-[ &theta;&#770;<sub>ridge</sub> = (X&#8868;X + m&lambda;I)&#8722;&sup1; X&#8868;y ]{.math}
+[ &theta;&#770;<sub>ridge</sub> = (X<sup>&#8868;</sup>X + m&lambda;I)<sup>&#8722;1</sup> X<sup>&#8868;</sup>y ]{.math}
 :::
 
 ```{=html}
@@ -300,9 +300,6 @@ ellipse sliding in from outside tends to strike a corner first, and a corner mea
 coefficient is exactly zero. That is feature selection falling out of the shape of the
 penalty.
 
-This panel is illustration, not computation, so there are no cross-language numbers to
-reconcile; both languages draw the same picture.
-
 ::: {.panel-tabset group="lang"}
 
 ## Python
@@ -436,8 +433,7 @@ cat(sprintf("theta2 (large scale): %9.6f     %8.4f\n", t_raw[3], t_std[3]))
 :::
 
 Raw, ridge crushes the signal-carrying coefficient to about $0.0002$, though its true value
-is $100$. Standardized, the two coefficients are comparable, near $0.52$ and $0.51$. The fixed
-data makes the two languages agree to every printed digit.
+is $100$. Standardized, the two coefficients are comparable, near $0.52$ and $0.51$.
 
 The one knob left is $\lambda$ itself, chosen by cross-validation against held-out error
 rather than by eye (see the model-evaluation page). When predictors are correlated, LASSO

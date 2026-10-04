@@ -86,7 +86,7 @@ document says *flour* and *bake* but uses either *oven* or *stove*. The synonym 
 linked only through the company they keep. The two topics get different document counts and
 hub weights on purpose: identical blocks would tie the two leading singular values, and a
 tie leaves the individual axes undetermined — the degeneracy the textbook's Theorem 13.1
-flags. Everything is deterministic, so Python and R agree digit for digit. For a moving
+flags. For a moving
 picture of the same idea, Wikipedia's
 [topic-model animation](https://en.wikipedia.org/wiki/File:Topic_model_scheme.webm)
 (Christoph Carl Kling, CC BY-SA 4.0) shows a document–word matrix reorganized until its
@@ -180,7 +180,7 @@ cat("loan and credit ever co-occur?",
 
 The singular values should show two dominant directions — one per topic — followed by a tail
 of within-topic variation. The sign of a singular vector is arbitrary, so we fix a
-convention (loadings sum positive) to make the two languages, and the plot below, agree.
+convention (loadings sum positive) so that every run, and the plot below, shows the same signs.
 
 ::: {.panel-tabset group="lang"}
 

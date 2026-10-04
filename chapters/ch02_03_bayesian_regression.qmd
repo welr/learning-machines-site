@@ -25,7 +25,7 @@ approximates.
 
 ::: {.defbox}
 [Gaussian Posterior (conjugate regression)]{.lbl}
-[ &Sigma;<sub>m</sub> = (&Sigma;<sub>0</sub><sup>&#8722;1</sup> + &sigma;<sup>&#8722;2</sup>X&#8868;X)<sup>&#8722;1</sup> &nbsp;&nbsp;&nbsp; &mu;<sub>m</sub> = &Sigma;<sub>m</sub>(&Sigma;<sub>0</sub><sup>&#8722;1</sup>&mu;<sub>0</sub> + &sigma;<sup>&#8722;2</sup>X&#8868;y) ]{.math}
+[ &Sigma;<sub>m</sub> = (&Sigma;<sub>0</sub><sup>&#8722;1</sup> + &sigma;<sup>&#8722;2</sup>X<sup>&#8868;</sup>X)<sup>&#8722;1</sup> &nbsp;&nbsp;&nbsp; &mu;<sub>m</sub> = &Sigma;<sub>m</sub>(&Sigma;<sub>0</sub><sup>&#8722;1</sup>&mu;<sub>0</sub> + &sigma;<sup>&#8722;2</sup>X<sup>&#8868;</sup>y) ]{.math}
 :::
 
 Here $(\boldsymbol{\mu}_0, \boldsymbol{\Sigma}_0)$ are the prior mean and covariance,

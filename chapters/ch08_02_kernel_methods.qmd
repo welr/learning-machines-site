@@ -17,8 +17,6 @@ Some patterns no straight line can split. Concentric rings, an exclusive-or chec
 
 Take two interleaved rings, an inner cluster wrapped by an outer one. No line separates them in the plane. But measure each point's squared distance from the origin, $\phi(x) = x_1^2 + x_2^2$, and the rings collapse onto a single axis: inner points pile up at small radius, outer points at large, and one threshold splits them cleanly. The classifier is still linear. It just lives in the lifted coordinate.
 
-The two languages build the same deterministic rings, so their figures and the threshold accuracy match exactly.
-
 ```{=html}
 <figure class="lm-figure">
 <img src="../figures/ch08_02_kernel_methods.png" alt="Two interleaved rings of points, blue outer and red inner, separated by a curved closed RBF decision boundary in dark blue; soft blue fill outside, soft red fill inside.">
@@ -345,13 +343,16 @@ prop it up (188 at $\gamma = 100$). Between $\gamma = 2$ and $\gamma = 4$ the co
 out in the twenties, reaching 22. Do not read that trough as the best model: a compact
 boundary and a boundary that generalizes are related, but they are not the same thing.
 
+The slider below refits the support vector machine on the rings at the $\gamma$ you set and
+redraws the boundary beneath it.
+
 ```{ojs}
 //| echo: false
 viewof gam = {
   const wrap = document.createElement("div");
   wrap.className = "lm-slider";
   const label = document.createElement("label");
-  label.textContent = "inverse width γ";
+  label.innerHTML = 'Inverse width <span class="sym">γ</span>';
   const range = document.createElement("input");
   range.type = "range";
   // log scale: gamma = 10^v, from 0.1 to 100
@@ -377,6 +378,7 @@ viewof gam = {
 #| input:
 #|   - gam
 #| autorun: true
+#| echo: false
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap

@@ -155,7 +155,7 @@ runtime and no third-party requests, so they work in either language tab.
 | figure | page | id |
 |---|---|---|
 | Least squares as a projection | `ch02_02` | `.lsproj` |
-| Same line, different valley | `ch02_02` | `#ix-valley` |
+| Why center the sizes? | `ch03_01` | `#ix-center` |
 | Momentum in a narrow valley | `ch03_01` | `#ix-momentum` |
 
 - **Shared kit.** Styles are the `.lm-ix` classes in `theme.scss`; helpers (contours,
@@ -165,8 +165,8 @@ runtime and no third-party requests, so they work in either language tab.
 - **Colors.** Data blue, fits FS-blue; red only for residuals, zero lines and thresholds;
   orange and cyan for a second series.
 - **Exercises.** A figure must not compute what an exercise asks for. Before adding one,
-  read the chapter's exercises. The valley figure shows the condition number but never the entries of
-  XᵀX (Exercises 2.2, 2.7), and the momentum figure has no "optimal" presets, rates or step counts
+  read the chapter's exercises. Neither Chapter 3 figure offers an
+  "optimal" step or momentum, a convergence rate, or a steps-to-tolerance count
   (Exercise 3.9).
 
 ## Exercise cells

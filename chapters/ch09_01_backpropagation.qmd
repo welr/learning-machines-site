@@ -125,7 +125,7 @@ cat(sprintf("dL/dw2 = %.4f   dL/db2 = %.4f\n", dL_dw2, dL_db2))
 
 :::
 
-Both languages run the identical scalar recurrence on the same fixed inputs, so every traced number agrees to the printed digits. Every gradient is negative: the network underpredicts ($\hat{y} < y$), so nudging each weight upward would shrink the loss, which is precisely what the next section's update does.
+Every gradient is negative: the network underpredicts ($\hat{y} < y$), so nudging each weight upward would shrink the loss, which is precisely what the next section's update does.
 
 ## Checking the gradients numerically
 
@@ -321,7 +321,7 @@ cat(sprintf("Final prediction: %.4f   (target %.1f)\n", preds[n_steps], y))
 
 :::
 
-Both runs start and end at the same numbers, because the update is deterministic given the weights. On the log axis the loss falls in a straight line: every step shrinks it by roughly the same factor, which is what geometric convergence looks like. It runs out of numbers before it runs out of progress, hitting exactly zero near iteration 30 — one training point and four free parameters, so the network can fit it perfectly and there is no asymptotic tail to speak of. Plotted on a linear axis the same run would show a single cliff and then a flat line, which reads as progress stalling; the flattening would be the axis, not the arithmetic. This is the whole training loop in miniature: the deep networks of the next chapters differ only in scale, replacing these four scalars with millions of weights and these scalar products with matrix multiplications.
+On the log axis the loss falls in a straight line: every step shrinks it by roughly the same factor, which is what geometric convergence looks like. It runs out of numbers before it runs out of progress, hitting exactly zero near iteration 30 — one training point and four free parameters, so the network can fit it perfectly and there is no asymptotic tail to speak of. Plotted on a linear axis the same run would show a single cliff and then a flat line, which reads as progress stalling; the flattening would be the axis, not the arithmetic. This is the whole training loop in miniature: the deep networks of the next chapters differ only in scale, replacing these four scalars with millions of weights and these scalar products with matrix multiplications.
 
 ## Why sigmoid makes deep networks hard
 

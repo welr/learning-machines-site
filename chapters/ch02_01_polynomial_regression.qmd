@@ -27,8 +27,7 @@ We use fifteen simulated houses, drawn once from the model behind Chapter 7's po
 figures: sizes uniform on $[40, 150]$ square meters, and price in thousands of euros
 $\text{price} = 160 + \tfrac{260}{110}(x - 40) + 0.02\,(x - 40)(x - 150)$ plus Gaussian
 noise with standard deviation 25. The true signal is exactly quadratic, so everything past
-degree two is the model chasing noise. The same fifteen points are hard-coded into every cell,
-so Python and R compute identical numbers. We measure fit with [mean squared error]{.term},
+degree two is the model chasing noise. We measure fit with [mean squared error]{.term},
 $\text{MSE} = \frac{1}{m}\sum_{i=1}^{m} (y^{(i)} - \hat{y}^{(i)})^2$.
 
 One numerical note carried by both languages: before building the design matrix we
