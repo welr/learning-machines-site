@@ -611,6 +611,133 @@ diamond, and its corners sit on the axes. An ellipse sliding in from outside ten
 corner first, here at $(0, 1.30)$, and a corner means one coefficient is exactly zero. That is
 feature selection falling out of the shape of the penalty.
 
+The plot above fixes one budget. The figure below lets it grow, with the same loss and the
+same least-squares point: a circle and a diamond of size $t$, and the share of the budget each
+method gives $\theta_1$.
+
+```{=html}
+<div class="lm-ix" id="ix-corners" role="figure" aria-label="Interactive figure: ridge and LASSO solutions as the budget on the coefficients grows">
+<div class="ix-eyebrow">Interactive</div>
+<div class="ix-title">Corners and circles, as the budget grows</div>
+<div class="ix-views even">
+  <div class="ix-card">
+    <div class="ix-ttl">The budget</div>
+    <p class="ix-sub">The same error ellipses; a circle and a diamond of size <span class="sym">t</span>, each with its solution and the contour that first reaches it.</p>
+    <svg class="ix-plane" viewBox="0 0 400 400"></svg>
+  </div>
+  <div class="ix-card">
+    <div class="ix-ttl">The coefficient <span class="sym">θ</span><sub>1</sub></div>
+    <p class="ix-sub">How much of the budget each method gives <span class="sym">θ</span><sub>1</sub>, as the budget grows.</p>
+    <svg class="ix-path" viewBox="0 0 400 400"></svg>
+  </div>
+</div>
+<div class="lm-slider"><label>Budget <span class="sym">t</span></label><input class="ix-t" type="range" min="0.05" max="3.4" step="0.01" value="1.3"><output class="ix-tv"></output></div>
+<div class="ix-buttons"></div>
+<div class="ix-readout">
+  <div class="ix-stat t-r"><div class="k">Ridge solution (<span class="sym">θ</span><sub>1</sub>, <span class="sym">θ</span><sub>2</sub>)</div><div class="v"></div></div>
+  <div class="ix-stat t-l"><div class="k">LASSO solution (<span class="sym">θ</span><sub>1</sub>, <span class="sym">θ</span><sub>2</sub>)</div><div class="v"></div></div>
+</div>
+<div class="ix-note"></div>
+<script src="../assets/lm-ix.js"></script>
+<script>
+(function () {
+  const root = document.getElementById('ix-corners'), L = window.LMIX, $ = s => root.querySelector(s);
+  // The loss of the cells above: 0.35 (t1 - 1)^2 + (t2 - 2.2)^2, least squares at (1, 2.2).
+  const A = [0.35, 1], C0 = [1.0, 2.2];
+  const loss = (a, b) => A[0] * (a - C0[0]) ** 2 + A[1] * (b - C0[1]) ** 2;
+  const OLS2 = Math.hypot(C0[0], C0[1]), OLS1 = Math.abs(C0[0]) + Math.abs(C0[1]);
+  function ridge(t) {                     // min loss s.t. |theta|_2 <= t: theta_i = a_i c_i / (a_i + mu)
+    if (OLS2 <= t) return C0.slice();
+    const at = mu => C0.map((c, i) => A[i] * c / (A[i] + mu));
+    let lo = 0, hi = 1e6;
+    for (let k = 0; k < 200; k++) { const mid = (lo + hi) / 2; Math.hypot(...at(mid)) > t ? lo = mid : hi = mid; }
+    return at((lo + hi) / 2);
+  }
+  function lasso(t) {                     // min loss s.t. |t1| + |t2| <= t; both c > 0, so the top-right edge
+    if (OLS1 <= t) return C0.slice();
+    let t1 = (A[0] * C0[0] + A[1] * (t - C0[1])) / (A[0] + A[1]);   // best point on t1 + t2 = t
+    t1 = Math.min(Math.max(t1, 0), t);                               // a corner when it would leave the edge
+    return [t1, t - t1];
+  }
+  let t = 1.3;
+
+  const P = { x0: 40, x1: 385, y0: 12, y1: 357, X: [-1.4, 3.2], Y: [-1.4, 3.2] };   // equal units
+  const px = v => P.x0 + (v - P.X[0]) / (P.X[1] - P.X[0]) * (P.x1 - P.x0);
+  const py = v => P.y1 - (v - P.Y[0]) / (P.Y[1] - P.Y[0]) * (P.y1 - P.y0);
+  function plane(C, r, l) {
+    const svg = $('.ix-plane'); svg.innerHTML = '';
+    L.el('rect', { x: P.x0, y: P.y0, width: P.x1 - P.x0, height: P.y1 - P.y0 }, L.el('clipPath', { id: 'ixc-clipP' }, svg));
+    const g = L.el('g', { 'clip-path': 'url(#ixc-clipP)' }, svg);
+    [-1, 0, 1, 2, 3].forEach(v => {
+      L.el('line', { x1: px(v), x2: px(v), y1: P.y0, y2: P.y1, stroke: v === 0 ? C.axis : C.grid }, g);
+      L.el('line', { x1: P.x0, x2: P.x1, y1: py(v), y2: py(v), stroke: v === 0 ? C.axis : C.grid }, g);
+    });
+    L.contours(loss, P.X, P.Y, [0.25, 1, 2.5, 5, 9], 90)
+      .forEach(cl => cl.segs.forEach(s => L.el('line', { x1: px(s[0]), y1: py(s[1]), x2: px(s[2]), y2: py(s[3]), stroke: C.axis, 'stroke-width': 1 }, g)));
+    [[r, C.blue], [l, C.cyan]].forEach(([sol, col]) => {
+      if (loss(...sol) > 1e-9) L.contours(loss, P.X, P.Y, [loss(...sol)], 140)
+        .forEach(cl => cl.segs.forEach(s => L.el('line', { x1: px(s[0]), y1: py(s[1]), x2: px(s[2]), y2: py(s[3]), stroke: col, 'stroke-width': 1.4, 'stroke-dasharray': '5 3' }, g)));
+    });
+    const k = (P.x1 - P.x0) / (P.X[1] - P.X[0]);
+    L.el('circle', { cx: px(0), cy: py(0), r: t * k, fill: 'none', stroke: C.blue, 'stroke-width': 2.4 }, g);
+    L.el('polygon', { points: [[t, 0], [0, t], [-t, 0], [0, -t]].map(q => px(q[0]) + ',' + py(q[1])).join(' '), fill: 'none', stroke: C.cyan, 'stroke-width': 2.4 }, g);
+    L.el('text', { x: px(C0[0]) + 10, y: py(C0[1]) - 8, 'font-size': 14, fill: C.fs }, g).textContent = 'least squares';
+    L.el('circle', { cx: px(C0[0]), cy: py(C0[1]), r: 5.5, fill: C.fs }, g);
+    L.el('circle', { cx: px(r[0]), cy: py(r[1]), r: 7, fill: C.blue, stroke: '#fff', 'stroke-width': 1.6 }, g);
+    L.el('circle', { cx: px(l[0]), cy: py(l[1]), r: 7, fill: C.cyan, stroke: '#fff', 'stroke-width': 1.6 }, g);
+    [-1, 0, 1, 2, 3].forEach(v => {
+      L.el('text', { x: px(v), y: P.y1 + 18, 'text-anchor': 'middle', 'font-size': 14, fill: C.muted }, svg).textContent = v;
+      L.el('text', { x: P.x0 - 7, y: py(v) + 5, 'text-anchor': 'end', 'font-size': 14, fill: C.muted }, svg).textContent = v;
+    });
+    L.el('text', { x: (P.x0 + P.x1) / 2, y: 396, 'text-anchor': 'middle', 'font-size': 15, fill: C.muted }, svg).textContent = 'θ₁';
+    L.el('text', { x: 12, y: py(2.5) + 5, 'text-anchor': 'middle', 'font-size': 15, fill: C.muted }, svg).textContent = 'θ₂';
+  }
+  const Q = { x0: 52, x1: 385, y0: 16, y1: 350, T: [0, 3.4], V: [-0.05, 1.05] };
+  const qx = v => Q.x0 + (v - Q.T[0]) / (Q.T[1] - Q.T[0]) * (Q.x1 - Q.x0);
+  const qy = v => Q.y1 - (v - Q.V[0]) / (Q.V[1] - Q.V[0]) * (Q.y1 - Q.y0);
+  const TS = Array.from({ length: 241 }, (_, i) => 3.4 * i / 240);
+  function path(C) {
+    const svg = $('.ix-path'); svg.innerHTML = '';
+    [0, 0.25, 0.5, 0.75, 1].forEach(v => {
+      L.el('line', { x1: Q.x0, x2: Q.x1, y1: qy(v), y2: qy(v), stroke: v === 0 ? C.axis : C.grid }, svg);
+      L.el('text', { x: Q.x0 - 7, y: qy(v) + 5, 'text-anchor': 'end', 'font-size': 14, fill: C.muted }, svg).textContent = v;
+    });
+    [0, 1, 2, 3].forEach(v => L.el('text', { x: qx(v), y: Q.y1 + 18, 'text-anchor': 'middle', 'font-size': 14, fill: C.muted }, svg).textContent = v);
+    L.el('line', { x1: Q.x0, x2: Q.x0, y1: Q.y0, y2: Q.y1, stroke: C.axis }, svg);
+    [[ridge, C.blue, 'ridge'], [lasso, C.cyan, 'LASSO']].forEach(([fn, col, name], k) => {
+      L.el('polyline', { points: TS.map(s => qx(s) + ',' + qy(fn(s)[0])).join(' '), fill: 'none', stroke: col, 'stroke-width': 2.6 }, svg);
+      L.el('circle', { cx: qx(t), cy: qy(fn(t)[0]), r: 6, fill: col, stroke: '#fff', 'stroke-width': 1.5 }, svg);
+      L.el('line', { x1: Q.x0 + 12, x2: Q.x0 + 34, y1: Q.y0 + 14 + 20 * k, y2: Q.y0 + 14 + 20 * k, stroke: col, 'stroke-width': 2.6 }, svg);
+      L.el('text', { x: Q.x0 + 40, y: Q.y0 + 19 + 20 * k, 'font-size': 14, fill: C.ink }, svg).textContent = name;
+    });
+    L.el('line', { x1: qx(t), x2: qx(t), y1: Q.y0, y2: Q.y1, stroke: C.muted, 'stroke-dasharray': '3 4' }, svg);
+    L.el('text', { x: (Q.x0 + Q.x1) / 2, y: 396, 'text-anchor': 'middle', 'font-size': 15, fill: C.muted }, svg).textContent = 'budget t';
+  }
+  const pair = p => '(' + L.fmt(p[0]) + ', ' + L.fmt(p[1]) + ')';
+  function note(r, l) {
+    if (t >= OLS1) return 'The budget no longer binds either method: both return least squares, (1.00, 2.20).';
+    if (t >= OLS2 && l[0] > 0) return 'The circle no longer binds: ridge returns least squares, θ₁ = 1.00. The diamond still does, and θ₁ has entered the LASSO model at ' + L.fmt(l[0]) + ', short of its least-squares value.';
+    if (l[0] === 0) return 'LASSO spends the whole budget on θ₂ and leaves θ₁ at exactly zero: the error contour first reaches the diamond at its top corner. Ridge, with the same budget, gives θ₁ ' + L.fmt(r[0]) + '. Every bit of θ₁ costs LASSO the same rate, all the way down to zero; ridge charges almost nothing for the first bit.';
+    return 'The budget now reaches past the corner, so the contour first meets the diamond along its edge, and θ₁ enters the LASSO model at ' + L.fmt(l[0]) + '. Ridge has given θ₁ a share all along: ' + L.fmt(r[0]) + '.';
+  }
+  function update() {
+    const C = L.colors(root), r = ridge(t), l = lasso(t);
+    plane(C, r, l); path(C);
+    L.stat($('.t-r'), 0, false, () => pair(r));
+    L.stat($('.t-l'), 0, l[0] === 0, () => pair(l));
+    $('.ix-note').textContent = note(r, l);
+  }
+  const sl = L.slider($('.ix-t'), $('.ix-tv'), v => L.fmt(v), v => { t = v; update(); });
+  L.presets($('.ix-buttons'), [
+    { label: 't = 1.3 (the plot above)', action: () => sl.set(1.3) },
+    { label: 't = 2.5', action: () => sl.set(2.5) },
+  ]);
+  sl.refresh();
+})();
+</script>
+</div>
+```
+
 ## Scale your features first
 
 The penalty couples to the scale of each feature. A coefficient on a tiny-scale feature has
