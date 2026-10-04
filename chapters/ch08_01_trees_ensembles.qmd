@@ -928,5 +928,5 @@ re-run. A small rate needs far more rounds to reach the same MSE but resists ove
 rate of `1.0` lurches toward the target and can overshoot. Then raise the tree count `B` in
 the bagging cell and watch the test error flatten out, the diminishing return that makes "more
 trees" safe but not free. You can also push `MAX_DEPTH` up: deeper single trees overfit harder,
-so bagging has more variance to average away.
+and bagging still cuts their test error by more than a quarter.
 :::

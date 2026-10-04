@@ -236,8 +236,8 @@ classic U-shaped error curve.
 Every prediction on this page is clipped to $[-10, 10]$ before the decomposition runs, so these
 plots decompose a clipped predictor rather than the raw polynomial. At low degree the clip
 never binds and the distinction is empty. At degree twelve on twenty points it binds hard:
-the variance the cell reports is about $11$, where the unclipped fit runs to the order of
-$10^8$ — and that unclipped figure is not even stable, moving by three orders of magnitude
+the variance the cell reports is between $11$ and $12$, where the unclipped fit runs to the order of
+$10^8$ — and that unclipped figure is not even stable, moving by orders of magnitude
 with the number of samples averaged, because a few catastrophic extrapolations set the scale.
 Without the clip the right-hand tail could not share an axis with anything else. Read the
 reported variance as evidence that the tail is bad, not as a measurement of how bad.
@@ -417,7 +417,7 @@ noise = float(sigma)
 def truth_f(x):
     return np.sin(2 * np.pi * x)
 
-# Fewer data sets than the table above (40 rather than 100) so the redraw stays quick.
+# Fewer data sets than the table above (40 rather than 500) so the redraw stays quick.
 def decompose_at(degree, n_datasets=40, m=20, noise=0.3):
     grid = np.linspace(0, 1, 100)
     truth = truth_f(grid)
@@ -728,7 +728,7 @@ The error falls to its classical minimum at degree three, then climbs by many or
 magnitude to a spike at exactly twenty coefficients, where the polynomial is forced through
 every noisy point with no freedom to spare. Past the threshold every fit still passes through
 all twenty points, yet the error falls again as the coefficients multiply. It levels off at
-about three times the classical minimum without beating it: more complexity need not raise
+three to four times the classical minimum without beating it: more complexity need not raise
 the error, and on this problem degree three remains the best model.
 
 The trade-off is the reason the next two chapters exist. Cross-validation (Chapter 6)
@@ -756,8 +756,8 @@ at 3 and 4, $1.85 \times 10^{-5}$ at 5 and 6. Each odd step buys a factor of 45,
 then 754. With that much bias available for the taking, the crossover where variance finally
 outweighs it is pushed down to very small $\sigma$.
 
-For the version that does move the optimum, change `m=20` to `m=100` in the cell above and
-rerun: degree five wins outright. Both effects reduce variance, but sample size reduces it
-far faster than noise does at the settings anyone would call realistic. The variance the plot reports at degree
-twelve falls from about $9.9$ to about $0.05$.
+For the version that does move the optimum, change `m=20` to `m=100` in the decomposition cell (the
+one that prints the table) and rerun: degree five wins outright. Both effects reduce variance, but sample size reduces it
+far faster than noise does at the settings anyone would call realistic. The variance the table reports at degree
+twelve falls from between 11 and 12 to under 0.1.
 :::

@@ -247,6 +247,6 @@ error.
 [Try it]{.lbl}
 Shrink the training set to a few dozen patients (lower `cut`, or slice `tr`) and rerun the
 comparison. Which classifier degrades less? Then break the shared-covariance assumption by
-scaling the positive class's features before the split, and watch the linear discriminant lose
-its edge as its modeling assumption stops holding.
+scaling the positive class's features before the split, and watch the linear discriminant fall
+behind as its modeling assumption stops holding.
 :::

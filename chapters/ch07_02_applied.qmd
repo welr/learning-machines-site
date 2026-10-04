@@ -383,7 +383,7 @@ cat(sprintf("spurious features kept:  %d\n", length(setdiff(kept, true_idx))))
 The two languages compute on independently generated data with different LASSO solvers
 (scikit-learn's optimized path versus our from-scratch coordinate descent), so the chosen penalty
 and exact survivor count differ. The lesson is identical in both. At a penalty tuned for
-prediction, LASSO recovers all eight true features but over-selects, keeping about as many spurious
+prediction, LASSO recovers all eight true features but over-selects, keeping at least as many spurious
 features as true ones. Cross-validated ridge keeps all thirty, every coefficient shrunk but none
 exactly zero; its chosen $\lambda$ sits at or near the small end of the grid, because with strong
 signals and 200 rows for 30 features, almost no shrinkage predicts best.
@@ -393,8 +393,8 @@ penalty that would isolate exactly the true support. The production tool for the
 
 ::: {.explore}
 [Try it]{.lbl}
-Raise the noise (`noise=10.0` in Python, the `rnorm(m, 0, 10)` standard deviation in R) or shrink
-the sample size from 200, and re-run the last cell. LASSO's selected set grows less reliable: it
-misses true features or keeps more spurious ones. That is the bias-variance trade of Chapter 7
+Raise the noise from 10 to 300 (`noise=10.0` in Python, the `rnorm(m, 0, 10)` standard
+deviation in R) and re-run the last cell. LASSO's selected set grows less reliable: it starts
+missing true features. That is the bias-variance trade of Chapter 7
 made concrete, the price of selecting features from noisy data.
 :::
