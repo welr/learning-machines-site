@@ -19,8 +19,8 @@ Take two interleaved rings, an inner cluster wrapped by an outer one. No line se
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch08_02_kernel_methods.png" alt="Two interleaved rings of points, blue outer and red inner, separated by a curved closed RBF decision boundary in dark blue; soft blue fill outside, soft red fill inside.">
-<figcaption><strong>An RBF kernel bends a linear method around the rings.</strong> The nonlinear boundary of an RBF-kernel support vector machine wraps the inner class and excludes the outer one, achieving perfect separation that no straight line could. This is the result the code below reproduces.</figcaption>
+<img src="../figures/ch08_02_kernel_methods.png" alt="Two interleaved rings of points, blue outer and orange inner, separated by a curved closed RBF decision boundary in dark blue; soft blue fill outside, soft orange fill inside.">
+<figcaption><strong>An RBF kernel bends a linear method around the rings.</strong> The nonlinear boundary of an RBF-kernel support vector machine wraps the inner class and excludes the outer one, achieving perfect separation that no straight line could. The support vector machine cells below fit it at $\gamma = 2$.</figcaption>
 </figure>
 ```
 

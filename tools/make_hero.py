@@ -29,6 +29,7 @@ import contextlib
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CHAPTERS, FIGURES = ROOT / "chapters", ROOT / "figures"
@@ -56,10 +57,95 @@ NEEDS_BESPOKE = {
     "ch03_01_gradient_descent": "hero is one contour panel; the matching cell draws three",
     "ch06_02_applied":          "hero is a square ROC; the cell's figure is a different shape",
     "ch07_01_regularization":   "hero is the ridge path alone; the cell draws ridge and LASSO",
-    "ch07_02_applied":          "hero is the LASSO path alone; the cell draws both paths",
-    "ch08_01_trees_ensembles":  "hero is the train/test curve; the cell adds a second panel",
-    "ch08_02_kernel_methods":   "hero is one boundary; the cell sweeps four values of gamma",
-    "ch08_03_applied":          "hero is one boundary; the cell draws six classifiers",
+}
+
+
+# Heroes that show ONE panel of a multi-panel cell. The page's cell still does all
+# the computing; draw(env, ax) only re-plots one panel from the variables it left.
+# Colors follow the site rule: data and the first class blue, fits FS-blue, a second
+# class or series orange or cyan; red only for residuals, zero lines and thresholds.
+BLUE, FS, CYAN, ORANGE, GRAY = "#076FA1", "#31417A", "#2FC1D3", "#9E4F00", "#666666"
+SPINE, GRID = "#cfccc2", "#e6e3da"
+
+
+def _frame(ax, grid="y"):
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_color(SPINE)
+    if grid:
+        ax.grid(axis=grid, color=GRID, lw=0.8)
+    ax.set_axisbelow(True)
+    ax.tick_params(colors=GRAY)
+
+
+def _lasso_path(env, ax):                       # ch07_02: the LASSO panel, book-scale lambda
+    lam, coefs, info = env["lasso_lams"], env["lasso_coefs"], env["informative"]
+    ax.axhline(0, color=GRAY, lw=0.9, zorder=1)
+    for j in (j for j in range(coefs.shape[0]) if not info[j]):
+        ax.plot(lam, coefs[j], color=GRAY, lw=0.9, alpha=0.55, zorder=2)
+    for j in (j for j in range(coefs.shape[0]) if info[j]):
+        ax.plot(lam, coefs[j], color=BLUE, lw=1.6, zorder=3)
+    ax.set_xscale("log")
+    ax.set_xlabel(r"penalty $\lambda$  (log scale; weak $\rightarrow$ strong)")
+    ax.set_ylabel("coefficient")
+    ax.plot([], [], color=BLUE, lw=1.6, label="informative features")
+    ax.plot([], [], color=GRAY, lw=0.9, label="spurious features")
+    ax.legend(loc="upper right", frameon=False)
+    _frame(ax)
+
+
+def _tree_depth(env, ax):                       # ch08_01: the train/test panel
+    d = list(env["depths"])
+    ax.plot(d, env["train_mse"], color=FS, lw=2.5, marker="o", label="train error")
+    ax.plot(d, env["test_mse"], color=CYAN, lw=2.5, marker="o", label="test error")
+    ax.axvline(env["best"], color=GRAY, ls=":", alpha=0.7)
+    ax.set_xlabel("tree depth"); ax.set_ylabel("MSE")
+    ax.legend(loc="center right", frameon=False)
+    _frame(ax)
+
+
+def _boundary(ax, X, y, clf, pad):
+    """Predicted regions, the decision boundary, and the true labels."""
+    from matplotlib.colors import ListedColormap
+    x0, x1 = X[:, 0].min() - pad, X[:, 0].max() + pad
+    y0, y1 = X[:, 1].min() - pad, X[:, 1].max() + pad
+    xx, yy = np.meshgrid(np.linspace(x0, x1, 300), np.linspace(y0, y1, 300))
+    g = np.c_[xx.ravel(), yy.ravel()]
+    ax.contourf(xx, yy, clf.predict(g).reshape(xx.shape), levels=[-0.5, 0.5, 1.5],
+                cmap=ListedColormap([BLUE, ORANGE]), alpha=0.18)
+    ax.contour(xx, yy, clf.decision_function(g).reshape(xx.shape), levels=[0],
+               colors=FS, linewidths=2)
+    return xx, yy
+
+
+def _rings_svm(env, ax):                        # ch08_02: the RBF SVM at gamma = 2
+    X, y = env["X"], env["y"]
+    clf = env["SVC"](kernel="rbf", gamma=2.0).fit(X, y)
+    _boundary(ax, X, y, clf, pad=0.35)
+    ax.scatter(*X[y == 0].T, c=BLUE, s=34, edgecolors="white", linewidths=0.6, label="outer")
+    ax.scatter(*X[y == 1].T, c=ORANGE, s=34, edgecolors="white", linewidths=0.6, label="inner")
+    ax.set_aspect("equal"); ax.set_xlabel("$x_1$"); ax.set_ylabel("$x_2$")
+    ax.legend(loc="upper right", framealpha=0.9)
+    _frame(ax, grid=None)
+
+
+def _moons_svm(env, ax):                        # ch08_03: the RBF SVM panel
+    X, y = env["Xm"], env["ym"]
+    clf = dict(env["models"])["kernel SVM (RBF)"]          # already fit by the cell
+    _boundary(ax, X, y, clf, pad=0.5)
+    for k, c in ((0, BLUE), (1, ORANGE)):
+        ax.scatter(*X[y == k].T, c=c, s=22, edgecolors="white", linewidths=0.4, label=f"class {k}")
+    ax.set_xlabel("feature 1"); ax.set_ylabel("feature 2")
+    ax.legend(loc="lower right", framealpha=0.9)
+    _frame(ax, grid=None)
+
+
+PANELS = {
+    "ch07_02_applied":         dict(cell=1, figsize=(8.0, 5.0), draw=_lasso_path),
+    "ch08_01_trees_ensembles": dict(cell=2, figsize=(8.0, 5.0), draw=_tree_depth),
+    "ch08_02_kernel_methods":  dict(cell=2, figsize=(6.6, 6.0), draw=_rings_svm),
+    "ch08_03_applied":         dict(cell=1, figsize=(8.0, 5.6), draw=_moons_svm),
 }
 
 
@@ -80,6 +166,10 @@ def render(stem, spec, outdir):
     env = {"__name__": "__hero__"}
     with contextlib.redirect_stdout(io.StringIO()) as printed:
         exec(compile(src, f"{stem}[cell {spec['cell']}]", "exec"), env)
+    if "draw" in spec:                          # one panel, from the cell's own variables
+        plt.close("all")
+        fig, ax = plt.subplots(figsize=spec["figsize"])
+        spec["draw"](env, ax)
     fig = plt.gcf()
     if not fig.get_axes():
         raise SystemExit(f"{stem}: cell {spec['cell']} drew nothing")
@@ -99,8 +189,9 @@ def main():
                     help="render to a temp directory instead of overwriting")
     args = ap.parse_args()
 
-    todo = args.pages or sorted(HEROES)
-    unknown = [p for p in todo if p not in HEROES]
+    ALL = {**HEROES, **PANELS}
+    todo = args.pages or sorted(ALL)
+    unknown = [p for p in todo if p not in ALL]
     if unknown:
         for u in unknown:
             why = NEEDS_BESPOKE.get(u, "has its own make_*_figure.py, or is not a chapter page")
@@ -113,9 +204,9 @@ def main():
         outdir.mkdir(exist_ok=True)
 
     for stem in todo:
-        out, note = render(stem, HEROES[stem], outdir)
+        out, note = render(stem, ALL[stem], outdir)
         kb = out.stat().st_size / 1024
-        print(f"  {stem:34} cell {HEROES[stem]['cell']}  {kb:6.1f} KB   {note}")
+        print(f"  {stem:34} cell {ALL[stem]['cell']}  {kb:6.1f} KB   {note}")
     print(f"\n{len(todo)} hero figure(s) -> {outdir}")
 
 
