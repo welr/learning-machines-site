@@ -157,7 +157,7 @@ ridge solution in exactly these two directions, with the stretches as $d_j^2$.
 <div class="ix-views one" style="margin-top:12px">
   <div class="ix-card">
     <div class="ix-ttl">The coefficients</div>
-    <p class="ix-sub">The solution is the sum of its two components. The dashed circle is the penalty's level set through it; the solid curve is the error contour that touches it there.</p>
+    <p class="ix-sub">The solution is the sum of its two components. Gray curves: training error at three levels above its least-squares minimum. The dashed circle is the penalty's level set through the solution; the solid curve is the error contour that touches it there.</p>
     <svg class="ix-coef" viewBox="0 0 560 362"></svg>
   </div>
 </div>
@@ -233,7 +233,7 @@ ridge solution in exactly these two directions, with the stretches as $d_j^2$.
     [0, 50, 100, 150, 200, 250].forEach(v => L.el('line', { x1: px(v), x2: px(v), y1: P.y0, y2: P.y1, stroke: C.grid }, g));
     [-100, -50, 0, 50].forEach(v => L.el('line', { x1: P.x0, x2: P.x1, y1: py(v), y2: py(v), stroke: C.grid }, g));
     L.contours((a, b) => mse([a, b]), P.X, P.Y, [120, 1200, 6000].map(d => MSE0 + d), 120)
-      .forEach((cl, j) => cl.segs.forEach(s => L.el('line', { x1: px(s[0]), y1: py(s[1]), x2: px(s[2]), y2: py(s[3]), stroke: j === 0 ? C.cyan : C.axis, 'stroke-width': j === 0 ? 1.5 : 1 }, g)));
+      .forEach((cl, j) => cl.segs.forEach(s => L.el('line', { x1: px(s[0]), y1: py(s[1]), x2: px(s[2]), y2: py(s[3]), stroke: C.axis, 'stroke-width': 1 }, g)));
     L.el('polyline', { points: PATH.map(p => px(p[0]) + ',' + py(p[1])).join(' '), fill: 'none', stroke: C.fs, 'stroke-width': 1.3, 'stroke-dasharray': '5 4', opacity: 0.55 }, g);
     if (lam > 0) {
       L.contours((a, b) => mse([a, b]), P.X, P.Y, [mse(t)], 160)
