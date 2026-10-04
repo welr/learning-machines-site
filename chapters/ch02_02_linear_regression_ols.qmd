@@ -309,6 +309,266 @@ text(adj * 1.02, opp * 0.45, "r", col = "#666666", cex = 0.95, adj = 0)
 
 :::
 
+The static drawing above fixes the line at its least-squares position. The interactive
+figure below lets you move the line and watch the projection respond. It uses the three houses
+of Section 2.3 of the book, with sizes $-1, 0, 1$ relative to the mean and prices $2, 3, 5$. Its
+left panel shows the familiar line. Its right panel shows the same fit in data space, where each
+axis is one house's price, so the three prices are a single point and every line the model can
+draw is a point on the shaded plane. Drag the sliders, or rotate the right panel. The residual
+stands at a right angle to the plane exactly when it has no average left and no trend in size.
+
+```{=html}
+<div class="lsproj" role="figure" aria-label="Interactive figure: least squares as a projection">
+<style>
+  .lsproj { --bg:#ffffff; --ink:#23252e; --muted:#6b6e78; --frame:#e6e3da; --grid:#ebe8df; --axis:#cfccc2;
+            --blue:#076FA1; --fsblue:#31417A; --red:#E3120B; --cyan:#2FC1D3; --orange:#9E4F00;
+            --plane:rgba(47,193,211,0.13); --panel:#ffffff; margin:26px 0 30px; color:var(--ink); max-width:42rem; }
+  .lsproj .eyebrow { font-family:"Inconsolata"; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--red); font-weight:700; margin:0 0 2px; }
+  .lsproj .ftitle { font-family:"Source Serif 4"; font-weight:600; font-size:19px; color:var(--ink); margin:0 0 12px; }
+  .lsproj .views { display:grid; grid-template-columns:1fr 1.2fr; gap:12px; }
+  @media (max-width: 640px) { .lsproj .views { grid-template-columns:1fr; } }
+  .lsproj .card { border:1px solid var(--frame); border-radius:6px; background:var(--panel); padding:12px 14px 6px; }
+  .lsproj .card .ttl { font-family:"Inconsolata"; font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+                     color:var(--fsblue); font-weight:700; margin:0 0 4px; }
+  .lsproj .card .sub { font-family:"Source Serif 4"; font-style:italic; font-size:13.5px; color:var(--muted); margin:0 0 4px; max-width:none; }
+  .lsproj svg { width:100%; height:auto; display:block; touch-action:none; }
+  .lsproj svg text { font-family:"Inconsolata"; }
+  .lsproj .lm-slider { max-width:none; margin:14px 0 8px; }
+  .lsproj .lm-slider label { min-width:8rem; }
+  .lsproj .lm-slider .sym { text-transform:none; letter-spacing:0; font-size:15px; }
+  .lsproj .buttons { margin:8px 0 0; display:flex; flex-wrap:wrap; gap:8px; }
+  .lsproj button { font-family:"Inconsolata"; font-size:13.5px; font-weight:600; letter-spacing:.03em; padding:6px 13px;
+                   border-radius:5px; cursor:pointer; border:1px solid var(--frame); background:#fff; color:#3f4450; }
+  .lsproj button:hover { border-color:var(--fsblue); color:var(--fsblue); }
+  .lsproj .readout { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:14px; }
+  @media (max-width: 560px) { .lsproj .readout { grid-template-columns:repeat(2,1fr); } }
+  .lsproj .stat { border:1px solid var(--frame); border-radius:6px; padding:9px 12px; background:#fff; }
+  .lsproj .stat .k { font-family:"Inconsolata"; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); line-height:1.35; }
+  .lsproj .stat .v { font-family:"Inconsolata"; font-size:19px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .lsproj .stat.zero .v { color:var(--blue); }
+  .lsproj .note { margin-top:14px; padding:12px 18px; border:1px solid var(--frame); border-left:4px solid var(--blue);
+                  border-radius:6px; background:#f3f6fb; font-size:16px; line-height:1.5; }
+</style>
+<div class="eyebrow">Interactive</div>
+<div class="ftitle">Least squares as a projection</div>
+<div class="views">
+    <div class="card">
+      <div class="ttl">The line</div>
+      <p class="sub">Residuals are the vertical gaps; the intercept is the height at size 0.</p>
+      <svg id="lsp-fit" viewBox="0 0 420 340" aria-label="Scatter of three houses with the current line and residuals"></svg>
+    </div>
+    <div class="card">
+      <div class="ttl">Data space</div>
+      <p class="sub">Each axis is one house's price, so the three prices are a single point. The shaded plane holds every set of fitted values a line can produce. Drag to rotate.</p>
+      <svg id="lsp-space" viewBox="0 0 520 400" aria-label="Three-dimensional view of the target vector, the column-space plane and the residual"></svg>
+    </div>
+  </div>
+
+  <div class="lm-slider"><label for="lsp-t0">Intercept <span class="sym">θ₀</span></label><input id="lsp-t0" type="range" min="0" max="6" step="any" value="3.3333333333"><output id="lsp-t0v"></output></div>
+<div class="lm-slider"><label for="lsp-t1">Slope <span class="sym">θ₁</span></label><input id="lsp-t1" type="range" min="-1" max="4" step="any" value="2"><output id="lsp-t1v"></output></div>
+  <div class="buttons">
+    <button id="lsp-ls">Least-squares line</button>
+    <button id="lsp-steep">Slope 2 (the text's steeper line)</button>
+    <button id="lsp-flat">Flat line at the mean</button>
+    <button id="lsp-zoom">Show the whole space</button>
+  </div>
+
+  <div class="readout">
+    <div class="stat" id="lsp-s-rss"><div class="k">RSS = length² of the residual</div><div class="v" id="lsp-rss"></div></div>
+    <div class="stat" id="lsp-s-sum"><div class="k">Residuals summed (against the column of 1s)</div><div class="v" id="lsp-sum"></div></div>
+    <div class="stat" id="lsp-s-trend"><div class="k">Residuals × size (against the size column)</div><div class="v" id="lsp-trend"></div></div>
+    <div class="stat" id="lsp-s-ang"><div class="k">Angle between residual and plane</div><div class="v" id="lsp-ang"></div></div>
+  </div>
+
+  <div class="note" id="lsp-note"></div>
+<script>
+(function () {
+  const X = [-1, 0, 1], Y = [2, 3, 5];
+  const LS = { t0: 10 / 3, t1: 1.5 };
+  const t0 = document.getElementById('lsp-t0'), t1 = document.getElementById('lsp-t1');
+  const root = document.querySelector('.lsproj');
+  const css = n => getComputedStyle(root).getPropertyValue(n).trim();
+  const NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  const fmt = (v, d = 2) => (Math.abs(v) < 0.005 ? 0 : v).toFixed(d).replace('-0.00', '0.00');
+
+  // ---- left panel: the line ----
+  const fit = document.getElementById('lsp-fit');
+  const fx = x => 60 + (x + 1.6) / 3.2 * 330, fy = y => 300 - (y - 0) / 7 * 270;
+  function drawFit(a, b) {
+    fit.innerHTML = '';
+    const defs = el('defs', {}, fit); const cp = el('clipPath', { id: 'lsp-plotclip' }, defs); el('rect', { x: 60, y: 30, width: 330, height: 270 }, cp);
+    const g = css('--grid'), f = css('--axis'), m = css('--muted');
+    for (let y = 0; y <= 7; y++) {
+      el('line', { x1: 60, x2: 390, y1: fy(y), y2: fy(y), stroke: g }, fit);
+      el('text', { x: 52, y: fy(y) + 4, 'text-anchor': 'end', 'font-size': 14, fill: m }, fit).textContent = y;
+    }
+    el('line', { x1: 60, x2: 390, y1: 300, y2: 300, stroke: f }, fit);
+    el('line', { x1: 60, x2: 60, y1: 30, y2: 300, stroke: f }, fit);
+    for (const x of [-1, 0, 1]) el('text', { x: fx(x), y: 318, 'text-anchor': 'middle', 'font-size': 14, fill: m }, fit).textContent = x;
+    el('text', { x: 225, y: 336, 'text-anchor': 'middle', 'font-size': 15, fill: m }, fit).textContent = 'size, relative to the mean';
+    el('text', { x: 14, y: 165, 'font-size': 15, fill: m, transform: 'rotate(-90 14 165)', 'text-anchor': 'middle' }, fit).textContent = 'price';
+    el('line', { x1: fx(0), x2: fx(0), y1: 30, y2: 300, stroke: m, 'stroke-width': 1, 'stroke-dasharray': '2 4' }, fit);
+    el('line', { x1: fx(-1.6), y1: fy(a + b * -1.6), x2: fx(1.6), y2: fy(a + b * 1.6), stroke: css('--fsblue'), 'stroke-width': 2.6, 'clip-path': 'url(#lsp-plotclip)' }, fit);
+    if (a >= 0 && a <= 7) {
+      el('line', { x1: fx(0) - 12, x2: fx(0) - 3, y1: fy(a), y2: fy(a), stroke: css('--fsblue'), 'stroke-width': 2 }, fit);
+      el('text', { x: fx(0) - 16, y: fy(a) + 4, 'text-anchor': 'end', 'font-size': 15, fill: css('--fsblue') }, fit).textContent = 'intercept θ₀ = ' + fmt(a);
+    }
+    X.forEach((x, i) => {
+      const yh = a + b * x;
+      el('line', { x1: fx(x), x2: fx(x), y1: fy(Y[i]), y2: fy(yh), stroke: css('--red'), 'stroke-width': 2, 'stroke-dasharray': '4 3' }, fit);
+      el('circle', { cx: fx(x), cy: fy(Y[i]), r: 6, fill: css('--blue'), stroke: css('--bg'), 'stroke-width': 2 }, fit);
+    });
+  }
+
+  // ---- right panel: data space ----
+  const space = document.getElementById('lsp-space');
+    let yaw = -2.3, pitch = 0.6;
+  let close = true;
+  let CX = 235, CY = 300, S = 27, OFF = [0, 0, 0];
+  function proj(v) {
+    v = v.map((c, i) => c - OFF[i]);
+    // rotate about vertical (z) axis, then tilt; orthographic
+    const [x, y, z] = v;
+    const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const x1 = cy * x - sy * y, y1 = sy * x + cy * y;
+    const sx = x1, depth = y1 * cp + z * sp, sz = z * cp - y1 * sp;
+    return [CX + S * sx, CY - S * sz, depth];
+  }
+  const add = (a, b) => a.map((v, i) => v + b[i]), mul = (a, s) => a.map(v => v * s);
+  const C1 = [1, 1, 1], C2 = [-1, 0, 1];
+  const P = (a, b) => add(mul(C1, a), mul(C2, b));
+  function line(a, b, attrs) { const p = proj(a), q = proj(b); return el('line', Object.assign({ x1: p[0], y1: p[1], x2: q[0], y2: q[1] }, attrs), space); }
+  function arrow(from, to, color, w) {
+    line(from, to, { stroke: color, 'stroke-width': w || 2.2 });
+    const p = proj(from), q = proj(to), dx = q[0] - p[0], dy = q[1] - p[1], L = Math.hypot(dx, dy) || 1;
+    const ux = dx / L, uy = dy / L, s = 8;
+    el('polygon', { points: `${q[0]},${q[1]} ${q[0] - s * ux - s * 0.5 * uy},${q[1] - s * uy + s * 0.5 * ux} ${q[0] - s * ux + s * 0.5 * uy},${q[1] - s * uy - s * 0.5 * ux}`, fill: color }, space);
+  }
+  function label(v, text, color, dx, dy) { const p = proj(v); el('text', { x: p[0] + (dx || 6), y: p[1] + (dy || -6), 'font-size': 15, fill: color }, space).textContent = text; }
+
+  function drawClose(a, b, m, g) {
+    const lo0 = Math.min(a, LS.t0) - 0.8, hi0 = Math.max(a, LS.t0) + 0.8;
+    const lo1 = Math.min(b, LS.t1) - 0.6, hi1 = Math.max(b, LS.t1) + 0.6;
+    const corners = [P(lo0, lo1), P(hi0, lo1), P(hi0, hi1), P(lo0, hi1)].map(proj);
+    el('polygon', { points: corners.map(c => c[0] + ',' + c[1]).join(' '), fill: css('--plane'), stroke: css('--cyan'), 'stroke-width': 1 }, space);
+    for (let i = Math.ceil(lo0 * 2) / 2; i <= hi0; i += 0.5) line(P(i, lo1), P(i, hi1), { stroke: g, 'stroke-width': 0.8 });
+    for (let j = Math.ceil(lo1 * 2) / 2; j <= hi1; j += 0.5) line(P(lo0, j), P(hi0, j), { stroke: g, 'stroke-width': 0.8 });
+    // directions within the plane, drawn from the least-squares point
+    const base = P(LS.t0, LS.t1);
+    arrow(base, add(base, mul(C1, 0.6)), css('--cyan'), 1.8); label(add(base, mul(C1, 0.6)), 'raise the line', css('--blue'), 8, -4);
+    arrow(base, add(base, mul(C2, 0.6)), css('--orange'), 1.6); label(add(base, mul(C2, 0.6)), 'tilt the line', css('--orange'), 8, 4);
+    const yv = Y, p = P(a, b), r = yv.map((v, i) => v - p[i]);
+    line(p, yv, { stroke: css('--red'), 'stroke-width': 2.6, 'stroke-dasharray': '6 4' });
+    const pp = proj(p), py = proj(yv);
+    el('circle', { cx: pp[0], cy: pp[1], r: 6.5, fill: css('--fsblue'), stroke: css('--bg'), 'stroke-width': 2 }, space);
+    el('circle', { cx: py[0], cy: py[1], r: 7, fill: css('--blue'), stroke: css('--bg'), 'stroke-width': 2 }, space);
+    label(yv, 'prices y = (2, 3, 5)', css('--blue'), -128, -12);
+    label(p, 'fitted values', css('--fsblue'), -40, 24);
+    const d1 = r.reduce((s, v, i) => s + v * C1[i], 0), d2 = r.reduce((s, v, i) => s + v * C2[i], 0);
+    if (Math.abs(d1) < 0.02 && Math.abs(d2) < 0.02) {
+      const rn = Math.hypot(...r) || 1, u = mul(r, 0.14 / rn);
+      const w0 = C1, wn = Math.hypot(...w0), w = mul(w0, 0.14 / wn);
+      const a1 = proj(add(p, u)), a2 = proj(add(add(p, u), w)), a3 = proj(add(p, w));
+      el('polyline', { points: `${a1[0]},${a1[1]} ${a2[0]},${a2[1]} ${a3[0]},${a3[1]}`, fill: 'none', stroke: css('--red'), 'stroke-width': 1.6 }, space);
+    }
+    return { r, d1, d2 };
+  }
+
+  function drawSpace(a, b) {
+    space.innerHTML = '';
+    const m = css('--muted'), g = css('--grid');
+    if (close) { const q = P(a, b), mid = Y.map((v, i) => (v + q[i]) / 2), rl = Math.hypot(...Y.map((v, i) => v - q[i]));
+      OFF = mid; CX = 260; CY = 235; S = Math.max(40, Math.min(115, 190 / (rl + 0.9))); } else { OFF = [0, 0, 0]; CX = 235; CY = 300; S = 27; }
+    if (close) return drawClose(a, b, m, g);
+    // axes
+    const L = 6.5;
+    [[[L, 0, 0], 'house 1'], [[0, L, 0], 'house 2'], [[0, 0, L], 'house 3']].forEach(([v, t]) => { line([0, 0, 0], v, { stroke: m, 'stroke-width': 1 }); label(v, t, m); });
+    // plane patch: theta0 in [0,6], theta1 in [-1.5,3.5]
+    const corners = [P(0, -1), P(5.5, -1), P(5.5, 3), P(0, 3)].map(proj);
+    el('polygon', { points: corners.map(c => c[0] + ',' + c[1]).join(' '), fill: css('--plane'), stroke: css('--cyan'), 'stroke-width': 1 }, space);
+    for (let i = 0; i <= 5; i++) line(P(i, -1), P(i, 3), { stroke: g, 'stroke-width': 0.8 });
+    for (let j = -1; j <= 3.01; j += 1) line(P(0, j), P(5.5, j), { stroke: g, 'stroke-width': 0.8 });
+    // column vectors
+    arrow([0, 0, 0], C1, css('--cyan')); label(C1, 'column of 1s', css('--blue'));
+    arrow([0, 0, 0], C2, css('--orange')); label(C2, 'size column', css('--orange'), -70, 4);
+    // target, fitted point, residual
+    const yv = Y, p = P(a, b);
+    const r = yv.map((v, i) => v - p[i]);
+    line(p, yv, { stroke: css('--red'), 'stroke-width': 2.4, 'stroke-dasharray': '6 4' });
+    const pp = proj(p), py = proj(yv);
+    el('circle', { cx: pp[0], cy: pp[1], r: 6, fill: css('--fsblue'), stroke: css('--bg'), 'stroke-width': 2 }, space);
+    el('circle', { cx: py[0], cy: py[1], r: 6.5, fill: css('--blue'), stroke: css('--bg'), 'stroke-width': 2 }, space);
+    label(yv, 'prices y = (2, 3, 5)', css('--blue'));
+    label(p, 'fitted values', css('--fsblue'), 8, 16);
+    // right-angle mark when residual is perpendicular to the plane
+    const d1 = r.reduce((s, v, i) => s + v * C1[i], 0), d2 = r.reduce((s, v, i) => s + v * C2[i], 0);
+    if (Math.abs(d1) < 0.02 && Math.abs(d2) < 0.02) {
+      const rn = Math.hypot(...r) || 1, u = mul(r, 0.35 / rn);
+      const w0 = add(mul(C1, 0.2), mul(C2, 0.1)), wn = Math.hypot(...w0), w = mul(w0, 0.35 / wn);
+      const a1 = proj(add(p, u)), a2 = proj(add(add(p, u), w)), a3 = proj(add(p, w));
+      el('polyline', { points: `${a1[0]},${a1[1]} ${a2[0]},${a2[1]} ${a3[0]},${a3[1]}`, fill: 'none', stroke: css('--red'), 'stroke-width': 1.5 }, space);
+    }
+    return { r, d1, d2 };
+  }
+
+  function update() {
+    const a = +t0.value, b = +t1.value;
+    document.getElementById('lsp-t0v').textContent = fmt(a);
+    document.getElementById('lsp-t1v').textContent = fmt(b);
+    drawFit(a, b);
+    const { r, d1, d2 } = drawSpace(a, b);
+    const rss = r.reduce((s, v) => s + v * v, 0);
+    document.getElementById('lsp-rss').textContent = fmt(rss, 3);
+    document.getElementById('lsp-sum').textContent = fmt(d1);
+    document.getElementById('lsp-trend').textContent = fmt(d2);
+    // angle between residual and its projection onto the plane's normal
+    const n = [1, -2, 1], nn = Math.hypot(...n), rn = Math.hypot(...r);
+    const ang = rn < 1e-9 ? 90 : Math.asin(Math.min(1, Math.abs(r.reduce((s, v, i) => s + v * n[i], 0)) / (nn * rn))) * 180 / Math.PI;
+    document.getElementById('lsp-ang').textContent = fmt(ang, 1) + '°';
+    document.getElementById('lsp-s-sum').classList.toggle('zero', Math.abs(d1) < 0.02);
+    document.getElementById('lsp-s-trend').classList.toggle('zero', Math.abs(d2) < 0.02);
+    document.getElementById('lsp-s-ang').classList.toggle('zero', Math.abs(ang - 90) < 0.5);
+    const note = document.getElementById('lsp-note');
+    if (Math.abs(d1) < 0.02 && Math.abs(d2) < 0.02) {
+      note.innerHTML = 'This is the least-squares line. The residuals sum to zero and show no trend in size, so the residual meets the plane at a right angle: the fitted values are the point on the plane closest to the prices. RSS is ' + fmt(rss, 3) + ', the smallest any line can reach.';
+    } else {
+      const parts = [];
+      if (Math.abs(d1) >= 0.02) parts.push('the residuals still have an average (' + fmt(d1) + '), so raising or lowering the line would help');
+      if (Math.abs(d2) >= 0.02) parts.push('they still trend with size (' + fmt(d2) + '), so tilting the line would help');
+      note.innerHTML = 'Not yet the closest point: ' + parts.join('; and ') + '. In data space the residual leans along the plane instead of standing straight off it.';
+    }
+  }
+  function set(a, b) { t0.value = a; t1.value = b; update(); }
+  t0.addEventListener('input', update); t1.addEventListener('input', update);
+  document.getElementById('lsp-ls').onclick = () => set(LS.t0, LS.t1);
+  document.getElementById('lsp-steep').onclick = () => set(LS.t0, 2);
+  document.getElementById('lsp-flat').onclick = () => set(LS.t0, 0);
+  const zb = document.getElementById('lsp-zoom');
+  zb.onclick = () => { close = !close; zb.textContent = close ? 'Show the whole space' : 'Close-up of the fit'; update(); };
+  zb.textContent = close ? 'Show the whole space' : 'Close-up of the fit';
+
+  // drag to rotate
+  let drag = null;
+  space.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, yaw, pitch }; space.setPointerCapture(e.pointerId); });
+  space.addEventListener('pointermove', e => {
+    if (!drag) return;
+    yaw = drag.yaw + (e.clientX - drag.x) * 0.01;
+    pitch = Math.max(-1.2, Math.min(1.4, drag.pitch + (e.clientY - drag.y) * 0.01));
+    update();
+  });
+  space.addEventListener('pointerup', () => { drag = null; });
+    update();
+})();
+</script>
+</div>
+```
+
 ## More than one feature
 
 Nothing in the formula cares how many columns $\mathbf{X}$ has. We simulate fifty houses
