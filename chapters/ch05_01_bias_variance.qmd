@@ -24,7 +24,7 @@ each, and looking at how the predictions scatter, we turn [bias]{.term} and
 ```{=html}
 <figure class="lm-figure">
 <img src="../figures/ch05_01_bias_variance.png" alt="Bias-squared, variance and total error against polynomial degree on a logarithmic scale. Bias-squared drops more than thirtyfold between degrees two and three and is too small to measure past degree four, variance rises from degree three onward, and the total error reaches its lowest point at degree three before rising by two orders of magnitude.">
-<figcaption><strong>The bias–variance trade-off.</strong> Bias falls with degree and variance rises, and their sum bottoms out at degree three before rising by two orders of magnitude — the vertical scale is logarithmic, because the right-hand tail will not otherwise share an axis with the rest. Both curves zigzag at low degree: $\sin(2\pi x)$ is odd about $x = 1/2$, so an even degree buys no less bias than the odd degree below it and pays for its extra coefficient in variance. Past degree four the remaining bias is too small to measure, so its curve stops. This is the result the code below reproduces, and `tools/make_ch05_01_figure.py` runs the same computation.</figcaption>
+<figcaption><strong>The bias–variance trade-off.</strong> Bias falls with degree and variance rises, and their sum bottoms out at degree three before rising by two orders of magnitude, so the vertical scale is logarithmic. Past degree four the remaining bias is too small to measure, so its curve stops. The decomposition cells below compute it.</figcaption>
 </figure>
 ```
 
@@ -49,7 +49,8 @@ The example is this page's own; the book's Section 5.4 draws its training sets f
 houses instead. Every demonstration on this page draws data the same way: inputs uniform on
 $[0, 1]$, and targets from the true function $f(x) = \sin(2\pi x)$ plus Gaussian noise with
 standard deviation $0.3$. That noise level fixes the irreducible error at $\sigma^2 = 0.09$,
-the floor every model is measured against. One noisy sample looks like this.
+the floor every model is measured against. Python and R draw different random samples, so their
+numbers differ noticeably while the patterns agree. One noisy sample looks like this.
 
 ::: {.panel-tabset group="lang"}
 
@@ -362,13 +363,7 @@ The minimum is at degree three. Bias falls off a cliff once the model is
 flexible enough to bend (degrees one and two are starved), and from there variance climbs
 steadily, dragging the total back up. The best model is not the one that fits the training
 data best; it is the one that balances the two errors. Notice also that the total never
-drops below the dashed irreducible line: $\sigma^2$ is the price of admission. At high degree
-the bias estimate often reads zero: what bias remains there is smaller than five hundred data
-sets can tell apart from chance, and the log axis leaves a gap.
-
-Python and R draw different random samples, so their numbers differ noticeably (the variance
-at degree eight is 2.42 in one and 2.81 in the other), but both show bias collapsing at
-degree three, variance climbing from there, and the total bottoming out at degree three.
+drops below the dashed irreducible line: $\sigma^2$ is the price of admission.
 
 Bias and variance are not spread evenly across the input. Near the edges of $[0, 1]$, where
 data are sparse and a high-degree polynomial has the least to anchor it, variance spikes
@@ -592,9 +587,7 @@ The degree-twelve panel tells the variance story cleanly: training error is near
 the start, while test error begins enormous and falls toward the noise floor as more data
 pins the model down. More data shrinks variance. It does **not** shrink bias: the degree-one
 panel converges quickly, but both curves settle well above $\sigma^2$, because a straight
-line can never bend into a sine no matter how many points it sees. Python and R again draw
-different samples, so their degree-twelve test errors differ noticeably at small sizes (9.4
-against 11.1 at twenty points), but both show the gap closing as the sample grows.
+line can never bend into a sine no matter how many points it sees.
 
 | Learning-curve pattern | Diagnosis | Remedy |
 |---|---|---|
@@ -608,6 +601,135 @@ The U-shaped curve is the classical picture, and it is not universal. In some se
 past the point where the model can interpolate the training data exactly, test error falls
 *again*: a second descent, observed in heavily overparameterized models, though it
 occurs even in linear least squares. The book takes this up in Section 5.4 and Figure 5.4.
+
+The book's Figure 5.4 sketches the shape; the cells below measure it with this page's own
+knob. Keep raising the degree past nineteen, where a polynomial has as many coefficients as
+there are training points and can pass through all twenty. Past that threshold many curves fit
+the data exactly, and least squares has to choose: NumPy's `lstsq` and the pseudoinverse in R
+return the one with the smallest coefficients, the choice the book's footnote in Section 5.4
+describes. The polynomials are written in the Legendre basis, which keeps the columns on one
+scale. The plot shows the median error over forty training sets, because near the threshold a
+few fits explode and the mean is meaningless.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+from numpy.polynomial import legendre
+
+def true_f(x):
+    return np.sin(2 * np.pi * x)
+
+def features(x, p):
+    # the first p Legendre polynomials on [0, 1]: degree p - 1, well-scaled columns
+    return legendre.legvander(2 * x - 1, p - 1)
+
+m, noise, n_sets = 20, 0.3, 40
+grid = np.linspace(0, 1, 400)
+sizes = np.unique(np.r_[np.arange(2, 30), np.round(np.geomspace(30, 300, 12)).astype(int)])
+
+rng = np.random.default_rng(0)
+err = np.zeros((n_sets, len(sizes)))
+for s in range(n_sets):
+    x = rng.uniform(0, 1, m)
+    y = true_f(x) + rng.normal(0, noise, m)
+    for k, p in enumerate(sizes):
+        # Past p = m many curves fit every point; lstsq returns the one with
+        # the smallest coefficients.
+        theta = np.linalg.lstsq(features(x, p), y, rcond=None)[0]
+        err[s, k] = np.mean((features(grid, p) @ theta - true_f(grid)) ** 2)
+
+typical = np.median(err, axis=0)          # the mean is ruled by a few exploding fits
+best = int(np.argmin(typical[sizes < m]))
+print(f"classical minimum: {sizes[best]} coefficients (degree {sizes[best] - 1}), error {typical[best]:.3f}")
+print(f"at the threshold, {m} coefficients: error {typical[sizes == m][0]:.2g}")
+print(f"at {sizes[-1]} coefficients: error {typical[-1]:.3f}")
+
+fig, ax = plt.subplots(figsize=(8, 4.6))
+ax.plot(sizes, typical, "o-", color="#9E4F00", lw=2, ms=4)
+ax.axvline(m, color="#666666", ls=":", lw=1.2)
+ax.annotate("interpolation threshold\n(20 coefficients, 20 points)", (m, typical.max()),
+            xytext=(8, -4), textcoords="offset points", va="top", fontsize=9, color="#666666")
+ax.axhline(typical[best], color="#31417A", ls="--", lw=1.2,
+           label=f"classical minimum (degree {sizes[best] - 1})")
+ax.set_xscale("log"); ax.set_yscale("log")
+ticks = [2, 5, 10, 20, 50, 100, 200]
+ax.set_xticks(ticks); ax.set_xticklabels([str(t) for t in ticks])
+ax.legend(loc="upper right", frameon=False, fontsize=9)
+ax.set_xlabel("number of coefficients (degree + 1)")
+ax.set_ylabel("error against the true curve\n(median of 40 training sets)")
+for side in ["top", "right"]:
+    ax.spines[side].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
+plt.tight_layout()
+plt.show()
+```
+
+## R
+```{webr}
+true_f <- function(x) sin(2 * pi * x)
+
+features <- function(x, p) {
+  # the first p Legendre polynomials on [0, 1]: degree p - 1, well-scaled columns
+  u <- 2 * x - 1
+  P <- matrix(0, length(x), p)
+  P[, 1] <- 1
+  if (p > 1) P[, 2] <- u
+  if (p > 2) for (k in 2:(p - 1)) P[, k + 1] <- ((2 * k - 1) * u * P[, k] - (k - 1) * P[, k - 1]) / k
+  P
+}
+
+min_norm <- function(A, y) {
+  # Past p = m many curves fit every point; this returns the one with the
+  # smallest coefficients (the pseudoinverse solution).
+  s <- svd(A)
+  keep <- s$d > max(s$d) * max(dim(A)) * .Machine$double.eps
+  s$v[, keep, drop = FALSE] %*% (crossprod(s$u[, keep, drop = FALSE], y) / s$d[keep])
+}
+
+m <- 20; noise <- 0.3; n_sets <- 40
+grid <- seq(0, 1, length.out = 400)
+sizes <- sort(unique(c(2:29, as.integer(round(exp(seq(log(30), log(300), length.out = 12)))))))
+
+set.seed(0)
+err <- matrix(0, n_sets, length(sizes))
+for (s in 1:n_sets) {
+  x <- runif(m)
+  y <- true_f(x) + rnorm(m, 0, noise)
+  for (k in seq_along(sizes)) {
+    theta <- min_norm(features(x, sizes[k]), y)
+    err[s, k] <- mean((features(grid, sizes[k]) %*% theta - true_f(grid))^2)
+  }
+}
+
+typical <- apply(err, 2, median)        # the mean is ruled by a few exploding fits
+best <- which.min(typical[sizes < m])
+cat(sprintf("classical minimum: %d coefficients (degree %d), error %.3f\n",
+            sizes[best], sizes[best] - 1, typical[best]))
+cat(sprintf("at the threshold, %d coefficients: error %.2g\n", m, typical[sizes == m]))
+cat(sprintf("at %d coefficients: error %.3f\n", max(sizes), typical[length(typical)]))
+
+plot(sizes, typical, type = "o", pch = 19, col = "#9E4F00", lwd = 2, log = "xy",
+     xlab = "number of coefficients (degree + 1)",
+     ylab = "error against the true curve (median of 40 training sets)", bty = "l")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+abline(v = m, col = "#666666", lty = 3)
+abline(h = typical[best], col = "#31417A", lty = 2)
+legend("topright", sprintf("classical minimum (degree %d)", sizes[best] - 1),
+       col = "#31417A", lty = 2, bty = "n", cex = 0.8)
+text(m, max(typical), "interpolation threshold", pos = 4, cex = 0.8, col = "#666666")
+```
+
+:::
+
+The error falls to its classical minimum at degree three, then climbs by many orders of
+magnitude to a spike at exactly twenty coefficients, where the polynomial is forced through
+every noisy point with no freedom to spare. Past the threshold every fit still passes through
+all twenty points, yet the error falls again as the coefficients multiply. It levels off at
+about three times the classical minimum without beating it: more complexity need not raise
+the error, and on this problem degree three remains the best model.
 
 The trade-off is the reason the next two chapters exist. Cross-validation (Chapter 6)
 estimates the test-error curve so we can find its minimum without peeking at held-out data,
@@ -637,5 +759,5 @@ outweighs it is pushed down to very small $\sigma$.
 For the version that does move the optimum, change `m=20` to `m=100` in the cell above and
 rerun: degree five wins outright. Both effects reduce variance, but sample size reduces it
 far faster than noise does at the settings anyone would call realistic. The variance the plot reports at degree
-twelve falls from about $9.9$ to about $0.05$; without the clip the fall would be steeper still.
+twelve falls from about $9.9$ to about $0.05$.
 :::
