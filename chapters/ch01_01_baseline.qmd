@@ -30,7 +30,7 @@ label, where the do-nothing model is a much more dangerous thing to overlook.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch01_01_baseline.png" alt="Scatter of Frankfurt house sales, price against living area, with a dashed dark-blue horizontal line at the mean price and a solid dark-blue least-squares line rising through the points. Thin gray vertical segments connect each point to the flat baseline.">
+<img src="../figures/ch01_01_baseline.png?v=65df8559" alt="Scatter of Frankfurt house sales, price against living area, with a dashed dark-blue horizontal line at the mean price and a solid dark-blue least-squares line rising through the points. Thin gray vertical segments connect each point to the flat baseline.">
 <figcaption><strong>The baseline, and what one feature buys.</strong> The dashed line predicts the same average for every house, ignoring living area; the gray segments are the error it leaves. Tilting that flat line to follow the data absorbs about 72% of the squared error. That is Chapter 2 in one picture.</figcaption>
 </figure>
 ```

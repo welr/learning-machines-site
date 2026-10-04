@@ -33,7 +33,7 @@ the R side calls `glm`, base R's maximum-likelihood fitter for the same model.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch06_01_model_evaluation.png" alt="ROC curve for the logistic classifier: true positive rate against false positive rate, bowing toward the upper-left corner well above the dashed chance diagonal.">
+<img src="../figures/ch06_01_model_evaluation.png?v=77dbb0cb" alt="ROC curve for the logistic classifier: true positive rate against false positive rate, bowing toward the upper-left corner well above the dashed chance diagonal.">
 <figcaption><strong>The ROC curve.</strong> Sweeping the decision threshold traces the true positive rate against the false positive rate; the curve bows toward the upper-left corner, for an AUC of 0.929, well above the 0.5 of the chance diagonal. This is the result the code below reproduces.</figcaption>
 </figure>
 ```

@@ -27,7 +27,7 @@ Each input is projected three ways. The [query]{.term} asks what this position i
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch11_01_attention_transformers.png" alt="Nine-by-nine heatmap of attention weights over a nine-token sentence; rows are the attending token, columns the token attended to. Most of the grid is pale, with a scatter of darker cells marking the links. The darkest is the pronoun row it against the column cat.">
+<img src="../figures/ch11_01_attention_transformers.png?v=321331de" alt="Nine-by-nine heatmap of attention weights over a nine-token sentence; rows are the attending token, columns the token attended to. Most of the grid is pale, with a scatter of darker cells marking the links. The darkest is the pronoun row it against the column cat.">
 <figcaption><strong>Where each token looks.</strong> One head of self-attention over a nine-token sentence, with the embeddings hand-built so the pattern is legible. Each row is a probability distribution across the columns. The pronoun <em>it</em> puts 0.63 on <em>cat</em>, its referent; the two <em>the</em> rows are identical, because nothing in the computation yet knows where a token sits. This is the result the code below reproduces.</figcaption>
 </figure>
 ```

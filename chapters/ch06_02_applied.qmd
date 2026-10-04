@@ -32,7 +32,7 @@ the same AUC. Toggling the language switches the syntax, not the problem.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch06_02_applied.png" alt="ROC curve for the breast-cancer logistic classifier, rising steeply to the top-left corner well above the dashed chance diagonal.">
+<img src="../figures/ch06_02_applied.png?v=fcc0b8d2" alt="ROC curve for the breast-cancer logistic classifier, rising steeply to the top-left corner well above the dashed chance diagonal.">
 <figcaption><strong>ROC curve for the breast-cancer classifier.</strong> Sweeping the threshold traces true-positive rate against false-positive rate; the curve hugs the top-left corner (AUC = 0.991), far above the chance diagonal. This is the result the code below reproduces.</figcaption>
 </figure>
 ```

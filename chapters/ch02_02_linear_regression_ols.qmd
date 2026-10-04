@@ -31,7 +31,7 @@ features, and see where the formula breaks down numerically.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch02_02_linear_regression_ols.png" alt="Scatter of five housing data points with the fitted OLS line and dashed red vertical residual segments from each point to the line.">
+<img src="../figures/ch02_02_linear_regression_ols.png?v=fca45555" alt="Scatter of five housing data points with the fitted OLS line and dashed red vertical residual segments from each point to the line.">
 <figcaption><strong>Least squares, pictured.</strong> The fitted line sits where the total squared length of the dashed red residuals, the vertical gaps from each point to the line, is as small as possible. This is the result the code below reproduces.</figcaption>
 </figure>
 ```

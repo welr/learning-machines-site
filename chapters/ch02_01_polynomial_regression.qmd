@@ -35,35 +35,34 @@ standardize the area (subtract its mean, divide by its standard deviation). A ra
 matrix in $\text{area}^{14}$ is hopelessly ill-conditioned; standardizing keeps the
 high-degree fits stable without changing the model.
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch02_01_polynomial_regression.png?v=4a871d6b" alt="Fifteen houses plotted as price against living area, with the true relationship as a gray dashed curve and three polynomial fits: a degree-1 straight line in cyan, a degree-2 parabola in dark blue that follows the true curve, and a degree-10 curve in orange that swings between the houses.">
+<figcaption><strong>One knob, three fits.</strong> The same fifteen houses fit by a straight line that cannot bend with the curve (degree 1, underfit), a parabola that tracks the true relationship (degree 2, good fit), and a degree-10 polynomial that swings to chase individual houses (overfit). This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 ## Underfit, good fit, overfit
 
 Three degrees on the same data. A straight line (degree 1) cannot bend toward the curvature
-and misses the data through the middle. A parabola (degree 2) matches the quadratic truth. A
+and misses the data through the middle. A parabola (degree 2) tracks the quadratic truth. A
 degree-10 polynomial wiggles to chase individual points. Note the training MSE: it *falls*
-as the degree rises (908, 375, 240), so the worst-looking curve has the best training score.
+as the degree rises (731, 297, 70), so the worst-looking curve has the best training score.
 Training error alone cannot tell you which model to trust; that is the job of held-out data, next.
-
-```{=html}
-<figure class="lm-figure">
-<img src="../figures/ch02_01_polynomial_regression.png" alt="Fifteen house price-versus-area points with three polynomial fits: a degree-1 straight line that misses the curvature, a degree-2 parabola that tracks the true relationship closely, and a degree-10 curve that swings up and down to chase individual points.">
-<figcaption><strong>One knob, three fits.</strong> The same fifteen houses fit by a degree-1 line that can't bend to the curve (underfit), a degree-2 parabola that tracks the true relationship (good fit), and a degree-10 polynomial that wiggles to chase the noise (overfit). This is the result the code below reproduces.</figcaption>
-</figure>
-```
 
 ::: {.panel-tabset group="lang"}
 
 ## Python
 ```{pyodide}
-#| autorun: true
 import numpy as np
 import matplotlib.pyplot as plt
 
 # Fifteen houses: living area (m^2) and price (thousands of euros), drawn once from
 # price = 160 + (260/110)(area - 40) + 0.02(area - 40)(area - 150) + Normal(0, 25^2).
-x = np.array([43.7, 45.2, 47.2, 49.3, 56.6, 75.0, 86.0, 97.6, 101.1, 108.8, 116.3,
-              134.4, 143.8, 145.6, 148.4])
-y = np.array([156.5, 206.9, 183.4, 133.5, 184.4, 202.4, 224.2, 234.2, 240.0, 288.1,
-              258.2, 342.6, 411.7, 410.1, 398.6])
+x = np.array([46.6, 47.6, 49.4, 63.3, 70.2, 74.4, 95.7, 109.1, 114.5, 115.5, 126.2,
+              139.0, 143.7, 146.3, 149.7])
+y = np.array([169.3, 127.3, 148.6, 167.8, 152.7, 139.9, 222.4, 286.7, 267.2, 281.8,
+              332.3, 396.0, 401.8, 404.5, 402.4])
 
 # Standardize area, then fit/predict via a Vandermonde design matrix.
 mu, sigma = x.mean(), x.std()
@@ -103,10 +102,10 @@ plt.show()
 ```{webr}
 # Fifteen houses: living area (m^2) and price (thousands of euros), drawn once from
 # price = 160 + (260/110)(area - 40) + 0.02(area - 40)(area - 150) + Normal(0, 25^2).
-x <- c(43.7, 45.2, 47.2, 49.3, 56.6, 75.0, 86.0, 97.6, 101.1, 108.8, 116.3, 134.4,
-       143.8, 145.6, 148.4)
-y <- c(156.5, 206.9, 183.4, 133.5, 184.4, 202.4, 224.2, 234.2, 240.0, 288.1, 258.2,
-       342.6, 411.7, 410.1, 398.6)
+x <- c(46.6, 47.6, 49.4, 63.3, 70.2, 74.4, 95.7, 109.1, 114.5, 115.5, 126.2, 139.0,
+       143.7, 146.3, 149.7)
+y <- c(169.3, 127.3, 148.6, 167.8, 152.7, 139.9, 222.4, 286.7, 267.2, 281.8, 332.3,
+       396.0, 401.8, 404.5, 402.4)
 
 # Standardize area (population sd, to match numpy), then fit/predict.
 mu <- mean(x); sigma <- sqrt(mean((x - mu)^2))
@@ -141,9 +140,9 @@ legend("topleft", bty = "n",
 ## The pathology of interpolation
 
 Push the degree to $m - 1 = 14$ and the polynomial passes *exactly* through all fifteen
-points: training MSE is zero. The price of that perfection is paid between and beyond the
-points, where the curve swings violently. Evaluated across a slightly wider range of house
-sizes, this interpolating polynomial predicts *negative prices* across part of its range, an
+points: training MSE is zero. The price of that perfection is paid between the points, where
+the curve swings violently. In the gap between the houses at 74 and 96 square meters it
+plunges below zero, predicting *negative prices* for houses in the middle of the data, an
 impossibility that a degree-1 line would never produce.
 
 ::: {.panel-tabset group="lang"}
@@ -153,10 +152,10 @@ impossibility that a degree-1 line would never produce.
 import numpy as np
 import matplotlib.pyplot as plt
 
-x = np.array([43.7, 45.2, 47.2, 49.3, 56.6, 75.0, 86.0, 97.6, 101.1, 108.8, 116.3,
-              134.4, 143.8, 145.6, 148.4])
-y = np.array([156.5, 206.9, 183.4, 133.5, 184.4, 202.4, 224.2, 234.2, 240.0, 288.1,
-              258.2, 342.6, 411.7, 410.1, 398.6])
+x = np.array([46.6, 47.6, 49.4, 63.3, 70.2, 74.4, 95.7, 109.1, 114.5, 115.5, 126.2,
+              139.0, 143.7, 146.3, 149.7])
+y = np.array([169.3, 127.3, 148.6, 167.8, 152.7, 139.9, 222.4, 286.7, 267.2, 281.8,
+              332.3, 396.0, 401.8, 404.5, 402.4])
 
 mu, sigma = x.mean(), x.std()
 def design(x_eval, degree):
@@ -165,7 +164,7 @@ def design(x_eval, degree):
 degree = len(x) - 1                       # 14: the interpolating polynomial
 theta, *_ = np.linalg.lstsq(design(x, degree), y, rcond=None)
 
-x_ext = np.linspace(30, 160, 300)         # a little beyond the data
+x_ext = np.linspace(x.min(), x.max(), 300)   # only between the smallest and largest house
 y_ext = design(x_ext, degree) @ theta
 
 fig, ax = plt.subplots(figsize=(9, 5))
@@ -175,7 +174,7 @@ ax.plot(x_ext, y_ext, color="#31417A", linewidth=2,
 ax.axhline(0, color="#E3120B", linestyle="--", linewidth=1)
 ax.fill_between(x_ext, y_ext, 0, where=(y_ext < 0), color="#E3120B", alpha=0.2,
                 label="negative prices")
-ax.set_xlim(30, 160); ax.set_ylim(-250, 650)
+ax.set_xlim(40, 155); ax.set_ylim(-350, 650)
 ax.set_xlabel("Living area (m$^2$)"); ax.set_ylabel("Price (thousands of euros)")
 ax.legend(loc="lower right")
 for s in ["top", "right"]:
@@ -190,10 +189,10 @@ print(f"Negative prices predicted at {(y_ext < 0).sum()} of {len(x_ext)} points.
 
 ## R
 ```{webr}
-x <- c(43.7, 45.2, 47.2, 49.3, 56.6, 75.0, 86.0, 97.6, 101.1, 108.8, 116.3, 134.4,
-       143.8, 145.6, 148.4)
-y <- c(156.5, 206.9, 183.4, 133.5, 184.4, 202.4, 224.2, 234.2, 240.0, 288.1, 258.2,
-       342.6, 411.7, 410.1, 398.6)
+x <- c(46.6, 47.6, 49.4, 63.3, 70.2, 74.4, 95.7, 109.1, 114.5, 115.5, 126.2, 139.0,
+       143.7, 146.3, 149.7)
+y <- c(169.3, 127.3, 148.6, 167.8, 152.7, 139.9, 222.4, 286.7, 267.2, 281.8, 332.3,
+       396.0, 401.8, 404.5, 402.4)
 
 mu <- mean(x); sigma <- sqrt(mean((x - mu)^2))
 design <- function(xv, d) outer((xv - mu) / sigma, 0:d, `^`)
@@ -201,11 +200,11 @@ design <- function(xv, d) outer((xv - mu) / sigma, 0:d, `^`)
 degree <- length(x) - 1                    # 14: the interpolating polynomial
 theta  <- qr.solve(design(x, degree), y)
 
-x_ext <- seq(30, 160, length.out = 300)    # a little beyond the data
+x_ext <- seq(min(x), max(x), length.out = 300)   # only between the smallest and largest house
 y_ext <- as.vector(design(x_ext, degree) %*% theta)
 
 plot(x, y, pch = 21, bg = "#076FA1", col = "white", cex = 1.4,
-     xlim = c(30, 160), ylim = c(-250, 650),
+     xlim = c(40, 155), ylim = c(-350, 650),
      xlab = "Living area (m^2)", ylab = "Price (thousands of euros)", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 neg <- y_ext < 0
@@ -234,7 +233,7 @@ hug the training points more closely. The quantity that matters is error on data
 from fitting. Below we draw a separate test set of forty houses from the same simulation and
 sweep the degree from 1 to 12. Training error marches down toward zero. Test error falls to
 its minimum at degree two (where the quadratic truth lives), then climbs, unevenly, to about
-seven times that minimum at degree 12. The gap between the two curves is overfitting made
+eight hundred times that minimum at degree 12. The gap between the two curves is overfitting made
 visible.
 
 ::: {.panel-tabset group="lang"}
@@ -244,18 +243,18 @@ visible.
 import numpy as np
 import matplotlib.pyplot as plt
 
-x = np.array([43.7, 45.2, 47.2, 49.3, 56.6, 75.0, 86.0, 97.6, 101.1, 108.8, 116.3,
-              134.4, 143.8, 145.6, 148.4])
-y = np.array([156.5, 206.9, 183.4, 133.5, 184.4, 202.4, 224.2, 234.2, 240.0, 288.1,
-              258.2, 342.6, 411.7, 410.1, 398.6])
-x_test = np.array([42.3, 42.5, 44.9, 48.1, 54.5, 64.5, 64.8, 67.4, 70.4, 70.7, 73.0,
-                   77.4, 83.3, 86.6, 90.9, 92.6, 93.9, 94.6, 95.8, 99.0, 100.4, 102.6,
-                   103.6, 110.9, 112.5, 116.6, 121.8, 122.7, 123.2, 124.1, 128.0, 128.8,
-                   133.3, 134.9, 134.9, 136.4, 136.7, 141.4, 141.9, 147.8])
-y_test = np.array([137.2, 115.9, 204.9, 177.4, 163.4, 174.0, 178.7, 164.5, 197.3, 185.4,
-                   172.0, 220.9, 211.4, 245.5, 229.6, 239.8, 225.7, 202.2, 255.2, 243.6,
-                   262.1, 231.8, 232.8, 295.7, 257.1, 321.7, 380.5, 307.1, 325.2, 326.9,
-                   322.5, 336.5, 355.3, 390.5, 351.8, 389.1, 350.9, 384.1, 377.5, 410.9])
+x = np.array([46.6, 47.6, 49.4, 63.3, 70.2, 74.4, 95.7, 109.1, 114.5, 115.5, 126.2,
+              139.0, 143.7, 146.3, 149.7])
+y = np.array([169.3, 127.3, 148.6, 167.8, 152.7, 139.9, 222.4, 286.7, 267.2, 281.8,
+              332.3, 396.0, 401.8, 404.5, 402.4])
+x_test = np.array([40.2, 42.8, 43.4, 45.2, 50.7, 56.6, 62.6, 65.0, 71.8, 74.7, 76.6,
+                   76.6, 78.3, 78.6, 82.0, 86.8, 87.8, 92.4, 95.1, 99.9, 100.6, 101.0,
+                   105.3, 107.5, 109.8, 110.3, 114.6, 115.5, 117.1, 119.3, 119.8, 121.3,
+                   130.3, 131.2, 131.8, 137.1, 138.8, 140.1, 144.5, 147.2])
+y_test = np.array([192.8, 155.1, 188.1, 134.7, 174.7, 188.0, 147.7, 183.1, 182.5, 197.2,
+                   179.2, 152.7, 172.9, 179.2, 231.4, 200.7, 210.2, 233.6, 247.9, 217.2,
+                   228.6, 254.1, 251.9, 287.5, 256.3, 292.7, 313.7, 219.8, 317.7, 340.7,
+                   269.5, 340.0, 325.5, 369.1, 327.7, 359.4, 393.2, 379.6, 381.5, 420.7])
 
 mu, sigma = x.mean(), x.std()
 def design(x_eval, degree):
@@ -273,7 +272,7 @@ for d in degrees:
 best = list(degrees)[int(np.argmin(test_err))]
 fig, ax = plt.subplots(figsize=(8, 5))
 ax.plot(list(degrees), train_err, "o-", color="#076FA1", linewidth=2, label="training error")
-ax.plot(list(degrees), test_err, "s-", color="#E3120B", linewidth=2, label="test error")
+ax.plot(list(degrees), test_err, "s-", color="#9E4F00", linewidth=2, label="test error")
 ax.axvline(best, color="#666666", linestyle=":", linewidth=1.5, label=f"best degree = {best}")
 ax.set_yscale("log")
 ax.set_xlabel("Polynomial degree"); ax.set_ylabel("Mean squared error (log scale)")
@@ -290,18 +289,18 @@ print(f"Test MSE at degree 12: {test_err[-1]:.1f}")
 
 ## R
 ```{webr}
-x <- c(43.7, 45.2, 47.2, 49.3, 56.6, 75.0, 86.0, 97.6, 101.1, 108.8, 116.3, 134.4,
-       143.8, 145.6, 148.4)
-y <- c(156.5, 206.9, 183.4, 133.5, 184.4, 202.4, 224.2, 234.2, 240.0, 288.1, 258.2,
-       342.6, 411.7, 410.1, 398.6)
-x_test <- c(42.3, 42.5, 44.9, 48.1, 54.5, 64.5, 64.8, 67.4, 70.4, 70.7, 73.0, 77.4,
-            83.3, 86.6, 90.9, 92.6, 93.9, 94.6, 95.8, 99.0, 100.4, 102.6, 103.6, 110.9,
-            112.5, 116.6, 121.8, 122.7, 123.2, 124.1, 128.0, 128.8, 133.3, 134.9, 134.9,
-            136.4, 136.7, 141.4, 141.9, 147.8)
-y_test <- c(137.2, 115.9, 204.9, 177.4, 163.4, 174.0, 178.7, 164.5, 197.3, 185.4, 172.0,
-            220.9, 211.4, 245.5, 229.6, 239.8, 225.7, 202.2, 255.2, 243.6, 262.1, 231.8,
-            232.8, 295.7, 257.1, 321.7, 380.5, 307.1, 325.2, 326.9, 322.5, 336.5, 355.3,
-            390.5, 351.8, 389.1, 350.9, 384.1, 377.5, 410.9)
+x <- c(46.6, 47.6, 49.4, 63.3, 70.2, 74.4, 95.7, 109.1, 114.5, 115.5, 126.2, 139.0,
+       143.7, 146.3, 149.7)
+y <- c(169.3, 127.3, 148.6, 167.8, 152.7, 139.9, 222.4, 286.7, 267.2, 281.8, 332.3,
+       396.0, 401.8, 404.5, 402.4)
+x_test <- c(40.2, 42.8, 43.4, 45.2, 50.7, 56.6, 62.6, 65.0, 71.8, 74.7, 76.6, 76.6,
+            78.3, 78.6, 82.0, 86.8, 87.8, 92.4, 95.1, 99.9, 100.6, 101.0, 105.3, 107.5,
+            109.8, 110.3, 114.6, 115.5, 117.1, 119.3, 119.8, 121.3, 130.3, 131.2, 131.8,
+            137.1, 138.8, 140.1, 144.5, 147.2)
+y_test <- c(192.8, 155.1, 188.1, 134.7, 174.7, 188.0, 147.7, 183.1, 182.5, 197.2, 179.2,
+            152.7, 172.9, 179.2, 231.4, 200.7, 210.2, 233.6, 247.9, 217.2, 228.6, 254.1,
+            251.9, 287.5, 256.3, 292.7, 313.7, 219.8, 317.7, 340.7, 269.5, 340.0, 325.5,
+            369.1, 327.7, 359.4, 393.2, 379.6, 381.5, 420.7)
 
 mu <- mean(x); sigma <- sqrt(mean((x - mu)^2))
 design <- function(xv, d) outer((xv - mu) / sigma, 0:d, `^`)
@@ -320,11 +319,11 @@ plot(degrees, train_err, type = "b", pch = 19, col = "#076FA1", log = "y", lwd =
      ylim = range(c(train_err, test_err)),
      xlab = "Polynomial degree", ylab = "Mean squared error (log scale)", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-lines(degrees, test_err, type = "b", pch = 15, col = "#E3120B", lwd = 2)
+lines(degrees, test_err, type = "b", pch = 15, col = "#9E4F00", lwd = 2)
 abline(v = best, col = "#666666", lty = 3, lwd = 1.5)
 legend("topleft", bty = "n",
        legend = c("training error", "test error", paste0("best degree = ", best)),
-       col = c("#076FA1", "#E3120B", "#666666"), lty = c(1, 1, 3), pch = c(19, 15, NA), lwd = 2)
+       col = c("#076FA1", "#9E4F00", "#666666"), lty = c(1, 1, 3), pch = c(19, 15, NA), lwd = 2)
 
 cat(sprintf("Lowest test error at degree %d (test MSE = %.1f)\n", best, min(test_err)))
 cat(sprintf("Test MSE at degree 12: %.1f\n", test_err[length(test_err)]))
@@ -338,8 +337,8 @@ The wild oscillations have a fingerprint in the coefficients. To thread through 
 a high-degree polynomial needs enormous coefficients of alternating sign that nearly cancel,
 a delicate balance that shatters between the data. We track the size of the fitted
 coefficients with their L2 norm, $\lVert\boldsymbol\theta\rVert = \sqrt{\sum_j \theta_j^2}$
-(intercept excluded). It grows from about 84 at degree 1 to nearly two thousand by degree 10
-and to about 35,000 at the interpolating degree 14. This explosion is exactly what the ridge
+(intercept excluded). It grows from about 100 at degree 1 to nearly two thousand by degree 10
+and to about 230,000 at the interpolating degree 14. This explosion is exactly what the ridge
 and LASSO penalties of Chapter 7 are built to prevent.
 
 ::: {.panel-tabset group="lang"}
@@ -349,10 +348,10 @@ and LASSO penalties of Chapter 7 are built to prevent.
 import numpy as np
 import matplotlib.pyplot as plt
 
-x = np.array([43.7, 45.2, 47.2, 49.3, 56.6, 75.0, 86.0, 97.6, 101.1, 108.8, 116.3,
-              134.4, 143.8, 145.6, 148.4])
-y = np.array([156.5, 206.9, 183.4, 133.5, 184.4, 202.4, 224.2, 234.2, 240.0, 288.1,
-              258.2, 342.6, 411.7, 410.1, 398.6])
+x = np.array([46.6, 47.6, 49.4, 63.3, 70.2, 74.4, 95.7, 109.1, 114.5, 115.5, 126.2,
+              139.0, 143.7, 146.3, 149.7])
+y = np.array([169.3, 127.3, 148.6, 167.8, 152.7, 139.9, 222.4, 286.7, 267.2, 281.8,
+              332.3, 396.0, 401.8, 404.5, 402.4])
 
 mu, sigma = x.mean(), x.std()
 def fit(degree):
@@ -379,10 +378,10 @@ for d, nrm in zip(degrees, norms):
 
 ## R
 ```{webr}
-x <- c(43.7, 45.2, 47.2, 49.3, 56.6, 75.0, 86.0, 97.6, 101.1, 108.8, 116.3, 134.4,
-       143.8, 145.6, 148.4)
-y <- c(156.5, 206.9, 183.4, 133.5, 184.4, 202.4, 224.2, 234.2, 240.0, 288.1, 258.2,
-       342.6, 411.7, 410.1, 398.6)
+x <- c(46.6, 47.6, 49.4, 63.3, 70.2, 74.4, 95.7, 109.1, 114.5, 115.5, 126.2, 139.0,
+       143.7, 146.3, 149.7)
+y <- c(169.3, 127.3, 148.6, 167.8, 152.7, 139.9, 222.4, 286.7, 267.2, 281.8, 332.3,
+       396.0, 401.8, 404.5, 402.4)
 
 mu <- mean(x); sigma <- sqrt(mean((x - mu)^2))
 fit <- function(d) qr.solve(outer((x - mu) / sigma, 0:d, `^`), y)
@@ -407,7 +406,8 @@ possible, and the model has learned the noise instead of the signal.
 
 ::: {.explore}
 [Try it]{.lbl}
-In the pathology cell, lower `degree` from 14 to 8 and re-run. The curve stops interpolating,
-the negative-price region shrinks, and the coefficient balance steadies. How low must the
-degree go before no predicted price is negative?
+In the pathology cell, lower `degree` from 14 to 13 and re-run. With one coefficient fewer
+than there are houses, the curve no longer has to pass through every point, and the plunge
+vanishes: every prediction between the houses stays between about 100 and 400. The
+negative prices come from exact interpolation itself.
 :::

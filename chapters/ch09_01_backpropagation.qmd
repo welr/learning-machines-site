@@ -24,7 +24,7 @@ $$a^{[1]} = x, \quad z^{[2]} = w^{[1]} a^{[1]} + b^{[1]}, \quad a^{[2]} = \sigma
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch09_01_backpropagation.png" alt="Log-scale line plot of training loss against iteration, falling in a near-straight line from about 0.4 to below 1e-32 by iteration 29.">
+<img src="../figures/ch09_01_backpropagation.png?v=fcad441a" alt="Log-scale line plot of training loss against iteration, falling in a near-straight line from about 0.4 to below 1e-32 by iteration 29.">
 <figcaption><strong>Backprop plus a step rule is training.</strong> Fifty gradient-descent steps on the scalar network drive the squared-error loss down geometrically — a straight line on the log axis — until it reaches the floating-point floor around iteration 30. This is the result the code below reproduces.</figcaption>
 </figure>
 ```

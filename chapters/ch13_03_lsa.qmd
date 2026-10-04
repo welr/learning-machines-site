@@ -27,7 +27,7 @@ the same company.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch13_03_lsa.png" alt="Two heatmaps of the 36-by-12 document-term matrix. Left: raw counts in arbitrary order, no visible structure, with the loan and credit columns outlined and full of holes. Right: the rank-2 reconstruction sorted by latent coordinate, showing two clean topic blocks, with the outlined loan and credit columns now filled across every finance document.">
+<img src="../figures/ch13_03_lsa.png?v=ccca0406" alt="Two heatmaps of the 36-by-12 document-term matrix. Left: raw counts in arbitrary order, no visible structure, with the loan and credit columns outlined and full of holes. Right: the rank-2 reconstruction sorted by latent coordinate, showing two clean topic blocks, with the outlined loan and credit columns now filled across every finance document.">
 <figcaption><strong>Topics surface as blocks.</strong> Left: the document–term count matrix as the algorithm receives it — rows and columns in arbitrary order, no visible structure. Right: the rank-two reconstruction with rows and columns sorted by their leading latent coordinates. Two topic blocks emerge, and the <em>loan</em> and <em>credit</em> columns (outlined) — each full of holes on the left, because the two synonyms never share a document — come back filled across every finance document: the synonym effect, visible as color. The code below builds this matrix and measures the effect.</figcaption>
 </figure>
 ```

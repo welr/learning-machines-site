@@ -9,6 +9,9 @@ project:
     # The interactive-figure kit (assets/lm-ix.js) is loaded by a <script> tag inside
     # raw-HTML blocks, which Quarto does not scan; copy it explicitly.
     - assets/**
+    # Hero links carry a content version (?v=...; tools/stamp_heroes.py), which Quarto's
+    # resource scan does not resolve; copy the figures explicitly.
+    - figures/**
 
   # Quarto hardcodes a cdnjs ES6 polyfill into every MathJax page with no option to
   # suppress it. This site needs WebAssembly to run Pyodide and WebR, so every

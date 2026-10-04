@@ -28,7 +28,7 @@ them all, while LASSO drives most of them to *exactly* zero and so performs
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch07_02_applied.png" alt="LASSO regularization path: thirty coefficients plotted against the penalty on a logarithmic axis; the eight blue informative-feature paths fall to exactly zero one at a time as the penalty grows, while the twenty-two gray spurious-feature paths stay close to the zero line.">
+<img src="../figures/ch07_02_applied.png?v=be4c3ac9" alt="LASSO regularization path: thirty coefficients plotted against the penalty on a logarithmic axis; the eight blue informative-feature paths fall to exactly zero one at a time as the penalty grows, while the twenty-two gray spurious-feature paths stay close to the zero line.">
 <figcaption><strong>The LASSO path.</strong> As the penalty &lambda; grows, each coefficient is driven to <em>exactly</em> zero one at a time; the eight informative features (blue) survive deepest into the penalty while the spurious ones (gray) hug zero and are the first driven out &mdash; LASSO selects variables by driving coefficients exactly to zero. (In this simulation the features are uncorrelated; with correlated predictors, survival depth is not a ranking of importance.) This is the result the code below reproduces.</figcaption>
 </figure>
 ```

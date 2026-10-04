@@ -37,7 +37,7 @@ that comparison concrete.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch02_03_bayesian_regression.png" alt="Scatter of data with a posterior-mean regression line and a shaded 95% predictive band that is narrow over the observed range of x and widens toward both plot edges.">
+<img src="../figures/ch02_03_bayesian_regression.png?v=b139dfac" alt="Scatter of data with a posterior-mean regression line and a shaded 95% predictive band that is narrow over the observed range of x and widens toward both plot edges.">
 <figcaption><strong>Uncertainty that grows with extrapolation.</strong> The posterior mean line with its 95% predictive band, tight where the data cluster and flaring outward as the input leaves the observed range. This is the result the code below reproduces.</figcaption>
 </figure>
 ```

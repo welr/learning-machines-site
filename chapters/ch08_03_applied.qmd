@@ -39,7 +39,7 @@ kind of accuracy contrast: a single axis-aligned cut against a smooth kernel bou
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch08_03_applied.png" alt="Two interleaving crescent-shaped clouds of points, one blue and one orange, split by a single smooth curved decision boundary drawn in dark blue, with the two predicted regions shaded soft blue and soft orange; because the crescents overlap, some dots sit in the opposite color's region.">
+<img src="../figures/ch08_03_applied.png?v=306a3cb3" alt="Two interleaving crescent-shaped clouds of points, one blue and one orange, split by a single smooth curved decision boundary drawn in dark blue, with the two predicted regions shaded soft blue and soft orange; because the crescents overlap, some dots sit in the opposite color's region.">
 <figcaption><strong>A decision boundary you can see.</strong> A radial-basis kernel SVM splits the make_moons data with one smooth curve, shading each <em>predicted</em> class soft blue and soft orange; the dots are the points' <em>true</em> labels. The two crescents are noisy and overlap, so some dots land on the wrong side of the curve: real misclassifications the smooth boundary can't avoid without overfitting. This is the result the code below reproduces.</figcaption>
 </figure>
 ```

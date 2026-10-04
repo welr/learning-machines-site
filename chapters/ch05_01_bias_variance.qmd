@@ -23,7 +23,7 @@ each, and looking at how the predictions scatter, we turn [bias]{.term} and
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch05_01_bias_variance.png" alt="Bias-squared, variance and total error against polynomial degree on a logarithmic scale. Bias-squared drops more than thirtyfold between degrees two and three and is too small to measure past degree four, variance rises from degree three onward, and the total error reaches its lowest point at degree three before rising by two orders of magnitude.">
+<img src="../figures/ch05_01_bias_variance.png?v=c1ff5eda" alt="Bias-squared, variance and total error against polynomial degree on a logarithmic scale. Bias-squared drops more than thirtyfold between degrees two and three and is too small to measure past degree four, variance rises from degree three onward, and the total error reaches its lowest point at degree three before rising by two orders of magnitude.">
 <figcaption><strong>The bias–variance trade-off.</strong> Bias falls with degree and variance rises, and their sum bottoms out at degree three before rising by two orders of magnitude, so the vertical scale is logarithmic. Past degree four the remaining bias is too small to measure, so its curve stops. The decomposition cells below compute it.</figcaption>
 </figure>
 ```

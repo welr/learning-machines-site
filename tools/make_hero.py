@@ -40,13 +40,12 @@ CHAPTERS, FIGURES = ROOT / "chapters", ROOT / "figures"
 # Only pages whose hero IS a whole cell's output are listed. Verified by
 # regenerating and comparing composition against the shipped PNG.
 HEROES = {
-    "ch02_01_polynomial_regression": dict(cell=0, figsize=(8.0, 5.0)),
+    "ch02_01_polynomial_regression": dict(cell=0, figsize=(8.0, 5.0)),   # one knob, three fits
     "ch02_02_linear_regression_ols": dict(cell=1, figsize=(8.0, 5.0)),
     "ch02_03_bayesian_regression":   dict(cell=1, figsize=(8.0, 5.0)),
     "ch02_04_applied":               dict(cell=2, figsize=(8.0, 5.0)),
-    "ch04_01_logistic_regression":   dict(cell=0, figsize=(8.0, 5.0)),
+    "ch04_01_logistic_regression":   dict(cell=1, figsize=(8.0, 5.0)),   # the fitted logistic curve
     "ch04_02_multiclass":            dict(cell=2, figsize=(7.6, 5.4)),   # softmax, as the caption says
-    "ch04_03_applied":               dict(cell=0, figsize=(8.0, 5.0)),
     "ch06_01_model_evaluation":      dict(cell=3, figsize=(8.0, 5.0)),
 }
 
@@ -242,6 +241,9 @@ def main():
         kb = out.stat().st_size / 1024
         print(f"  {stem:34} cell {ALL[stem]['cell']}  {kb:6.1f} KB   {note}")
     print(f"\n{len(todo)} hero figure(s) -> {outdir}")
+    if not args.check:                          # new image, new link: defeat stale browser caches
+        import stamp_heroes
+        stamp_heroes.main()
 
 
 if __name__ == "__main__":

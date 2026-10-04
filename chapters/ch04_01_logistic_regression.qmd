@@ -18,6 +18,13 @@ hours they studied. The same forty students carry us from the failure of a strai
 through the [sigmoid]{.term} and [log-loss]{.term}, to a fitted decision rule and the
 threshold that controls its errors.
 
+```{=html}
+<figure class="lm-figure">
+<img src="../figures/ch04_01_logistic_regression.png?v=85fba15d" alt="Forty students plotted by hours studied: the twenty who failed at zero as open blue circles, the twenty who passed at one as filled cyan circles, an S-shaped fitted probability curve rising through them, and a dashed vertical line where the curve crosses 0.5, near 4.9 hours.">
+<figcaption><strong>The logistic curve.</strong> The fitted sigmoid maps hours studied to the probability of passing; the dots are the students' actual outcomes, and the dashed line marks where the curve crosses 0.5, near 4.9 hours. One student passed on 4.65 hours and two failed on 4.83 and 4.90, so the classes overlap and no cutoff separates them cleanly. This is the result the code below reproduces.</figcaption>
+</figure>
+```
+
 ## Why a straight line won't do
 
 Suppose we ignore the discreteness and fit ordinary least squares to the $0/1$ labels. The
@@ -25,13 +32,6 @@ line has to keep rising to separate the failures from the passes, so it predicts
 "probabilities" for students who barely studied and probabilities above one for those who
 studied a lot. Both are nonsense as probabilities, and no rescaling fixes it, because a line
 is unbounded by construction.
-
-```{=html}
-<figure class="lm-figure">
-<img src="../figures/ch04_01_logistic_regression.png" alt="Forty students plotted by hours studied: the twenty who failed at zero as open blue circles, the twenty who passed at one as filled cyan circles, and a straight least-squares line through them that falls below zero on the left and rises above one on the right.">
-<figcaption><strong>Why a straight line won't do.</strong> Least squares fit to pass/fail outcomes predicts about &minus;0.41 at zero hours and 1.51 at ten, numbers that cannot be probabilities. The logistic curve below bends the line back into (0, 1). This is the result the code below reproduces.</figcaption>
-</figure>
-```
 
 ::: {.panel-tabset group="lang"}
 
