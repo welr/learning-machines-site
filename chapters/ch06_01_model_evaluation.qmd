@@ -40,11 +40,14 @@ the R side calls `glm`, base R's maximum-likelihood fitter for the same model.
 
 ## A classifier and an honest estimate of its accuracy
 
-The data is deliberately awkward: the true boundary curves ($x_1 + 0.3\,x_2^2 > 0.5$) while
+The data are deliberately awkward: the true boundary curves ($x_1 + 0.3\,x_2^2 > 0.5$) while
 the model we fit is linear, and 5% of labels are flipped to mimic noise. A single train/test
 split gives one estimate of out-of-sample accuracy; [$K$-fold cross-validation]{.term}
 averages over $K$ such splits so the estimate stops depending on which points happened to
-land in the test set. Five folds means each point is held out exactly once.
+land in the test set. Five folds means each point is held out exactly once. Five and ten are
+common compromises; how much cross-validation buys depends on the size of the data, and once a
+single held-out set is large enough to give a precise estimate, the extra fits add cost
+without adding precision.
 
 ::: {.panel-tabset group="lang"}
 
@@ -149,8 +152,9 @@ cat(sprintf("CV accuracy %.1f%% +/- %.1f%%\n", 100 * mean(scores), 100 * sd(scor
 
 :::
 
-The spread across folds is the point. A single split can read several points high or low; the
-cross-validated mean, with its standard deviation, tells you how much to trust any one number.
+The spread across folds is the point. A single split can read several points high or low, and
+the spread shows by how much. Its standard deviation is only a rough guide, though: the five
+fits share most of their training data, so the fold scores are dependent.
 
 Notice the second pair of numbers. [Log-loss]{.term} is not one more score competing with
 accuracy: it is the negative log-likelihood per observation, which is to say the exact
@@ -318,7 +322,7 @@ for t in thr:
 
 fig, ax = plt.subplots(figsize=(7, 4.5))
 ax.plot(thr, prec, color="#31417A", lw=2.5, label="precision")
-ax.plot(thr, rec, color="#2FC1D3", lw=2.5, label="recall")
+ax.plot(thr, rec, color="#9E4F00", lw=2.5, label="recall")
 ax.axvline(0.5, color="#666666", ls="--", alpha=0.8, label="default threshold")
 ax.set_xlabel("classification threshold")
 ax.set_ylabel("score")
@@ -358,18 +362,26 @@ rec <- sapply(thr, function(t) {
 plot(thr, prec, type = "l", col = "#31417A", lwd = 2.5, ylim = c(0, 1.05),
      xlab = "classification threshold", ylab = "score", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-lines(thr, rec, col = "#2FC1D3", lwd = 2.5)
+lines(thr, rec, col = "#9E4F00", lwd = 2.5)
 abline(v = 0.5, col = "#666666", lty = 2)
 legend("left", c("precision", "recall", "default threshold"),
-       col = c("#31417A", "#2FC1D3", "#666666"),
+       col = c("#31417A", "#9E4F00", "#666666"),
        lwd = c(2.5, 2.5, 1), lty = c(1, 1, 2), bty = "n")
 ```
 
 :::
 
-Which cutoff is right depends on the application. If a false negative is a missed diagnosis,
-favor recall; if a false positive is an expensive intervention, favor precision. The dial,
-not a fixed 0.5, is the decision.
+Which cutoff is right follows from the costs of the two errors. Write $c_{\text{FP}}$ for the
+cost of a false positive and $c_{\text{FN}}$ for a false negative. If the probabilities are
+calibrated (the last section of this page checks), predicting positive at probability $p$ has
+expected cost $(1-p)\,c_{\text{FP}}$ and predicting negative has expected cost
+$p\,c_{\text{FN}}$, so we predict positive when
+
+$$p > \frac{c_{\text{FP}}}{c_{\text{FP}} + c_{\text{FN}}}.$$
+
+The default $0.5$ is the case of equal costs. If a missed positive costs nine times as much
+as a false alarm, the threshold falls to $0.1$, and the plot shows what that buys: higher
+recall, lower precision. The curves describe what each cutoff does; the costs pick one.
 
 ## ROC and AUC: the whole trade-off at once
 
@@ -528,7 +540,7 @@ pos = np.random.normal(SEP, 1, NPOS)     # the same positive cases every time
 
 print(f"{'screened':>9}{'prevalence':>12}{'ROC-AUC':>10}{'PR-AUC':>9}{'PR baseline':>13}")
 fig, (a1, a2) = plt.subplots(1, 2, figsize=(11, 4.6))
-drawn = {200: "#31417A", 3800: "#E3120B"}      # the two we also plot
+drawn = {200: "#31417A", 3800: "#9E4F00"}      # the two we also plot
 for nneg in (200, 800, 3800, 19800):
     neg = np.random.normal(0, 1, nneg)
     p = 1 / (1 + np.exp(-np.concatenate([pos, neg])))
@@ -588,7 +600,7 @@ for (nneg in c(200, 800, 3800, 19800)) {
   cat(sprintf("%9d %10.0f%% %9.3f %8.3f %12.3f\n",
               NPOS + nneg, 100 * mean(y), area(cv$fpr, cv$tpr), pr_auc, mean(y)))
   if (nneg %in% c(200, 3800)) {
-    color <- if (nneg == 200) "#31417A" else "#E3120B"
+    color <- if (nneg == 200) "#31417A" else "#9E4F00"
     if (first) {
       plot(cv$rec, cv$prec, type = "l", col = color, lwd = 2.5,
            xlim = c(0, 1), ylim = c(0, 1.05),
@@ -602,7 +614,7 @@ for (nneg in c(200, 800, 3800, 19800)) {
   }
 }
 legend("topright", c("50% positive", "5% positive"),
-       col = c("#31417A", "#E3120B"), lwd = 2.5, bty = "n")
+       col = c("#31417A", "#9E4F00"), lwd = 2.5, bty = "n")
 ```
 
 :::
@@ -626,8 +638,10 @@ A model can rank well, high AUC, yet still report probabilities that are off. A 
 is [well-calibrated]{.term} when, among the cases it calls 70% positive, about 70% really are.
 Binning the predictions and plotting the observed fraction of positives against the mean
 predicted probability gives the [reliability diagram]{.term}: points on the diagonal are
-calibrated, above it underconfident, below it overconfident. Logistic regression, fit by
-maximum likelihood, is usually close to the line by construction.
+calibrated, above it underconfident, below it overconfident. Logistic regression fit by
+maximum likelihood with an intercept gets one thing right by construction: on its training
+data, the mean predicted probability equals the fraction of positives. Agreement within each
+bin is not guaranteed, and has to be checked.
 
 ::: {.panel-tabset group="lang"}
 

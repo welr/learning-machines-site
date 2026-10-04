@@ -12,7 +12,7 @@ engine: markdown
 :::
 
 A short companion to the classification chapter. We fit [logistic regression]{.term} to a
-screening dataset, read its coefficients as [odds]{.term}, and then fit [linear discriminant
+screening data set, read its coefficients as [odds]{.term}, and then fit [linear discriminant
 analysis]{.term}, the *generative* counterpart to logistic regression's *discriminative* fit,
 to see how close the two land.
 
@@ -25,7 +25,7 @@ sandbox cannot make, so it lives in the companion notebook, which loads it with
 <a class="colab-btn" href="https://colab.research.google.com/github/welr/learning_machines/blob/main/ch04_03_applied.ipynb" target="_blank" rel="noopener"><span class="dot"></span> Open in Google Colab</a>
 ```
 
-The cells on this page instead simulate a comparable screening dataset from a known
+The cells on this page instead simulate a comparable screening data set from a known
 two-Gaussian model, which has the side benefit of making the shared-covariance assumption behind
 linear discriminant analysis exactly true. Five markers (glucose, BMI, age, blood pressure, and
 HDL) separate a positive class from a negative one; we standardize them so each coefficient
@@ -40,7 +40,7 @@ one-standard-deviation rise in that feature. Above one raises the odds; below on
 
 ::: {.defbox}
 [Logistic Regression in Log-Odds]{.lbl}
-[ log( p ∕ (1 − p) ) = θ₀ + θ₁x₁ + ⋯ + θₚxₚ &nbsp;&nbsp;⟹&nbsp;&nbsp; odds ratioⱼ = exp(θⱼ) ]{.math}
+[ log( p ∕ (1 − p) ) = θ₀ + θ₁x₁ + ⋯ + θₙxₙ &nbsp;&nbsp;⟹&nbsp;&nbsp; odds ratioⱼ = exp(θⱼ) ]{.math}
 :::
 
 ```{=html}
@@ -63,7 +63,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 
-# A simulated screening dataset (no network): five markers, two classes
+# A simulated screening data set (no network): five markers, two classes
 # drawn from Gaussians with a SHARED covariance.
 rng = np.random.default_rng(0)
 names = ["glucose", "bmi", "age", "blood pressure", "hdl"]
@@ -107,7 +107,7 @@ print(f"\ntest accuracy: {logreg.score(X_te, y_te):.3f}")
 
 ## R
 ```{webr}
-# A simulated screening dataset (no network): five markers, two classes
+# A simulated screening data set (no network): five markers, two classes
 # drawn from Gaussians with a SHARED covariance.
 set.seed(0)
 names <- c("glucose", "bmi", "age", "blood pressure", "hdl")
@@ -172,7 +172,7 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
-# Same simulated screening dataset, regenerated so the cell stands alone.
+# Same simulated screening data set, regenerated so the cell stands alone.
 rng = np.random.default_rng(0)
 shift = np.array([1.3, 0.9, 0.5, 0.3, -0.8])
 m = 200
@@ -195,7 +195,7 @@ print(f"linear discriminant  (generative)      test accuracy: {lda.score(X_te, y
 
 ## R
 ```{webr}
-# Same simulated screening dataset, regenerated so the cell stands alone.
+# Same simulated screening data set, regenerated so the cell stands alone.
 set.seed(0)
 shift <- c(1.3, 0.9, 0.5, 0.3, -0.8)
 m <- 200
@@ -238,9 +238,10 @@ cat(sprintf("linear discriminant  (generative)      test accuracy: %.3f\n", acc_
 
 The two classifiers reach almost identical accuracy. That is no accident here: when the
 generative model's assumptions hold, its decision boundary and logistic regression's coincide in
-the limit. The textbook's Ng--Jordan note adds the practical wrinkle: with little data the
-generative model can win, because it borrows strength from its assumptions; with abundant data
-the discriminative model usually catches up and passes it.
+the limit. The analogous Ng--Jordan result for naive Bayes, noted in the textbook, suggests
+a practical wrinkle: with little data the generative model can win, because it borrows
+strength from its assumptions; with enough data the discriminative model can reach a lower
+error.
 
 ::: {.explore}
 [Try it]{.lbl}

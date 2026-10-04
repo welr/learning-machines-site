@@ -110,7 +110,7 @@ class AutoEncoder(nn.Module):
         return self.dec(self.enc(x))
 ```
 
-The loss is reconstruction error against the input itself, which is what makes this unsupervised despite looking exactly like supervised training: the target is the input. Chapter 13's closing question — in what sense is a method "unsupervised" when it minimizes a supervised-looking objective — is best answered with this model in front of you.
+The loss is reconstruction error against the input itself, which is what makes this unsupervised despite looking exactly like supervised training: the target is the input. Exercise 10(c) of Chapter 13 — in what sense is a method "unsupervised" when it minimizes a supervised-looking objective — is best answered with this model in front of you.
 
 ::: {.explore}
 [Try it]{.lbl}

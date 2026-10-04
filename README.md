@@ -147,6 +147,28 @@ are on `ch03_01` (step size), `ch05_01` (noise), `ch06_02` (threshold), and `ch0
   *worked example* carries both" and names the sliders and the Chapter 1 exercises as the
   exceptions. Keep that qualification true if you add or remove controls.
 
+## Interactive figures
+
+Figures marked "Interactive" are plain JavaScript in a ```` ```{=html} ```` block, with no
+runtime and no third-party requests, so they work in either language tab.
+
+| figure | page | id |
+|---|---|---|
+| Least squares as a projection | `ch02_02` | `.lsproj` |
+| Same line, different valley | `ch02_02` | `#ix-valley` |
+| Momentum in a narrow valley | `ch03_01` | `#ix-momentum` |
+
+- **Shared kit.** Styles are the `.lm-ix` classes in `theme.scss`; helpers (contours,
+  camera, slider binding, presets, stat tiles) are `window.LMIX` in `assets/lm-ix.js`,
+  which `_quarto.yml` publishes as a resource. Colors come from the `--ix-*` variables, so
+  drawing code and stylesheet agree.
+- **Colors.** Data blue, fits FS-blue; red only for residuals, zero lines and thresholds;
+  orange and cyan for a second series.
+- **Exercises.** A figure must not compute what an exercise asks for. Before adding one,
+  read the chapter's exercises. The valley figure shows the condition number but never the entries of
+  XᵀX (Exercises 2.2, 2.7), and the momentum figure has no "optimal" presets, rates or step counts
+  (Exercise 3.9).
+
 ## Exercise cells
 
 `ch01_01` converts its "Try it" prose into real exercise cells: a cell with

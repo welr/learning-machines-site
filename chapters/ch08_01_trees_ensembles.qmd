@@ -122,8 +122,10 @@ achieves is the [impurity gain]{.term}.
 
 ::: {.defbox}
 [Impurity gain of a split]{.lbl}
-[ gain = I(parent) &minus; (n<sub>L</sub>/n) I(left) &minus; (n<sub>R</sub>/n) I(right) ]{.math}
+[ gain = I(parent) &minus; (N<sub>L</sub>/N) I(left) &minus; (N<sub>R</sub>/N) I(right) ]{.math}
 :::
+
+Here $N$, $N_L$, and $N_R$ count the training points in the parent and the two children.
 
 On a small two-class data set built to overlap across both axes, the best stump cuts $x_1$ at
 $-0.5$ and recovers about five-sixths of the points. It cannot do better, because no single
@@ -182,7 +184,7 @@ print(f"Stump train accuracy : {acc:.1%}  (one split cannot separate the overlap
 
 fig, ax = plt.subplots(figsize=(7, 5))
 ax.scatter(x1[y == 0], x2[y == 0], c="#076FA1", s=70, edgecolor="white", label="class 0")
-ax.scatter(x1[y == 1], x2[y == 1], c="#E3120B", s=70, edgecolor="white", label="class 1")
+ax.scatter(x1[y == 1], x2[y == 1], c="#9E4F00", s=70, edgecolor="white", label="class 1")
 if feature == 0:
     ax.axvline(t, color="#31417A", lw=2, ls="--")
 else:
@@ -243,12 +245,12 @@ cat(sprintf("Left leaf -> class %d   (%d points)\n", left_pred, sum(left)))
 cat(sprintf("Right leaf -> class %d  (%d points)\n", right_pred, sum(!left)))
 cat(sprintf("Stump train accuracy : %.1f%%  (one split cannot separate the overlap)\n", 100 * acc))
 
-cols <- ifelse(y == 1, "#E3120B", "#076FA1")
+cols <- ifelse(y == 1, "#9E4F00", "#076FA1")
 plot(x1, x2, col = cols, pch = 19, cex = 1.6, xlab = "x1", ylab = "x2", bty = "l")
 if (fit$feature == 1) abline(v = fit$threshold, col = "#31417A", lwd = 2, lty = 2)
 if (fit$feature == 2) abline(h = fit$threshold, col = "#31417A", lwd = 2, lty = 2)
 legend("topleft", legend = c("class 0", "class 1"),
-       col = c("#076FA1", "#E3120B"), pch = 19, bty = "n")
+       col = c("#076FA1", "#9E4F00"), pch = 19, bty = "n")
 ```
 
 :::
@@ -342,15 +344,15 @@ overgrown = predict_tree(fit_tree(x_tr, y_tr, 0, 10),   grid)
 
 fig, (axL, axR) = plt.subplots(1, 2, figsize=(11, 4.5))
 axL.plot(list(depths), train_mse, color="#31417A", lw=2.5, marker="o", label="train")
-axL.plot(list(depths), test_mse,  color="#E3120B", lw=2.5, marker="o", label="test")
+axL.plot(list(depths), test_mse,  color="#2FC1D3", lw=2.5, marker="o", label="test")
 axL.axvline(best, color="#666666", ls=":", alpha=0.6)
 axL.set_xlabel("tree depth"); axL.set_ylabel("MSE")
 axL.set_title("Train falls, test turns up"); axL.legend()
 
 axR.scatter(x_tr, y_tr, c="#666666", s=20, alpha=0.5, label="train data")
-axR.plot(grid, np.sin(grid), color="#31417A", lw=2, ls="--", label="truth  sin(x)")
-axR.plot(grid, moderate,  color="#076FA1", lw=2.5, label=f"depth {best} (moderate)")
-axR.plot(grid, overgrown, color="#E3120B", lw=1.5, label="depth 10 (overgrown)")
+axR.plot(grid, np.sin(grid), color="#666666", lw=2, ls="--", label="truth  sin(x)")
+axR.plot(grid, moderate,  color="#31417A", lw=2.5, label=f"depth {best} (moderate)")
+axR.plot(grid, overgrown, color="#2FC1D3", lw=1.5, label="depth 10 (overgrown)")
 axR.set_xlabel("$x$"); axR.set_ylabel("$y$")
 axR.set_title("A deep tree chases noise"); axR.legend()
 for a in (axL, axR):
@@ -425,19 +427,19 @@ plot(depths, train_mse, type = "b", col = "#31417A", lwd = 2.5, pch = 19,
      main = "Train falls, test turns up", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(depths, train_mse, type = "b", col = "#31417A", lwd = 2.5, pch = 19)
-lines(depths, test_mse, type = "b", col = "#E3120B", lwd = 2.5, pch = 19)
+lines(depths, test_mse, type = "b", col = "#2FC1D3", lwd = 2.5, pch = 19)
 abline(v = best, lty = 3, col = "#666666")
 legend("topright", legend = c("train", "test"),
-       col = c("#31417A", "#E3120B"), lwd = 2.5, pch = 19, bty = "n")
+       col = c("#31417A", "#2FC1D3"), lwd = 2.5, pch = 19, bty = "n")
 
 plot(x_tr, y_tr, col = "#666666", pch = 19, cex = 0.6, xlab = "x", ylab = "y",
      main = "A deep tree chases noise", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-lines(grid, sin(grid), col = "#31417A", lwd = 2, lty = 2)
-lines(grid, moderate,  col = "#076FA1", lwd = 2.5)
-lines(grid, overgrown, col = "#E3120B", lwd = 1.5)
+lines(grid, sin(grid), col = "#666666", lwd = 2, lty = 2)
+lines(grid, moderate,  col = "#31417A", lwd = 2.5)
+lines(grid, overgrown, col = "#2FC1D3", lwd = 1.5)
 legend("topright", legend = c("truth  sin(x)", paste("depth", best), "depth 10"),
-       col = c("#31417A", "#076FA1", "#E3120B"),
+       col = c("#666666", "#31417A", "#2FC1D3"),
        lwd = c(2, 2.5, 1.5), lty = c(2, 1, 1), bty = "n")
 ```
 
@@ -445,8 +447,8 @@ legend("topright", legend = c("truth  sin(x)", paste("depth", best), "depth 10")
 
 The two languages draw different samples, so their exact numbers differ, but the shape is the
 same: training error marches to zero while test error traces a U, lowest at a middling depth.
-The right panel shows why. The shallow tree (blue) tracks the underlying curve; the depth-ten
-tree (red) wraps itself around individual noisy points. Pruning or a depth cap can tame a
+The right panel shows why. The shallow tree (dark blue) tracks the underlying curve; the depth-ten
+tree (cyan) wraps itself around individual noisy points. Pruning or a depth cap can tame a
 single tree, but the more powerful fix is to keep the trees and combine them.
 
 ## Bagging: averaging cuts variance
@@ -540,9 +542,9 @@ print(f"variance averaged away              : {1 - bag_test / single_test:.0%} l
 
 fig, ax = plt.subplots(figsize=(7, 5))
 ax.scatter(x_tr, y_tr, c="#666666", s=25, alpha=0.5, label="train data")
-ax.plot(grid, truth,       color="#31417A", lw=2,   ls="--", label="truth  sin(x)")
-ax.plot(grid, single_grid, color="#E3120B", lw=1.3,          label="single deep tree")
-ax.plot(grid, bag_grid,    color="#076FA1", lw=2.5,          label=f"{B} bagged trees")
+ax.plot(grid, truth,       color="#666666", lw=2,   ls="--", label="truth  sin(x)")
+ax.plot(grid, single_grid, color="#2FC1D3", lw=1.3,          label="single deep tree")
+ax.plot(grid, bag_grid,    color="#31417A", lw=2.5,          label=f"{B} bagged trees")
 ax.set_xlabel("$x$"); ax.set_ylabel("$y$")
 ax.legend()
 for s in ["top", "right"]:
@@ -620,12 +622,12 @@ cat(sprintf("variance averaged away              : %.0f%% lower test error\n",
 
 plot(x_tr, y_tr, col = "#666666", pch = 19, cex = 0.6, xlab = "x", ylab = "y", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-lines(grid, truth,       col = "#31417A", lwd = 2, lty = 2)
-lines(grid, single_grid, col = "#E3120B", lwd = 1.3)
-lines(grid, bag_grid,    col = "#076FA1", lwd = 2.5)
+lines(grid, truth,       col = "#666666", lwd = 2, lty = 2)
+lines(grid, single_grid, col = "#2FC1D3", lwd = 1.3)
+lines(grid, bag_grid,    col = "#31417A", lwd = 2.5)
 legend("topright", bty = "n",
        legend = c("truth  sin(x)", "single deep tree", paste(B, "bagged trees")),
-       col = c("#31417A", "#E3120B", "#076FA1"), lwd = c(2, 1.3, 2.5), lty = c(2, 1, 1))
+       col = c("#666666", "#2FC1D3", "#31417A"), lwd = c(2, 1.3, 2.5), lty = c(2, 1, 1))
 ```
 
 :::
@@ -640,7 +642,8 @@ out-of-bag scoring, and fast C internals.
 parallel and averaging, it trains them in sequence, and each new tree fits the part of the
 target the current ensemble still gets wrong, the [residual]{.term}. A small
 [learning rate]{.term} $\eta$ (the book's symbol; some libraries write $\nu$) shrinks each contribution so the model improves in careful steps
-rather than overshooting.
+rather than overshooting. For squared loss the ensemble starts from the constant
+$F_0 = \bar{y}$, the mean of the targets.
 
 ::: {.defbox}
 [Gradient boosting update]{.lbl}
@@ -650,7 +653,7 @@ rather than overshooting.
 Each stump is too weak to fit a sine on its own, but the additive sequence drives the error
 down round after round. Here we boost on the noise-free curve so the two languages can be
 compared digit for digit: the mean squared error falls from $0.298$ after one stump to
-$0.007$ after forty.
+$0.006$ after forty.
 
 ::: {.panel-tabset group="lang"}
 
@@ -680,7 +683,7 @@ def predict_stump(stump, xq):
 
 lr = 0.3
 rounds = 40
-pred = np.zeros_like(x)
+pred = np.full_like(x, y.mean())       # F_0 = y-bar for squared loss
 stumps = []
 for m in range(1, rounds + 1):
     residual = y - pred                 # what the ensemble still gets wrong
@@ -691,10 +694,10 @@ for m in range(1, rounds + 1):
         print(f"round {m:2d}   MSE = {np.mean((y - pred)**2):.4f}")
 
 grid = np.linspace(0, 6, 300)
-ensemble = sum(lr * predict_stump(s, grid) for s in stumps)
+ensemble = y.mean() + sum(lr * predict_stump(s, grid) for s in stumps)
 fig, ax = plt.subplots(figsize=(7, 5))
-ax.plot(grid, np.sin(grid), color="#31417A", lw=2, ls="--", label="truth  sin(x)")
-ax.plot(grid, ensemble, color="#076FA1", lw=2.5, label=f"boosted ({rounds} stumps)")
+ax.plot(grid, np.sin(grid), color="#666666", lw=2, ls="--", label="truth  sin(x)")
+ax.plot(grid, ensemble, color="#31417A", lw=2.5, label=f"boosted ({rounds} stumps)")
 ax.scatter(x, y, c="#666666", s=15, alpha=0.4)
 ax.set_xlabel("$x$"); ax.set_ylabel("$y$")
 ax.legend()
@@ -730,7 +733,7 @@ predict_stump <- function(stump, xq) {
 
 lr <- 0.3
 rounds <- 40
-pred <- numeric(length(x))
+pred <- rep(mean(y), length(x))       # F_0 = y-bar for squared loss
 stumps <- vector("list", rounds)
 for (m in 1:rounds) {
   residual <- y - pred                 # what the ensemble still gets wrong
@@ -743,18 +746,18 @@ for (m in 1:rounds) {
 }
 
 grid <- seq(0, 6, length.out = 300)
-ensemble <- numeric(length(grid))
+ensemble <- rep(mean(y), length(grid))
 for (s in stumps) ensemble <- ensemble + lr * predict_stump(s, grid)
 
-plot(grid, sin(grid), type = "l", col = "#31417A", lwd = 2, lty = 2,
+plot(grid, sin(grid), type = "l", col = "#666666", lwd = 2, lty = 2,
      xlab = "x", ylab = "y", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-lines(grid, sin(grid), col = "#31417A", lwd = 2, lty = 2)
-lines(grid, ensemble, col = "#076FA1", lwd = 2.5)
+lines(grid, sin(grid), col = "#666666", lwd = 2, lty = 2)
+lines(grid, ensemble, col = "#31417A", lwd = 2.5)
 points(x, y, col = "#666666", pch = 19, cex = 0.4)
 legend("topright", bty = "n",
        legend = c("truth  sin(x)", paste0("boosted (", rounds, " stumps)")),
-       col = c("#31417A", "#076FA1"), lwd = c(2, 2.5), lty = c(2, 1))
+       col = c("#666666", "#31417A"), lwd = c(2, 2.5), lty = c(2, 1))
 ```
 
 :::
@@ -772,7 +775,7 @@ trade-off.
 | Aspect | Bagging / random forest | Boosting |
 |---|---|---|
 | Trees are trained | in parallel, independently | in sequence, each fixing the last |
-| Each tree is | deep (low bias, high variance) | shallow (a stump or near-stump) |
+| Each tree is | deep (low bias, high variance) | small (often 4–8 leaves; depth sets the interaction order) |
 | The ensemble reduces | variance | bias |
 | More trees | help, with diminishing returns | help until they start to overfit |
 | Key knobs | number of trees, features per split | rounds, learning rate, tree depth |
@@ -909,7 +912,10 @@ barplot(rev(importance), horiz = TRUE, col = rev(cols), border = "white",
 
 Real implementations expose this for free: scikit-learn's `feature_importances_` and
 `randomForest`'s `importance()` report the same mean-impurity-decrease, averaged over a full
-forest of deep trees rather than a handful of stumps.
+forest of deep trees rather than a handful of stumps. Read impurity importance with care: it
+can favor features that offer many possible splits, such as continuous or high-cardinality
+features. [Permutation importance]{.term}, the drop in held-out accuracy when one feature's
+values are shuffled, is the usual check (`sklearn.inspection.permutation_importance` in Python).
 
 Trees are weak on their own and strong in committee. A single tree is readable but
 overfits; bagging averages many high-variance trees into a stable predictor; boosting stacks

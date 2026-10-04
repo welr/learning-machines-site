@@ -59,8 +59,8 @@ print(f"predicted at 10 hours: {theta[0] + theta[1]*10:.2f}   (a probability can
 xs = np.linspace(0, 11, 100)
 fig, ax = plt.subplots(figsize=(8, 4.5))
 fail, pas = passed == 0, passed == 1
-ax.scatter(hours[fail], passed[fail], color="#E3120B", s=70, edgecolor="white", zorder=3, label="Fail")
-ax.scatter(hours[pas],  passed[pas],  color="#076FA1", s=70, edgecolor="white", zorder=3, label="Pass")
+ax.scatter(hours[fail], passed[fail], s=70, facecolors="white", edgecolors="#076FA1", linewidths=2, zorder=3, label="Fail (y = 0)")
+ax.scatter(hours[pas],  passed[pas],  s=70, color="#2FC1D3", edgecolor="white", zorder=3, label="Pass (y = 1)")
 ax.plot(xs, theta[0] + theta[1]*xs, color="#31417A", lw=2.5, label="OLS line")
 ax.fill_between(xs, -0.4, 0, color="#666666", alpha=0.12)
 ax.fill_between(xs, 1, 1.4, color="#666666", alpha=0.12)
@@ -90,8 +90,8 @@ cat(sprintf("predicted at  0 hours: %.2f   (a probability cannot be < 0)\n", the
 cat(sprintf("predicted at 10 hours: %.2f   (a probability cannot be > 1)\n", theta[1] + theta[2]*10))
 
 xs  <- seq(0, 11, length.out = 100)
-col <- ifelse(passed == 1, "#076FA1", "#E3120B")
-plot(hours, passed, pch = 19, col = col, cex = 1.4,
+col <- ifelse(passed == 1, "#2FC1D3", "#076FA1")   # y = 1 filled cyan, y = 0 open blue
+plot(hours, passed, pch = ifelse(passed == 1, 19, 1), col = col, cex = 1.4, lwd = 2,
      xlab = "Hours studied", ylab = "Predicted value",
      xlim = c(0, 11), ylim = c(-0.3, 1.3), bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
@@ -126,11 +126,13 @@ is the quantity gradient descent walks downhill.
 
 The two languages fit the same model by different routes. Python runs gradient descent on the
 log-loss; R calls `glm(..., family = binomial)`, which finds the [maximum likelihood]{.term}
-estimate by Newton steps. On this near-separable data the likelihood keeps rising as the
-coefficients grow, so the two methods report different raw coefficients: gradient descent,
-stopped after a fixed budget, has not yet reached the steeper maximum-likelihood values. What
-they agree on is what actually classifies a student, the [decision boundary]{.term} where
-$\boldsymbol{\theta}^\top x = 0$ (here $x = -\theta_0/\theta_1$) and the resulting accuracy.
+estimate by Newton steps. The classes overlap (one student passed on 4.65 hours, two failed
+on 4.83 and 4.90), so the maximum-likelihood estimate is finite, and `glm` reaches it at
+$\boldsymbol{\theta} \approx (-24.03,\ 4.93)$. Gradient descent on raw, uncentered hours
+approaches the same point slowly, and after a fixed budget of 20,000 steps it stops short, at
+about $(-21.55,\ 4.44)$. What they agree on is what actually classifies a student, the
+[decision boundary]{.term} where $\boldsymbol{\theta}^\top x = 0$ (here $x = -\theta_0/\theta_1$)
+and the resulting accuracy.
 
 ::: {.panel-tabset group="lang"}
 
@@ -171,10 +173,10 @@ print(f"training accuracy: {(pred == y).mean():.1%}")
 xs = np.linspace(0, 11, 200)
 fig, ax = plt.subplots(figsize=(8, 5))
 fail, pas = y == 0, y == 1
-ax.scatter(hours[fail], y[fail], color="#E3120B", s=80, edgecolor="white", zorder=3, label="Fail")
-ax.scatter(hours[pas],  y[pas],  color="#076FA1", s=80, edgecolor="white", zorder=3, label="Pass")
+ax.scatter(hours[fail], y[fail], s=80, facecolors="white", edgecolors="#076FA1", linewidths=2, zorder=3, label="Fail (y = 0)")
+ax.scatter(hours[pas],  y[pas],  s=80, color="#2FC1D3", edgecolor="white", zorder=3, label="Pass (y = 1)")
 ax.plot(xs, sigmoid(theta[0] + theta[1]*xs), color="#31417A", lw=2.5, label="P(pass)")
-ax.axvline(boundary, color="#666666", ls="--", lw=2, label=f"boundary {boundary:.1f}h")
+ax.axvline(boundary, color="#E3120B", ls="--", lw=2, label=f"boundary {boundary:.1f}h")
 ax.axhline(0.5, color="#666666", ls=":", alpha=0.6)
 ax.set_xlabel("Hours studied"); ax.set_ylabel("P(pass)")
 ax.set_xlim(0, 11); ax.set_ylim(-0.05, 1.05); ax.legend(loc="center right")
@@ -204,13 +206,13 @@ cat(sprintf("training accuracy: %.1f%%\n", 100 * mean(pred == passed)))
 
 xs  <- seq(0, 11, length.out = 200)
 ps  <- predict(fit, newdata = data.frame(hours = xs), type = "response")
-col <- ifelse(passed == 1, "#076FA1", "#E3120B")
-plot(hours, passed, pch = 19, col = col, cex = 1.5,
+col <- ifelse(passed == 1, "#2FC1D3", "#076FA1")   # y = 1 filled cyan, y = 0 open blue
+plot(hours, passed, pch = ifelse(passed == 1, 19, 1), col = col, cex = 1.5, lwd = 2,
      xlab = "Hours studied", ylab = "P(pass)",
      xlim = c(0, 11), ylim = c(-0.05, 1.05), bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(xs, ps, col = "#31417A", lwd = 2.5)
-abline(v = boundary, col = "#666666", lty = 2, lwd = 2)
+abline(v = boundary, col = "#E3120B", lty = 2, lwd = 2)
 abline(h = 0.5, col = "#666666", lty = 3)
 ```
 
@@ -258,9 +260,9 @@ print(f"boundary line: x2 = {-theta[0]/theta[2]:.3f} + {-theta[1]/theta[2]:.3f} 
 xs = np.linspace(-1, 7, 200)
 fig, ax = plt.subplots(figsize=(7, 6))
 c0, c1 = y == 0, y == 1
-ax.scatter(x1[c0], x2[c0], color="#E3120B", s=70, edgecolor="white", zorder=3, label="Class 0")
-ax.scatter(x1[c1], x2[c1], color="#076FA1", s=70, edgecolor="white", zorder=3, label="Class 1")
-ax.plot(xs, -(theta[0] + theta[1]*xs)/theta[2], color="#31417A", lw=2.5, label="boundary")
+ax.scatter(x1[c0], x2[c0], s=70, facecolors="white", edgecolors="#076FA1", linewidths=2, zorder=3, label="Class 0")
+ax.scatter(x1[c1], x2[c1], s=70, color="#2FC1D3", edgecolor="white", zorder=3, label="Class 1")
+ax.plot(xs, -(theta[0] + theta[1]*xs)/theta[2], color="#E3120B", lw=2.5, label="boundary")
 ax.set_xlabel("Feature x1"); ax.set_ylabel("Feature x2")
 ax.set_xlim(-1, 7); ax.set_ylim(0, 7); ax.legend(loc="lower right")
 for s in ["top", "right"]: ax.spines[s].set_visible(False)
@@ -287,12 +289,12 @@ cat(sprintf("training accuracy: %.1f%%\n", 100 * mean(pred == y)))
 cat(sprintf("boundary line: x2 = %.3f + %.3f * x1\n", -co[1]/co[3], -co[2]/co[3]))
 
 xs  <- seq(-1, 7, length.out = 200)
-col <- ifelse(y == 1, "#076FA1", "#E3120B")
-plot(x1, x2, pch = 19, col = col, cex = 1.4,
+col <- ifelse(y == 1, "#2FC1D3", "#076FA1")   # class 1 filled cyan, class 0 open blue
+plot(x1, x2, pch = ifelse(y == 1, 19, 1), col = col, cex = 1.4, lwd = 2,
      xlab = "Feature x1", ylab = "Feature x2",
      xlim = c(-1, 7), ylim = c(0, 7), bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-lines(xs, -(co[1] + co[2]*xs)/co[3], col = "#31417A", lwd = 2.5)
+lines(xs, -(co[1] + co[2]*xs)/co[3], col = "#E3120B", lwd = 2.5)
 ```
 
 :::
@@ -303,12 +305,19 @@ slices between the clusters and misclassifies the handful of points that stray a
 
 ## Choosing the threshold
 
-A probability becomes a label only after we pick a [threshold]{.term}. The default $0.5$ is
-not sacred: lowering it catches more passes at the cost of more false alarms, raising it does
-the reverse. The table sweeps thresholds and counts false positives (predicted pass, actually
-failed) against false negatives (predicted fail, actually passed). The two languages produce
-identical tables, because thresholding depends only on the *ordering* of the fitted
-probabilities, which both fits share.
+A probability becomes a label only after we pick a [threshold]{.term}, and the threshold
+follows from what the two errors cost. Write $c_{\text{FP}}$ for the cost of a false positive
+(predicted pass, actually failed) and $c_{\text{FN}}$ for a false negative (predicted fail,
+actually passed). If the probabilities are calibrated, predicting a pass at probability $p$
+has expected cost $(1-p)\,c_{\text{FP}}$ and predicting a fail has expected cost
+$p\,c_{\text{FN}}$, so we predict a pass when
+
+$$p > \frac{c_{\text{FP}}}{c_{\text{FP}} + c_{\text{FN}}}.$$
+
+The default $0.5$ is the case of equal costs. The table runs the rule across cost ratios and
+counts the training errors at each threshold; the plot fixes one ratio, a false pass three
+times as costly as a missed one, and shows total training cost at every threshold, with the
+rule's threshold in red.
 
 ::: {.panel-tabset group="lang"}
 
@@ -333,22 +342,25 @@ for _ in range(20000):
     theta -= 0.5 * (X.T @ (sigmoid(X @ theta) - y)) / len(y)
 prob = sigmoid(X @ theta)
 
-print(f"{'threshold':>9} {'accuracy':>9} {'FP':>4} {'FN':>4}")
-thresholds = np.linspace(0.1, 0.9, 9)
-accs = []
-for t in thresholds:
-    pred = (prob >= t).astype(int)
+# The rule: predict a pass when p > c_FP / (c_FP + c_FN).
+print(f"{'c_FN/c_FP':>9} {'threshold':>9} {'FP':>4} {'FN':>4}")
+for ratio in [1/9, 1/3, 1, 3, 9]:
+    t = 1 / (1 + ratio)
+    pred = (prob > t).astype(int)
     fp = int(np.sum((y == 0) & (pred == 1)))
     fn = int(np.sum((y == 1) & (pred == 0)))
-    acc = (pred == y).mean()
-    accs.append(acc)
-    print(f"{t:>9.2f} {acc:>9.1%} {fp:>4} {fn:>4}")
+    print(f"{ratio:>9.2f} {t:>9.2f} {fp:>4} {fn:>4}")
 
-best = thresholds[int(np.argmax(accs))]
+# One cost setting: a false pass costs three times a missed pass.
+c_FP, c_FN = 3.0, 1.0
+rule = c_FP / (c_FP + c_FN)
+ts = np.linspace(0.05, 0.95, 91)
+cost = [c_FP * np.sum((y == 0) & (prob > t)) + c_FN * np.sum((y == 1) & (prob <= t))
+        for t in ts]
 fig, ax = plt.subplots(figsize=(8, 4.5))
-ax.plot(thresholds, accs, "o-", color="#076FA1", lw=2, markersize=8)
-ax.axvline(best, color="#666666", ls="--", alpha=0.7, label=f"best {best:.2f}")
-ax.set_xlabel("Decision threshold"); ax.set_ylabel("Accuracy")
+ax.plot(ts, cost, color="#31417A", lw=2.5, label="total training cost")
+ax.axvline(rule, color="#E3120B", ls="--", lw=2, label=f"rule threshold {rule:.2f}")
+ax.set_xlabel("Decision threshold"); ax.set_ylabel("Total cost (units of $c_{FN}$)")
 ax.set_xlim(0, 1); ax.legend()
 for s in ["top", "right"]: ax.spines[s].set_visible(False)
 ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
@@ -367,35 +379,43 @@ passed <- c(0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1,
 fit  <- glm(passed ~ hours, family = binomial)
 prob <- predict(fit, type = "response")
 
-cat(sprintf("%9s %9s %4s %4s\n", "threshold", "accuracy", "FP", "FN"))
-thresholds <- seq(0.1, 0.9, by = 0.1)
-accs <- numeric(length(thresholds))
-for (i in seq_along(thresholds)) {
-  t    <- thresholds[i]
-  pred <- as.integer(prob >= t)
+# The rule: predict a pass when p > c_FP / (c_FP + c_FN).
+cat(sprintf("%9s %9s %4s %4s\n", "c_FN/c_FP", "threshold", "FP", "FN"))
+for (ratio in c(1/9, 1/3, 1, 3, 9)) {
+  t    <- 1 / (1 + ratio)
+  pred <- as.integer(prob > t)
   fp   <- sum(passed == 0 & pred == 1)
   fn   <- sum(passed == 1 & pred == 0)
-  accs[i] <- mean(pred == passed)
-  cat(sprintf("%9.2f %8.1f%% %4d %4d\n", t, 100 * accs[i], fp, fn))
+  cat(sprintf("%9.2f %9.2f %4d %4d\n", ratio, t, fp, fn))
 }
 
-best <- thresholds[which.max(accs)]
-plot(thresholds, accs, type = "b", pch = 19, col = "#076FA1", lwd = 2,
-     xlab = "Decision threshold", ylab = "Accuracy", xlim = c(0, 1), bty = "l")
+# One cost setting: a false pass costs three times a missed pass.
+c_FP <- 3; c_FN <- 1
+rule <- c_FP / (c_FP + c_FN)
+ts   <- seq(0.05, 0.95, by = 0.01)
+cost <- sapply(ts, function(t) c_FP * sum(passed == 0 & prob > t) +
+                               c_FN * sum(passed == 1 & prob <= t))
+plot(ts, cost, type = "l", col = "#31417A", lwd = 2.5, xlim = c(0, 1), bty = "l",
+     xlab = "Decision threshold", ylab = "Total cost (units of c_FN)")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-abline(v = best, col = "#666666", lty = 2)
+abline(v = rule, col = "#E3120B", lty = 2, lwd = 2)
 ```
 
 :::
 
-Accuracy alone hides the trade: at a threshold of $0.6$ this model reaches its best score by
-eliminating false passes, but a setting that tolerates a false pass to never miss a real one
-would push the threshold lower. Which error costs more is a question about the application,
-not the algorithm, and it is the bridge to precision, recall, and ROC curves in Chapter 6.
+The two fits agree on every row of the table, on these data only. A threshold $t$ cuts at
+$\boldsymbol{\theta}^\top x = \log(t/(1-t))$, and since the two coefficient vectors differ,
+they cut at slightly different hours (4.36 and 4.43 at $t = 0.1$); no student happens to fall
+in between. In the plot, the rule's threshold of
+$0.75$ lands in the flat bottom of the cost curve, at a total cost of one missed pass. The
+rule assumes calibrated probabilities, and forty students are too few to check that; Chapter 6
+takes up calibration, along with precision, recall, and ROC curves. Which error costs more is
+a question about the application, not the algorithm.
 
 ::: {.explore}
 [Try it]{.lbl}
 In the first fit, drop the iteration count from `20000` to `200` and re-run. Watch the
-coefficients shrink and the sigmoid flatten, yet the decision boundary and accuracy barely
-move. Gradient descent settles the boundary long before it settles the magnitudes.
+coefficients shrink and the sigmoid flatten, yet the decision boundary moves only from about
+4.9 to 4.5 hours and the accuracy does not change. Gradient descent settles the boundary long
+before it settles the magnitudes.
 :::

@@ -153,11 +153,14 @@ cat(sprintf("RBF kernel ridge (smooth bound)  test accuracy: %.3f\n",
 
 :::
 
-Both Python ensembles lift accuracy well above the single tree, and the two "gain" lines are
-the chapter's bias-variance decomposition made arithmetic. A deep tree's errors come mostly
-from variance, which the forest attacks by averaging decorrelated trees; boosting reaches a
-similar place from the other side, reducing bias one shallow correction at a time. The
-forest's [feature importances]{.term} also explain why it *subsamples* features at each split:
+Both Python ensembles lift accuracy above the single tree on this split, and the two "gain"
+lines show what each mechanism bought here. The chapter's account reads them this way: a deep
+tree's errors come mostly from variance, which the forest attacks by averaging decorrelated
+trees, while boosting reduces bias one shallow correction at a time. Neither mechanism
+guarantees which method predicts better on a particular data set; another split or another
+data set can reorder the three. The forest's [feature importances]{.term} (impurity
+importances, which can favor features offering many possible splits; permutation importance is
+the usual check) also explain why it *subsamples* features at each split:
 left alone, every tree would seize the same one or two strong predictors and the trees would
 be near-copies. Forcing each split to choose from a random subset [decorrelates]{.term} them,
 which is what makes the average worth taking. The base-R column shows the same lesson in
@@ -165,10 +168,10 @@ miniature: a lone axis cut underperforms the smooth kernel that follows the data
 
 ## Decision boundaries across model classes
 
-To *see* the inductive biases, we drop to two features. The `make_moons` data is two
+To *see* the inductive biases, we drop to two features. The `make_moons` data are two
 interleaving crescents, not linearly separable, with enough noise that a flexible model can
 overfit. The kernel classifier rests on the radial basis function, the same Gaussian
-similarity from the chapter's kernel smoother.
+similarity used on the [Kernel Methods page](ch08_02_kernel_methods.qmd).
 
 ::: {.defbox}
 [Radial Basis Function Kernel]{.lbl}
@@ -177,7 +180,7 @@ similarity from the chapter's kernel smoother.
 
 The Python column fits five classifiers on the same points and draws where each switches its
 prediction. The R column draws the two it builds by hand: the axis-aligned stump against the
-smooth RBF boundary. Plotted in the site's blue and red, the shaded region is each model's
+smooth RBF boundary. Plotted in the book's blue and orange, the shaded region is each model's
 predicted class.
 
 ::: {.panel-tabset group="lang"}
@@ -204,8 +207,8 @@ models = [
     ("gradient boosting",  GradientBoostingClassifier(random_state=RNG)),
 ]
 
-region = ListedColormap(["#076FA1", "#E3120B"])   # blue / red, one per class
-point  = np.array(["#076FA1", "#E3120B"])
+region = ListedColormap(["#076FA1", "#9E4F00"])   # blue / orange, one per class
+point  = np.array(["#076FA1", "#9E4F00"])
 
 x_min, x_max = Xm[:, 0].min() - 0.5, Xm[:, 0].max() + 0.5
 y_min, y_max = Xm[:, 1].min() - 0.5, Xm[:, 1].max() + 0.5
@@ -279,8 +282,8 @@ xs <- seq(min(X[, 1]) - 0.5, max(X[, 1]) + 0.5, length.out = 120)
 ys <- seq(min(X[, 2]) - 0.5, max(X[, 2]) + 0.5, length.out = 120)
 grid <- as.matrix(expand.grid(x = xs, y = ys))
 
-region <- c("#CDE0EC", "#F7D2D0")     # light blue / light red fill
-pts    <- c("#076FA1", "#E3120B")     # blue / red points
+region <- c("#CDE0EC", "#EBD9C6")     # light blue / light orange fill
+pts    <- c("#076FA1", "#9E4F00")     # blue / orange points
 
 draw <- function(pred, title) {
   z <- matrix(pred, nrow = length(xs))
@@ -300,7 +303,7 @@ draw(predict_rbf(kern, grid),    "RBF kernel ridge (smooth)")
 Read the panels against the methods. **Linear (logistic)** draws one straight cut and cannot
 help misclassifying a slice of each crescent; its bias is a single hyperplane and no amount
 of data changes that. **Kernel SVM (RBF)** draws a smooth curved boundary that follows the
-crescents, its shape set by a hand-designed similarity fixed before any data is seen. The
+crescents, its shape set by a hand-designed similarity fixed before any data are seen. The
 **single tree** draws an axis-aligned staircase with small islands fencing off individual
 noisy points, the high-variance learner that overfits this data most readily. The **random
 forest** keeps the axis-aligned vocabulary but smooths the staircase, because it averages
@@ -336,9 +339,10 @@ separates them is the gap. The **single tree** has the widest, around $0.11$, an
 settings say why: `DecisionTreeClassifier()` is left at its defaults, with no depth limit and
 no minimum leaf size, so it splits until every leaf is pure. On noisy data that means
 memorizing the noise, which is the same thing as those small islands in its boundary panel.
-The **random forest** and **gradient boosting** fit the training set just as perfectly and
-generalize better, because averaging over resampled trees and correcting residuals in small
-steps both damp what any one tree memorizes. The **kernel SVM** has by far the narrowest gap,
+The **random forest** and **gradient boosting** fit the training set just as perfectly, and
+their gaps (about $0.09$ and $0.08$) are narrower than the tree's, because averaging over
+resampled trees and correcting residuals in small steps both damp what any one tree memorizes.
+The improvement is modest on 300 points: boosting's gap is about the linear model's. The **kernel SVM** has by far the narrowest gap,
 under $0.02$: its shape was fixed by the choice of `gamma` before any data arrived, and `C`
 caps how hard it will work to classify an awkward point. The **linear** model shows a modest
 gap for the opposite reason, having too little capacity to overfit and too little to fit.

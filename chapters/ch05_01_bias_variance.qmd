@@ -18,7 +18,7 @@ each, and looking at how the predictions scatter, we turn [bias]{.term} and
 
 ::: {.defbox}
 [Bias–Variance Decomposition]{.lbl}
-[ E[(y &minus; f&#770;(x))&sup2;] = Bias&sup2; + Variance + &sigma;&sup2; ]{.math}
+[ E<sub>D</sub>[(y &minus; h<sub>D</sub>(x))&sup2;] = Bias&sup2; + Variance + &sigma;&sup2; ]{.math}
 :::
 
 ```{=html}
@@ -28,8 +28,10 @@ each, and looking at how the predictions scatter, we turn [bias]{.term} and
 </figure>
 ```
 
-Read the three terms as answers to three questions. [Bias]{.term} asks how far the
-*average* fitted prediction sits from the truth, the error baked in by assumptions that are
+Here $h_{\mathcal{D}}$ is the model fitted to a training set $\mathcal{D}$, and
+$\bar{h}(x)$ is its prediction at $x$ averaged over training sets. Read the three terms as
+answers to three questions. [Bias]{.term} asks how far the *average* fitted prediction
+$\bar{h}(x)$ sits from the truth, the error baked in by assumptions that are
 too rigid (a straight line for a curved signal). [Variance]{.term} asks how much the fit
 *moves* when the training set changes, the error from chasing the noise in any one sample.
 The [irreducible error]{.term} $\sigma^2$ is the noise floor: scatter no model can remove
@@ -43,10 +45,11 @@ below is the middle two cases competing as we turn one knob: model complexity.
 
 ## The simulation
 
-Every demonstration on this page draws data the same way: inputs uniform on $[0, 1]$, and
-targets from the true function $f(x) = \sin(2\pi x)$ plus Gaussian noise with standard
-deviation $0.3$. That noise level fixes the irreducible error at $\sigma^2 = 0.09$, the
-floor every model is measured against. One noisy sample looks like this.
+The example is this page's own; the book's Section 5.4 draws its training sets from simulated
+houses instead. Every demonstration on this page draws data the same way: inputs uniform on
+$[0, 1]$, and targets from the true function $f(x) = \sin(2\pi x)$ plus Gaussian noise with
+standard deviation $0.3$. That noise level fixes the irreducible error at $\sigma^2 = 0.09$,
+the floor every model is measured against. One noisy sample looks like this.
 
 ::: {.panel-tabset group="lang"}
 
@@ -276,7 +279,7 @@ print(f"\nLowest total error at degree {best}")
 fig, ax = plt.subplots(figsize=(8, 5))
 ax.plot(degrees, bias2, "o-", color="#076FA1", linewidth=2, label="bias$^2$")
 ax.plot(degrees, var, "s-", color="#31417A", linewidth=2, label="variance")
-ax.plot(degrees, total, "^-", color="#E3120B", linewidth=2, label="total error")
+ax.plot(degrees, total, "^-", color="#9E4F00", linewidth=2, label="total error")
 ax.axhline(irr, color="#666666", linestyle="--", label=f"irreducible ($\\sigma^2$={irr:.2f})")
 ax.axvline(best, color="#666666", linestyle=":", alpha=0.7)
 ax.set_xlabel("polynomial degree (model complexity)")
@@ -321,7 +324,7 @@ best <- degrees[which.min(rows[, 4])]
 cat(sprintf("\nLowest total error at degree %d\n", best))
 
 irr <- rows[1, 3]
-plot(degrees, rows[, 4], type = "o", pch = 17, col = "#E3120B", lwd = 2,
+plot(degrees, rows[, 4], type = "o", pch = 17, col = "#9E4F00", lwd = 2,
      ylim = c(0, min(max(rows[, 4]) * 1.1, 12)),
      xlab = "polynomial degree (model complexity)", ylab = "error", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
@@ -330,7 +333,7 @@ lines(degrees, rows[, 2], type = "o", pch = 15, col = "#31417A", lwd = 2)
 abline(h = irr, col = "#666666", lty = 2)
 abline(v = best, col = "#666666", lty = 3)
 legend("top", c("total error", "bias^2", "variance", "irreducible"),
-       col = c("#E3120B", "#076FA1", "#31417A", "#666666"),
+       col = c("#9E4F00", "#076FA1", "#31417A", "#666666"),
        pch = c(17, 19, 15, NA), lty = c(1, 1, 1, 2), bty = "n")
 ```
 
@@ -347,7 +350,7 @@ variance differ in the last digits and the high-degree variance drifts apart by 
 percent. The shape of the curve, and the degree at which it bottoms out, are the same.
 
 Bias and variance are not spread evenly across the input. Near the edges of $[0, 1]$, where
-data is sparse and a high-degree polynomial has the least to anchor it, variance spikes
+data are sparse and a high-degree polynomial has the least to anchor it, variance spikes
 sharply; in the well-sampled interior it stays small. This is why extrapolation is
 dangerous: the same fit that is trustworthy in the middle is wild at the boundary.
 
@@ -395,7 +398,7 @@ noise = float(sigma)
 def truth_f(x):
     return np.sin(2 * np.pi * x)
 
-# Fewer datasets than the table above (40 rather than 100) so the redraw stays quick.
+# Fewer data sets than the table above (40 rather than 100) so the redraw stays quick.
 def decompose_at(degree, n_datasets=40, m=20, noise=0.3):
     grid = np.linspace(0, 1, 100)
     truth = truth_f(grid)
@@ -420,7 +423,7 @@ best = degs[int(np.argmin(total))]
 fig, ax = plt.subplots(figsize=(8, 4.6))
 ax.plot(degs, b2, "o-", color="#076FA1", lw=2, label="bias$^2$")
 ax.plot(degs, v, "s-", color="#31417A", lw=2, label="variance")
-ax.plot(degs, total, "^-", color="#E3120B", lw=2, label="total error")
+ax.plot(degs, total, "^-", color="#9E4F00", lw=2, label="total error")
 ax.axhline(irr, color="#666666", ls="--", label=f"irreducible ($\\sigma^2$={irr:.3f})")
 ax.axvline(best, color="#666666", ls=":", alpha=0.7)
 ax.set_xlabel("polynomial degree (model complexity)")
@@ -484,7 +487,7 @@ for ax, degree, title in zip(axes, [1, 3, 12],
                               "Degree 12 (high variance)"]):
     tr, te = learning_curve(degree, sizes)
     ax.plot(sizes, tr, "o-", color="#076FA1", linewidth=2, label="training MSE")
-    ax.plot(sizes, te, "s-", color="#E3120B", linewidth=2, label="test MSE")
+    ax.plot(sizes, te, "s-", color="#9E4F00", linewidth=2, label="test MSE")
     ax.axhline(0.09, color="#666666", linestyle="--", label="irreducible")
     ax.set_title(title); ax.set_xlabel("training set size")
     ax.legend(loc="upper right", fontsize=8)
@@ -539,10 +542,10 @@ for (k in 1:3) {
        ylim = c(0, yhi), main = title, xlab = "training set size", ylab = "MSE",
        bty = "l")
   grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-  lines(sizes, lc$test, type = "o", pch = 15, col = "#E3120B", lwd = 2)
+  lines(sizes, lc$test, type = "o", pch = 15, col = "#9E4F00", lwd = 2)
   abline(h = 0.09, col = "#666666", lty = 2)
   legend("topright", c("training MSE", "test MSE", "irreducible"),
-         col = c("#076FA1", "#E3120B", "#666666"),
+         col = c("#076FA1", "#9E4F00", "#666666"),
          pch = c(19, 15, NA), lty = c(1, 1, 2), bty = "n")
 }
 
@@ -570,11 +573,10 @@ between Python and R at the same trailing-digit level, for the same reason as be
 
 ## A modern footnote: double descent
 
-The U-shaped curve is the classical picture, and it is the right one for the models in this
-book. In the heavily overparameterized regime of modern deep learning, researchers have
-observed a second descent: past the point where the model can interpolate the training data
-exactly, test error can fall *again*. The book takes this up in Section 5.4 and Figure 5.4: the
-tidy U-shape is the beginning of the story, not the whole of it.
+The U-shaped curve is the classical picture, and it is not universal. In some settings,
+past the point where the model can interpolate the training data exactly, test error falls
+*again*: a second descent, observed in heavily overparameterized models, though it
+occurs even in linear least squares. The book takes this up in Section 5.4 and Figure 5.4.
 
 The trade-off is the reason the next two chapters exist. Cross-validation (Chapter 6)
 estimates the test-error curve so we can find its minimum without peeking at held-out data,
@@ -586,7 +588,7 @@ let a flexible model thrash.
 Take the noise slider down to $0.10$. The irreducible error drops to $0.01$, as $\sigma^2$
 must — but the winner does not move: degree three still takes it. Keep going to $0.05$ and
 degree five edges ahead, though only barely, and here you should distrust the result rather
-than learn from it. At forty datasets the two degrees are within Monte Carlo error of each
+than learn from it. At forty data sets the two degrees are within Monte Carlo error of each
 other, and which one "wins" flips as you add replications: 5, 5, 5, 3, 5, 3 at 40, 60, 100,
 200, 400 and 800. The cell reports no uncertainty, so it cannot tell you that. A number that
 changes when you look at it harder is not yet a finding.

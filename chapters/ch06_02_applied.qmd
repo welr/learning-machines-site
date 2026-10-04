@@ -98,13 +98,13 @@ y = 1 - benign
 
 # Fit the logistic model, then threshold its probabilities at 0.5.
 X = np.column_stack([np.ones(len(y)), radius, texture, concave_pts])
-beta = np.zeros(X.shape[1])
+theta = np.zeros(X.shape[1])
 for _ in range(50):                         # IRLS: the fit glm() also computes
-    p = 1 / (1 + np.exp(-X @ beta))
+    p = 1 / (1 + np.exp(-X @ theta))
     W = np.clip(p * (1 - p), 1e-9, None)
-    z = X @ beta + (y - p) / W
-    beta = np.linalg.solve((X * W[:, None]).T @ X, (X * W[:, None]).T @ z)
-proba = 1 / (1 + np.exp(-X @ beta))          # P(benign)
+    z = X @ theta + (y - p) / W
+    theta = np.linalg.solve((X * W[:, None]).T @ X, (X * W[:, None]).T @ z)
+proba = 1 / (1 + np.exp(-X @ theta))         # P(malignant)
 pred = (proba >= 0.5).astype(int)
 
 TN = int(((pred == 0) & (y == 0)).sum()); FP = int(((pred == 1) & (y == 0)).sum())
@@ -216,12 +216,15 @@ that one threshold of $0.5$. Move it, and the whole table shifts.
 
 So move it. The slider below re-tallies the same 120 cases at whatever cut-off you choose.
 Note which way the errors migrate. The positive class is *malignant*, so lowering the
-threshold calls more cases malignant: recall rises, fewer cancers are missed, and the cost is
-paid in the top-right cell, where a benign tumor is graded malignant and the patient is called
-back for a biopsy she did not need. Raise the threshold and the trade runs the other way, into
-the bottom-left cell, where a malignancy is graded benign. That is the mistake a cancer screen
-can least afford, and it is the reason the threshold is a clinical decision rather than a
-default of $0.5$.
+threshold calls more cases malignant. The bottom-left cell, malignant tumors graded benign,
+empties into the top-left, so recall rises; the top-right cell, benign tumors graded
+malignant, fills from the bottom-right, so precision tends to fall. Raising the threshold
+runs both migrations in reverse. Which of those two errors should a cancer screen avoid, and
+which way should the threshold move? If the probabilities are calibrated, Section 6.5 turns
+the answer into a number: predict malignant when
+$p > c_{\text{FP}}/(c_{\text{FP}} + c_{\text{FN}})$, where $c_{\text{FP}}$ and
+$c_{\text{FN}}$ are the costs you assign to a false positive and a false negative, and $0.5$
+is the case of equal costs.
 
 ```{ojs}
 //| echo: false
@@ -257,7 +260,7 @@ viewof cut = {
 import numpy as np
 import matplotlib.pyplot as plt
 
-# P(benign) from the IRLS fit above, and the benign labels, inlined so this cell stands on
+# P(benign) = 1 - P(malignant) from the IRLS fit above, and the benign labels, inlined so this cell stands on
 # its own: thresholding is the point here, and refitting would only repeat the cell above.
 # Both are flipped below, so that malignant is the positive class throughout.
 proba_benign = np.array([
@@ -314,7 +317,7 @@ plt.show()
 
 print(f"threshold {t:.2f} | precision {precision:.3f} | recall {recall:.3f} | F1 {f1:.3f}")
 print(f"benign graded malignant (top-right)      = {FP}   <- the false alarm")
-print(f"malignancy graded benign (bottom-left)   = {FN}   <- the costly error")
+print(f"malignancy graded benign (bottom-left)   = {FN}   <- the missed malignancy")
 ```
 
 ## ROC and AUC: every threshold at once
@@ -379,13 +382,13 @@ benign      = np.array([
 y = 1 - benign                               # malignant is the positive class
 
 X = np.column_stack([np.ones(len(y)), radius, texture, concave_pts])
-beta = np.zeros(X.shape[1])
+theta = np.zeros(X.shape[1])
 for _ in range(50):                         # IRLS: the fit glm() also computes
-    p = 1 / (1 + np.exp(-X @ beta))
+    p = 1 / (1 + np.exp(-X @ theta))
     W = np.clip(p * (1 - p), 1e-9, None)
-    z = X @ beta + (y - p) / W
-    beta = np.linalg.solve((X * W[:, None]).T @ X, (X * W[:, None]).T @ z)
-proba = 1 / (1 + np.exp(-X @ beta))          # P(malignant)
+    z = X @ theta + (y - p) / W
+    theta = np.linalg.solve((X * W[:, None]).T @ X, (X * W[:, None]).T @ z)
+proba = 1 / (1 + np.exp(-X @ theta))         # P(malignant)
 
 # Sweep the threshold from high to low; the TPR and FPR rise together, monotone.
 thr = np.unique(np.concatenate([[0.0], proba, [1.0]]))[::-1]
@@ -476,7 +479,7 @@ legend("bottomright", legend = c(sprintf("AUC = %.3f", auc), "chance"),
 The classifier rides close to the top-left corner, an AUC near $0.99$: on these three features
 the malignant and benign cases separate cleanly. Both panels report the same AUC because they
 rank the same cases with the same fitted model. That is the honest reading of AUC: it rates the
-ranking, not the dataset, and an easy problem flatters any reasonable model.
+ranking, not the data set, and an easy problem flatters any reasonable model.
 
 ::: {.explore}
 [Try it]{.lbl}

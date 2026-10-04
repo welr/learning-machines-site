@@ -33,7 +33,7 @@ explains why only one of them selects features.
 
 Fifteen noisy points come from $y = \sin(2\pi x)$. A degree-9 polynomial has enough freedom
 to chase every wiggle, and ordinary least squares takes the bait: its coefficients blow up to
-hundreds of thousands. Ridge solves the same normal equations with $\lambda I$ added to the
+hundreds of thousands. Ridge solves the same normal equation with $m\lambda I$ added to the
 cross-product, leaving the intercept unpenalized. That one term tames the fit.
 
 ::: {.defbox}
@@ -81,7 +81,7 @@ G = poly(grid, degree)
 fig, ax = plt.subplots(figsize=(7, 4.5))
 ax.scatter(x, y, s=70, color="#076FA1", edgecolor="white", zorder=5, label="training data")
 ax.plot(grid, np.sin(2*np.pi*grid), color="#666666", lw=2, ls="--", label="true function")
-ax.plot(grid, G @ theta_ols,   color="#E3120B", lw=2.2, label="degree-9 OLS (overfit)")
+ax.plot(grid, G @ theta_ols,   color="#2FC1D3", lw=2.2, label="degree-9 OLS (overfit)")
 ax.plot(grid, G @ theta_ridge, color="#31417A", lw=2.2, label="ridge (lambda=0.01)")
 ax.set_ylim(-2, 2); ax.set_xlabel("x"); ax.set_ylabel("y"); ax.legend(fontsize=8)
 for s in ["top", "right"]: ax.spines[s].set_visible(False)
@@ -117,20 +117,20 @@ G <- poly_features(grid, degree)
 plot(x, y, pch = 19, col = "#076FA1", cex = 1.4, ylim = c(-2, 2), xlab = "x", ylab = "y", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(grid, sin(2*pi*grid),       col = "#666666", lwd = 2, lty = 2)
-lines(grid, G %*% theta_ols,      col = "#E3120B", lwd = 2.2)
+lines(grid, G %*% theta_ols,      col = "#2FC1D3", lwd = 2.2)
 lines(grid, G %*% theta_ridge,    col = "#31417A", lwd = 2.2)
 legend("topright", c("training data", "true function", "degree-9 OLS", "ridge (0.01)"),
-       col = c("#076FA1", "#666666", "#E3120B", "#31417A"),
+       col = c("#076FA1", "#666666", "#2FC1D3", "#31417A"),
        pch = c(19, NA, NA, NA), lty = c(NA, 2, 1, 1), lwd = 2, bty = "n", cex = 0.8)
 ```
 
 :::
 
-Ridge cuts the largest coefficient from roughly $3 \times 10^5$ down to about $5$. The two
+Ridge cuts the largest coefficient from roughly $3 \times 10^5$ down to about $1.4$. The two
 languages agree to that figure, but their OLS maxima differ in the fifth significant digit
 (about 318026 versus 318018). That gap is not a bug; it is the symptom. The unpenalized
 cross-product is so close to singular that two linear solvers round it differently. Adding
-$\lambda I$ removes the pathology, and both report the same $4.9$.
+$m\lambda I$ removes the pathology, and both report the same $1.4$.
 
 ## Two penalties, two paths
 
@@ -143,14 +143,14 @@ exactly zero once the penalty outweighs its correlation with the residual.
 
 ::: {.defbox}
 [Soft-Thresholding (one LASSO coordinate)]{.lbl}
-[ &theta;<sub>j</sub> = sign(&rho;<sub>j</sub>) &middot; max(|&rho;<sub>j</sub>| &minus; &lambda;m, 0) / &Sigma;<sub>i</sub> x<sub>ij</sub>&sup2; ]{.math}
+[ &theta;<sub>j</sub> = sign(&rho;<sub>j</sub>) &middot; max(|&rho;<sub>j</sub>| &minus; m&lambda;/2, 0) / &Sigma;<sub>i</sub> x<sub>ij</sub>&sup2; ]{.math}
 :::
 
 Here $\rho_j$ is the dot product of feature $j$ with the residual formed by leaving feature
 $j$ out. We standardize the polynomial features first, so a single $\lambda$ penalizes every
 coefficient on equal footing. The two panels tell the whole story: ridge coefficients glide
 toward zero but never arrive, while LASSO coefficients hit zero one after another. At
-$\lambda = 0.05$ ridge keeps all eight features and LASSO keeps three. (`glmnet` in R and
+$\lambda = 0.05$ ridge keeps all eight features and LASSO keeps two. (`glmnet` in R and
 `Lasso` in scikit-learn are the production solvers; the dozen lines below are the idea they
 optimize.)
 
@@ -318,7 +318,7 @@ loss = (T1 - ols[0])**2 + 0.35 * (T2 - ols[1])**2
 
 fig, axes = plt.subplots(1, 2, figsize=(10, 5), sharex=True, sharey=True)
 for ax in axes:
-    ax.contour(T1, T2, loss, levels=12, colors="#076FA1", alpha=0.6, linewidths=0.8)
+    ax.contour(T1, T2, loss, levels=12, colors="#666666", alpha=0.6, linewidths=0.8)
     ax.axhline(0, color="#666666", lw=0.8); ax.axvline(0, color="#666666", lw=0.8)
     ax.scatter(*ols, color="#31417A", marker="*", s=180, zorder=5,
                edgecolor="white", label="OLS")
@@ -328,13 +328,13 @@ for ax in axes:
 axes[0].set_ylabel(r"$\theta_2$")
 
 r = 1.3
-axes[0].add_patch(Circle((0, 0), r, fill=False, edgecolor="#E3120B", lw=2.5))
-axes[0].scatter(0.78, 1.04, color="#E3120B", s=120, zorder=6, edgecolor="white", label="ridge")
+axes[0].add_patch(Circle((0, 0), r, fill=False, edgecolor="#076FA1", lw=2.5))
+axes[0].scatter(0.78, 1.04, color="#076FA1", s=120, zorder=6, edgecolor="white", label="ridge")
 axes[0].set_title("Ridge (L2): circle", loc="left"); axes[0].legend(fontsize=8, loc="lower left")
 
 axes[1].add_patch(Polygon([(r, 0), (0, r), (-r, 0), (0, -r)], fill=False,
-                          edgecolor="#E3120B", lw=2.5))
-axes[1].scatter(0, r, color="#E3120B", s=120, zorder=6, edgecolor="white",
+                          edgecolor="#2FC1D3", lw=2.5))
+axes[1].scatter(0, r, color="#2FC1D3", s=120, zorder=6, edgecolor="white",
                 label="LASSO (corner)")
 axes[1].set_title("LASSO (L1): diamond", loc="left"); axes[1].legend(fontsize=8, loc="lower left")
 plt.tight_layout(); plt.show()
@@ -346,17 +346,17 @@ g <- seq(-3, 3, length.out = 200)
 loss <- outer(g, g, function(a, b) (a - 1.5)^2 + 0.35 * (b - 2.0)^2)
 
 draw_panel <- function(shape, sol, title) {
-  contour(g, g, loss, nlevels = 12, col = "#076FA1", drawlabels = FALSE, asp = 1, bty = "l",
+  contour(g, g, loss, nlevels = 12, col = "#666666", drawlabels = FALSE, asp = 1, bty = "l",
           xlab = expression(theta[1]), ylab = expression(theta[2]), main = title)
   abline(h = 0, v = 0, col = "#666666")
   if (shape == "circle") {
     a <- seq(0, 2*pi, length.out = 200)
-    lines(1.3 * cos(a), 1.3 * sin(a), col = "#E3120B", lwd = 2.5)
+    lines(1.3 * cos(a), 1.3 * sin(a), col = "#076FA1", lwd = 2.5)
   } else {
-    polygon(c(1.3, 0, -1.3, 0), c(0, 1.3, 0, -1.3), border = "#E3120B", lwd = 2.5)
+    polygon(c(1.3, 0, -1.3, 0), c(0, 1.3, 0, -1.3), border = "#2FC1D3", lwd = 2.5)
   }
   points(1.5, 2.0, pch = 8,  col = "#31417A", cex = 1.6)   # OLS solution
-  points(sol[1], sol[2], pch = 19, col = "#E3120B", cex = 1.6)
+  points(sol[1], sol[2], pch = 19, col = if (shape == "circle") "#076FA1" else "#2FC1D3", cex = 1.6)
 }
 
 par(mfrow = c(1, 2))
@@ -435,15 +435,15 @@ cat(sprintf("theta2 (large scale): %9.6f     %8.4f\n", t_raw[3], t_std[3]))
 
 :::
 
-Raw, ridge gives the signal-carrying coefficient about $0.003$, no better than the noise
-feature. Standardized, the two coefficients are comparable, near $0.77$ and $0.73$. The fixed
+Raw, ridge crushes the signal-carrying coefficient to about $0.0002$, though its true value
+is $100$. Standardized, the two coefficients are comparable, near $0.52$ and $0.51$. The fixed
 data makes the two languages agree to every printed digit.
 
 The one knob left is $\lambda$ itself, chosen by cross-validation against held-out error
 rather than by eye (see the model-evaluation page). When predictors are correlated, LASSO
 picks one of a group somewhat arbitrarily; [Elastic Net]{.term} adds a ridge term to the L1
-penalty to keep correlated features together while still zeroing out the rest, and it is the
-default in `scikit-learn`'s `ElasticNet` and `glmnet`.
+penalty to keep correlated features together while still zeroing out the rest; `scikit-learn`
+fits it with `ElasticNet`.
 
 ::: {.explore}
 [Try it]{.lbl}

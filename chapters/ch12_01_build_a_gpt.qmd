@@ -24,7 +24,7 @@ The step-by-step structure follows Andrej Karpathy's *"Let's build GPT"* lecture
 
 ## Characters in, characters out
 
-Production models tokenize text into sub-word pieces (Chapter 12). Here we keep things as simple as possible and work [character by character]{.term}, so the vocabulary is just the set of distinct characters in the corpus, Karpathy's *Tiny Shakespeare*, about a megabyte of the plays. An `encode` map sends each character to an integer and `decode` sends it back. A batch is a stack of random fixed-length windows, with the targets shifted one position right: at every position the model is asked to predict the next character. That one-position shift is the entire supervision signal. The model never sees a label beyond "what came next."
+Production models tokenize text into sub-word pieces (Chapter 11). Here we keep things as simple as possible and work [character by character]{.term}, so the vocabulary is just the set of distinct characters in the corpus, Karpathy's *Tiny Shakespeare*, about a megabyte of the plays. An `encode` map sends each character to an integer and `decode` sends it back. A batch is a stack of random fixed-length windows, with the targets shifted one position right: at every position the model is asked to predict the next character. That one-position shift is the entire supervision signal. The model never sees a label beyond "what came next."
 
 ## The same idea, with a context of one
 
@@ -314,7 +314,7 @@ The full model strings it together: a token embedding and a position embedding (
 ::: {.defbox}
 [The Next-Token Objective]{.lbl}
 
-[ minimize &nbsp; &minus;&sum;<sub>t</sub> log p<sub>&theta;</sub>(x<sub>t+1</sub> &nbsp;|&nbsp; x<sub>1</sub>,&hellip;,x<sub>t</sub>) &nbsp;=&nbsp; cross-entropy &nbsp;=&nbsp; the MLE of Chapter 2 ]{.math}
+[ minimize &nbsp; &minus;&sum;<sub>t=1</sub><sup>T</sup> log p<sub>&theta;</sub>(x<sub>t</sub> &nbsp;|&nbsp; x<sub>1</sub>,&hellip;,x<sub>t&minus;1</sub>) &nbsp;=&nbsp; cross-entropy &nbsp;=&nbsp; the MLE of Chapter 2 ]{.math}
 :::
 
 ```python
@@ -355,12 +355,12 @@ for step in range(max_iters + 1):
     _, loss = model(x, y)                 # forward pass returns the next-token cross-entropy
     optimizer.zero_grad(set_to_none=True)
     loss.backward()                       # backpropagation
-    optimizer.step()                      # theta <- theta - lr * grad
+    optimizer.step()                      # optimizer update (AdamW, Ch 9)
 ```
 
 To generate, the model runs forward one character at a time: take the logits at the last position, turn them into a distribution, sample, append, and repeat. This is [autoregressive decoding]{.term}. Two controls from Chapter 12 shape the output: a [temperature]{.term} that divides the logits before the softmax, sharpening or flattening the distribution, and an optional [top-k]{.term} truncation that keeps only the most probable characters.
 
-A third of a million parameters, trained for a couple of minutes on a megabyte of text, learns the *shape* of the data: line breaks, speaker labels in capitals, the rhythm of the verse, plausible-looking words. It is not yet coherent. That gap is the subject of Chapter 12's scaling laws, in which the cross-entropy floor lies far below where we are and the way down is more parameters and more data, grown together. nanoGPT is this same architecture scaled up until the babble becomes fluent.
+A third of a million parameters, trained for a couple of minutes on a megabyte of text, learns the *shape* of the data: line breaks, speaker labels in capitals, the rhythm of the verse, plausible-looking words. It is not yet coherent. That gap is the subject of Chapter 12's scaling laws: more parameters and more data, grown together, would lower this loss. nanoGPT is this same architecture scaled up until the babble becomes fluent.
 
 ::: {.explore}
 [Try it]{.lbl}

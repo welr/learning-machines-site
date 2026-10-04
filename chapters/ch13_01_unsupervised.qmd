@@ -134,12 +134,65 @@ Even with one color, the plot is not one blob: a tight island sits apart from a 
 ridge. We did not put that there. It is structure in $p(\mathbf{x})$, and the next step
 gives it names — well, numbers.
 
+## The book's worked example
+
+Before the flowers, the chapter's own example: six points on a line, $\{0, 1, 2, 7, 8, 9\}$,
+$K = 2$, and the deliberately poor start $\mu_1 = 0$, $\mu_2 = 1$. The trace should match the
+book's $150 \to 53.2 \to 27.28 \to 4$, ending at centers 1 and 8.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+
+x = np.array([0., 1., 2., 7., 8., 9.])
+mu = np.array([0., 1.])                     # the book's deliberately poor start
+J = lambda c: ((x - mu[c]) ** 2).sum()
+
+c = np.abs(x[:, None] - mu).argmin(axis=1)  # first assignment
+trace = [J(c)]
+while True:
+    mu = np.array([x[c == k].mean() for k in range(2)])   # update
+    trace.append(J(c))
+    c_new = np.abs(x[:, None] - mu).argmin(axis=1)        # reassign
+    if (c_new == c).all():
+        break                               # no assignment changed: halt
+    c = c_new
+    trace.append(J(c))
+print("J:", " -> ".join(f"{j:g}" for j in trace))   # the book: 150 -> 53.2 -> 27.28 -> 4
+print("centers:", mu)
+```
+
+## R
+```{webr}
+x <- c(0, 1, 2, 7, 8, 9)
+mu <- c(0, 1)                               # the book's deliberately poor start
+J <- function(cl) sum((x - mu[cl])^2)
+nearest <- function() max.col(-abs(outer(x, mu, "-")), ties.method = "first")
+
+cl <- nearest()                             # first assignment
+trace <- J(cl)
+repeat {
+  mu <- sapply(1:2, function(k) mean(x[cl == k]))   # update
+  trace <- c(trace, J(cl))
+  cl_new <- nearest()                               # reassign
+  if (all(cl_new == cl)) break              # no assignment changed: halt
+  cl <- cl_new
+  trace <- c(trace, J(cl))
+}
+cat("J:", paste(format(trace, drop0trailing = TRUE, trim = TRUE), collapse = " -> "), "\n")
+cat("centers:", mu, "\n")
+```
+
+:::
+
 ## K-means, by hand
 
 Lloyd's algorithm is two alternating steps: assign each point to its nearest center, move
-each center to the mean of its points. Each step can only lower the objective $J$, so the
-printed trace falls monotonically and then stops moving — the same monotone descent as
-the textbook's worked example, on real data.
+each center to the mean of its points. Neither step can raise the objective $J$, so the
+printed trace never rises and then stops moving — the same monotone descent as
+the worked example above, on real data.
 
 ::: {.panel-tabset group="lang"}
 
@@ -200,7 +253,7 @@ settle near $J \approx 139$–$141$ within a few iterations. Convergence is guar
 convergence to the *best* partition is not, which is why production implementations
 (`sklearn.cluster.KMeans`, R's `kmeans` with `nstart`) run several restarts and keep the
 best. The textbook's statistical reading explains what we just fit: a Gaussian mixture
-whose component variances have been sent to zero — density estimation with the class
+with equal weights and a shared spherical covariance whose variance has been sent to zero — density estimation with the class
 labels treated as missing data.
 
 ## Breaking the seal
@@ -233,7 +286,7 @@ for _ in range(6):
 
 names = iris.target_names
 fig, ax = plt.subplots(figsize=(7, 5))
-for s, color in zip(range(3), ["#076FA1", "#2FC1D3", "#9E4F00"]):
+for s, color in zip(range(3), ["#076FA1", "#3EB489", "#9E4F00"]):
     pts = Z[species_sealed == s]
     ax.scatter(pts[:, 0], pts[:, 1], s=45, color=color, alpha=0.75,
                edgecolor="white", linewidth=0.6, label=names[s])
@@ -270,7 +323,7 @@ for (it in 1:6) {
   for (k in 1:K) mus[k, ] <- colMeans(Z[cluster == k, , drop = FALSE])
 }
 
-cols <- c("#076FA1", "#2FC1D3", "#9E4F00")
+cols <- c("#076FA1", "#3EB489", "#9E4F00")
 plot(Z, pch = 19, cex = 1.1, bty = "l",
      col = adjustcolor(cols[as.integer(species_sealed)], 0.75),
      xlab = "first principal score", ylab = "second principal score",

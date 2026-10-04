@@ -14,7 +14,7 @@ engine: markdown
 For a linear model $\mathbf{y} = \mathbf{X}\boldsymbol{\theta} + \boldsymbol{\varepsilon}$, the
 [ordinary least squares]{.term} estimate is the coefficient vector that minimizes the
 residual sum of squares, $\lVert \mathbf{y} - \mathbf{X}\boldsymbol{\theta} \rVert^2$.
-Differentiating and setting the gradient to zero gives the [normal equations]{.term}
+Differentiating and setting the gradient to zero gives the [normal equation]{.term}
 $\mathbf{X}^\top\mathbf{X}\,\hat{\boldsymbol{\theta}} = \mathbf{X}^\top\mathbf{y}$. When
 $\mathbf{X}^\top\mathbf{X}$ is invertible, one line of linear algebra returns the optimum
 with no iteration.
@@ -36,10 +36,10 @@ features, and see where the formula breaks down numerically.
 </figure>
 ```
 
-## Solving the normal equations by hand
+## Solving the normal equation by hand
 
-Five houses, one feature: floor area (hundreds of square feet) against price (thousands of
-dollars). The design matrix gets a leading column of ones so the model carries an intercept.
+Five houses, one feature: the first five rows of the book's Frankfurt data set, living area
+in square meters against price in thousands of euros. The design matrix gets a leading column of ones so the model carries an intercept.
 We form $\mathbf{X}^\top\mathbf{X}$ and $\mathbf{X}^\top\mathbf{y}$, invert the first, and
 multiply.
 
@@ -50,16 +50,16 @@ multiply.
 import numpy as np
 np.set_printoptions(precision=4, suppress=True)
 
-# Floor area (hundreds of sq ft) and price (thousands of $)
-x = np.array([8, 10, 12, 14, 16])
-y = np.array([175, 200, 255, 262, 330])
+# Living area (m^2) and price (thousands of euros): the book's first five Frankfurt houses
+x = np.array([52.14, 82.69, 120.47, 122.73, 65.40])
+y = np.array([164.22, 384.49, 465.42, 746.54, 202.26])
 
 # Design matrix: a column of ones for the intercept, then the feature
 X = np.column_stack([np.ones(len(x)), x])
 
 XtX = X.T @ X                       # 2x2 cross-product
 Xty = X.T @ y                       # 2x1
-theta = np.linalg.inv(XtX) @ Xty    # normal-equations solution
+theta = np.linalg.inv(XtX) @ Xty    # normal-equation solution
 
 print("X^T X =\n", XtX)
 print("\nX^T y =", Xty)
@@ -71,16 +71,16 @@ print(f"\nPrice ~ {theta[0]:.0f} + {theta[1]:.1f} * area")
 
 ## R
 ```{webr}
-# Floor area (hundreds of sq ft) and price (thousands of $)
-x <- c(8, 10, 12, 14, 16)
-y <- c(175, 200, 255, 262, 330)
+# Living area (m^2) and price (thousands of euros): the book's first five Frankfurt houses
+x <- c(52.14, 82.69, 120.47, 122.73, 65.40)
+y <- c(164.22, 384.49, 465.42, 746.54, 202.26)
 
 # Design matrix: a column of ones for the intercept, then the feature
 X <- cbind(1, x)
 
 XtX <- t(X) %*% X                 # 2x2 cross-product
 Xty <- t(X) %*% y                 # 2x1
-theta <- solve(XtX) %*% Xty       # normal-equations solution
+theta <- solve(XtX) %*% Xty       # normal-equation solution
 
 cat("X^T X =\n"); print(XtX)
 cat("\nX^T y =\n"); print(Xty)
@@ -108,8 +108,8 @@ small as possible in aggregate. The dashed segments below are exactly those gaps
 import numpy as np
 import matplotlib.pyplot as plt
 
-x = np.array([8, 10, 12, 14, 16])
-y = np.array([175, 200, 255, 262, 330])
+x = np.array([52.14, 82.69, 120.47, 122.73, 65.40])
+y = np.array([164.22, 384.49, 465.42, 746.54, 202.26])
 X = np.column_stack([np.ones(len(x)), x])
 theta = np.linalg.inv(X.T @ X) @ (X.T @ y)
 
@@ -118,12 +118,12 @@ residuals = y - y_pred
 
 fig, ax = plt.subplots(figsize=(7, 5))
 ax.scatter(x, y, s=80, color="#076FA1", edgecolor="white", zorder=3, label="data")
-xs = np.linspace(6, 18, 100)
+xs = np.linspace(45, 130, 100)
 ax.plot(xs, theta[0] + theta[1] * xs, color="#31417A", linewidth=2, label="OLS fit")
 for xi, yi, yp in zip(x, y, y_pred):
     ax.plot([xi, xi], [yi, yp], color="#E3120B", linestyle="--", linewidth=1.5, alpha=0.7)
-ax.set_xlabel("Floor area (hundreds of sq ft)")
-ax.set_ylabel("Price (thousands of $)")
+ax.set_xlabel("Living area (m$^2$)")
+ax.set_ylabel("Price (thousands of euros)")
 ax.legend()
 for s in ["top", "right"]:
     ax.spines[s].set_visible(False)
@@ -139,8 +139,8 @@ print("Residuals: ", residuals.round(1))
 
 ## R
 ```{webr}
-x <- c(8, 10, 12, 14, 16)
-y <- c(175, 200, 255, 262, 330)
+x <- c(52.14, 82.69, 120.47, 122.73, 65.40)
+y <- c(164.22, 384.49, 465.42, 746.54, 202.26)
 X <- cbind(1, x)
 theta <- solve(t(X) %*% X, t(X) %*% y)   # solve(A, b) avoids forming the inverse
 
@@ -148,8 +148,8 @@ y_pred <- as.vector(X %*% theta)
 residuals <- y - y_pred
 
 plot(x, y, pch = 19, col = "#076FA1", cex = 1.6, bty = "l",
-     xlab = "Floor area (hundreds of sq ft)",
-     ylab = "Price (thousands of $)")
+     xlab = "Living area (m^2)",
+     ylab = "Price (thousands of euros)")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 abline(a = theta[1], b = theta[2], col = "#31417A", lwd = 2)
 segments(x, y, x, y_pred, col = "#E3120B", lty = 2, lwd = 1.5)
@@ -177,8 +177,8 @@ that returns later as effective degrees of freedom.
 import numpy as np
 np.set_printoptions(precision=3, suppress=True)
 
-x = np.array([8, 10, 12, 14, 16])
-y = np.array([175, 200, 255, 262, 330])
+x = np.array([52.14, 82.69, 120.47, 122.73, 65.40])
+y = np.array([164.22, 384.49, 465.42, 746.54, 202.26])
 X = np.column_stack([np.ones(len(x)), x])
 
 # Hat matrix: projects y onto the column space of X
@@ -194,8 +194,8 @@ print("\ntrace(H) =", round(float(np.trace(H)), 3), "= number of parameters")
 
 ## R
 ```{webr}
-x <- c(8, 10, 12, 14, 16)
-y <- c(175, 200, 255, 262, 330)
+x <- c(52.14, 82.69, 120.47, 122.73, 65.40)
+y <- c(164.22, 384.49, 465.42, 746.54, 202.26)
 X <- cbind(1, x)
 
 # Hat matrix: projects y onto the column space of X
@@ -318,76 +318,46 @@ draw is a point on the shaded plane. Drag the sliders, or rotate the right panel
 stands at a right angle to the plane exactly when it has no average left and no trend in size.
 
 ```{=html}
-<div class="lsproj" role="figure" aria-label="Interactive figure: least squares as a projection">
-<style>
-  .lsproj { --bg:#ffffff; --ink:#23252e; --muted:#6b6e78; --frame:#e6e3da; --grid:#ebe8df; --axis:#cfccc2;
-            --blue:#076FA1; --fsblue:#31417A; --red:#E3120B; --cyan:#2FC1D3; --orange:#9E4F00;
-            --plane:rgba(47,193,211,0.13); --panel:#ffffff; margin:26px 0 30px; color:var(--ink); max-width:42rem; }
-  .lsproj .eyebrow { font-family:"Inconsolata"; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--red); font-weight:700; margin:0 0 2px; }
-  .lsproj .ftitle { font-family:"Source Serif 4"; font-weight:600; font-size:19px; color:var(--ink); margin:0 0 12px; }
-  .lsproj .views { display:grid; grid-template-columns:1fr 1.2fr; gap:12px; }
-  @media (max-width: 640px) { .lsproj .views { grid-template-columns:1fr; } }
-  .lsproj .card { border:1px solid var(--frame); border-radius:6px; background:var(--panel); padding:12px 14px 6px; }
-  .lsproj .card .ttl { font-family:"Inconsolata"; font-size:11px; letter-spacing:.18em; text-transform:uppercase;
-                     color:var(--fsblue); font-weight:700; margin:0 0 4px; }
-  .lsproj .card .sub { font-family:"Source Serif 4"; font-style:italic; font-size:13.5px; color:var(--muted); margin:0 0 4px; max-width:none; }
-  .lsproj svg { width:100%; height:auto; display:block; touch-action:none; }
-  .lsproj svg text { font-family:"Inconsolata"; }
-  .lsproj .lm-slider { max-width:none; margin:14px 0 8px; }
-  .lsproj .lm-slider label { min-width:8rem; }
-  .lsproj .lm-slider .sym { text-transform:none; letter-spacing:0; font-size:15px; }
-  .lsproj .buttons { margin:8px 0 0; display:flex; flex-wrap:wrap; gap:8px; }
-  .lsproj button { font-family:"Inconsolata"; font-size:13.5px; font-weight:600; letter-spacing:.03em; padding:6px 13px;
-                   border-radius:5px; cursor:pointer; border:1px solid var(--frame); background:#fff; color:#3f4450; }
-  .lsproj button:hover { border-color:var(--fsblue); color:var(--fsblue); }
-  .lsproj .readout { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:14px; }
-  @media (max-width: 560px) { .lsproj .readout { grid-template-columns:repeat(2,1fr); } }
-  .lsproj .stat { border:1px solid var(--frame); border-radius:6px; padding:9px 12px; background:#fff; }
-  .lsproj .stat .k { font-family:"Inconsolata"; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); line-height:1.35; }
-  .lsproj .stat .v { font-family:"Inconsolata"; font-size:19px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; }
-  .lsproj .stat.zero .v { color:var(--blue); }
-  .lsproj .note { margin-top:14px; padding:12px 18px; border:1px solid var(--frame); border-left:4px solid var(--blue);
-                  border-radius:6px; background:#f3f6fb; font-size:16px; line-height:1.5; }
-</style>
-<div class="eyebrow">Interactive</div>
-<div class="ftitle">Least squares as a projection</div>
-<div class="views">
-    <div class="card">
-      <div class="ttl">The line</div>
-      <p class="sub">Residuals are the vertical gaps; the intercept is the height at size 0.</p>
+<div class="lm-ix lsproj" role="figure" aria-label="Interactive figure: least squares as a projection">
+<div class="ix-eyebrow">Interactive</div>
+<div class="ix-title">Least squares as a projection</div>
+<div class="ix-views">
+    <div class="ix-card">
+      <div class="ix-ttl">The line</div>
+      <p class="ix-sub">Residuals are the vertical gaps; the intercept is the height at size 0.</p>
       <svg id="lsp-fit" viewBox="0 0 420 340" aria-label="Scatter of three houses with the current line and residuals"></svg>
     </div>
-    <div class="card">
-      <div class="ttl">Data space</div>
-      <p class="sub">Each axis is one house's price, so the three prices are a single point. The shaded plane holds every set of fitted values a line can produce. Drag to rotate.</p>
+    <div class="ix-card">
+      <div class="ix-ttl">Data space</div>
+      <p class="ix-sub">Each axis is one house's price, so the three prices are a single point. The shaded plane holds every set of fitted values a line can produce. Drag to rotate.</p>
       <svg id="lsp-space" viewBox="0 0 520 400" aria-label="Three-dimensional view of the target vector, the column-space plane and the residual"></svg>
     </div>
   </div>
 
   <div class="lm-slider"><label for="lsp-t0">Intercept <span class="sym">θ₀</span></label><input id="lsp-t0" type="range" min="0" max="6" step="any" value="3.3333333333"><output id="lsp-t0v"></output></div>
 <div class="lm-slider"><label for="lsp-t1">Slope <span class="sym">θ₁</span></label><input id="lsp-t1" type="range" min="-1" max="4" step="any" value="2"><output id="lsp-t1v"></output></div>
-  <div class="buttons">
+  <div class="ix-buttons">
     <button id="lsp-ls">Least-squares line</button>
     <button id="lsp-steep">Slope 2 (the text's steeper line)</button>
     <button id="lsp-flat">Flat line at the mean</button>
     <button id="lsp-zoom">Show the whole space</button>
   </div>
 
-  <div class="readout">
-    <div class="stat" id="lsp-s-rss"><div class="k">RSS = length² of the residual</div><div class="v" id="lsp-rss"></div></div>
-    <div class="stat" id="lsp-s-sum"><div class="k">Residuals summed (against the column of 1s)</div><div class="v" id="lsp-sum"></div></div>
-    <div class="stat" id="lsp-s-trend"><div class="k">Residuals × size (against the size column)</div><div class="v" id="lsp-trend"></div></div>
-    <div class="stat" id="lsp-s-ang"><div class="k">Angle between residual and plane</div><div class="v" id="lsp-ang"></div></div>
+  <div class="ix-readout">
+    <div class="ix-stat" id="lsp-s-rss"><div class="k">RSS = length² of the residual</div><div class="v" id="lsp-rss"></div></div>
+    <div class="ix-stat" id="lsp-s-sum"><div class="k">Residuals summed (against the column of 1s)</div><div class="v" id="lsp-sum"></div></div>
+    <div class="ix-stat" id="lsp-s-trend"><div class="k">Residuals × size (against the size column)</div><div class="v" id="lsp-trend"></div></div>
+    <div class="ix-stat" id="lsp-s-ang"><div class="k">Angle between residual and plane</div><div class="v" id="lsp-ang"></div></div>
   </div>
 
-  <div class="note" id="lsp-note"></div>
+  <div class="ix-note" id="lsp-note"></div>
 <script>
 (function () {
   const X = [-1, 0, 1], Y = [2, 3, 5];
   const LS = { t0: 10 / 3, t1: 1.5 };
   const t0 = document.getElementById('lsp-t0'), t1 = document.getElementById('lsp-t1');
   const root = document.querySelector('.lsproj');
-  const css = n => getComputedStyle(root).getPropertyValue(n).trim();
+  const css = n => getComputedStyle(root).getPropertyValue(n === '--fsblue' ? '--ix-fs' : n.replace('--', '--ix-')).trim();   // kit colors (theme.scss .lm-ix)
   const NS = 'http://www.w3.org/2000/svg';
   function el(tag, attrs, parent) {
     const e = document.createElementNS(NS, tag);
@@ -678,7 +648,7 @@ x2 = x1 + np.random.randn(m) * 1e-8        # x2 is almost identical to x1
 y = 3 * x1 + 2 * x2 + np.random.randn(m) * 0.1   # so theta1 + theta2 should be ~5
 
 X = np.column_stack([np.ones(m), x1, x2])
-print(f"Condition number of X^T X: {np.linalg.cond(X.T @ X):.2e}  (housing data: about 3,000)\n")
+print(f"Condition number of X^T X: {np.linalg.cond(X.T @ X):.2e}  (housing data: about 90,000)\n")
 
 theta_inv = np.linalg.inv(X.T @ X) @ (X.T @ y)   # invert the squared matrix
 theta_svd, *_ = np.linalg.lstsq(X, y, rcond=None)  # SVD on X directly
@@ -700,7 +670,7 @@ x2 <- x1 + rnorm(m) * 1e-8                 # x2 is almost identical to x1
 y <- 3 * x1 + 2 * x2 + rnorm(m) * 0.1      # so theta1 + theta2 should be ~5
 
 X <- cbind(1, x1, x2)
-cat(sprintf("Condition number of X^T X: %.2e  (housing data: about 3,000)\n\n",
+cat(sprintf("Condition number of X^T X: %.2e  (housing data: about 90,000)\n\n",
             kappa(t(X) %*% X, exact = TRUE)))
 
 # Invert the squared matrix (tol = 0 forces R past its singularity guard)
@@ -722,6 +692,123 @@ cat(sprintf("  svd:     %.3f\n", theta_svd[2] + theta_svd[3]))
 
 :::
 
+The condition number also sets the shape of the cost surface that gradient descent walks in
+Chapter 3. The figure below uses the three houses of Section 2.3 of the book, with their sizes
+measured from a shifted origin. The fitted line stays put while the valley stretches, and the
+stretch, $\kappa$, is the condition number of $\mathbf{X}^\top\mathbf{X}$.
+
+```{=html}
+<div class="lm-ix" id="ix-valley" role="figure" aria-label="Interactive figure: same line, different valley">
+<div class="ix-eyebrow">Interactive</div>
+<div class="ix-title">Same line, different valley</div>
+<div class="ix-views even">
+  <div class="ix-card">
+    <div class="ix-ttl">The line</div>
+    <p class="ix-sub">The same three houses, with sizes measured from a different origin.</p>
+    <svg class="ix-line" viewBox="0 0 400 332"></svg>
+  </div>
+  <div class="ix-card">
+    <div class="ix-ttl">The cost valley</div>
+    <p class="ix-sub">Contours of RSS over intercept and slope. Drag the point.</p>
+    <svg class="ix-cost" viewBox="0 0 400 320"></svg>
+  </div>
+</div>
+<div class="lm-slider"><label>Size origin shift <span class="sym">c</span></label><input class="ix-c" type="range" min="0" max="3" step="any" value="0"><output class="ix-cv"></output></div>
+<div class="ix-buttons"></div>
+<div class="ix-readout">
+  <div class="ix-stat s-kappa"><div class="k">Valley stretch <span class="sym">κ</span></div><div class="v"></div></div>
+  <div class="ix-stat s-rss"><div class="k">RSS of the drawn line</div><div class="v"></div></div>
+  <div class="ix-stat s-icpt"><div class="k">Least-squares intercept</div><div class="v"></div></div>
+  <div class="ix-stat s-slope"><div class="k">Least-squares slope</div><div class="v"></div></div>
+</div>
+<div class="ix-note"></div>
+<script src="../assets/lm-ix.js"></script>
+<script>
+(function () {
+  const root = document.getElementById('ix-valley'), L = window.LMIX, $ = s => root.querySelector(s);
+  const Y = [2, 3, 5], U = [-1, 0, 1];               // sizes relative to the mean
+  let c = 0, pt = null;                               // pt: dragged (theta0, theta1)
+  const lineSvg = $('.ix-line'), costSvg = $('.ix-cost');
+  const xs = () => U.map(u => u + c);
+  const ls = () => ({ t1: 1.5, t0: 10 / 3 - 1.5 * c }); // slope unchanged; intercept moves
+  const rss = (t0, t1) => xs().reduce((s, x, i) => s + (Y[i] - t0 - t1 * x) ** 2, 0);
+  function kappa() {                                   // eigenvalues of X^T X = [[3, 3c], [3c, 2 + 3c^2]]
+    const a = 3, b = 3 * c, d = 2 + 3 * c * c, tr = a + d, det = a * d - b * b;
+    const r = Math.sqrt(tr * tr / 4 - det); return (tr / 2 + r) / (tr / 2 - r);
+  }
+  // cost-card window: centered on the least-squares point
+  const W = { t0: [-3, 3], t1: [-1.5, 4.5] };
+  const box = { x0: 46, x1: 380, y0: 16, y1: 284 };
+  const sx = t0 => { const o = ls().t0; return box.x0 + (t0 - (o + W.t0[0])) / (W.t0[1] - W.t0[0]) * (box.x1 - box.x0); };
+  const sy = t1 => box.y1 - (t1 - W.t1[0]) / (W.t1[1] - W.t1[0]) * (box.y1 - box.y0);
+  const ix = px => ls().t0 + W.t0[0] + (px - box.x0) / (box.x1 - box.x0) * (W.t0[1] - W.t0[0]);
+  const iy = py => W.t1[0] + (box.y1 - py) / (box.y1 - box.y0) * (W.t1[1] - W.t1[0]);
+
+  function drawLine(C) {
+    lineSvg.innerHTML = '';
+    const X0 = c - 1.6, X1 = c + 1.6, fx = x => 46 + (x - X0) / (X1 - X0) * 334, fy = y => 284 - y / 7 * 268;
+    for (let y = 0; y <= 7; y++) {
+      L.el('line', { x1: 46, x2: 380, y1: fy(y), y2: fy(y), stroke: C.grid }, lineSvg);
+      L.el('text', { x: 40, y: fy(y) + 4, 'text-anchor': 'end', 'font-size': 18, fill: C.muted }, lineSvg).textContent = y;
+    }
+    L.el('line', { x1: 46, x2: 380, y1: 284, y2: 284, stroke: C.axis }, lineSvg);
+    xs().forEach(x => L.el('text', { x: fx(x), y: 304, 'text-anchor': 'middle', 'font-size': 18, fill: C.muted }, lineSvg).textContent = L.fmt(x, 1));
+    L.el('text', { x: 213, y: 326, 'text-anchor': 'middle', 'font-size': 18, fill: C.muted }, lineSvg).textContent = 'size, measured from the new origin';
+    const t = pt || ls();
+    L.el('line', { x1: fx(X0), y1: fy(t.t0 + t.t1 * X0), x2: fx(X1), y2: fy(t.t0 + t.t1 * X1), stroke: C.fs, 'stroke-width': 2.6 }, lineSvg);
+    xs().forEach((x, i) => {
+      L.el('line', { x1: fx(x), x2: fx(x), y1: fy(Y[i]), y2: fy(t.t0 + t.t1 * x), stroke: C.red, 'stroke-width': 2, 'stroke-dasharray': '4 3' }, lineSvg);
+      L.el('circle', { cx: fx(x), cy: fy(Y[i]), r: 6, fill: C.blue, stroke: '#fff', 'stroke-width': 2 }, lineSvg);
+    });
+  }
+
+  function drawCost(C) {
+    costSvg.innerHTML = '';
+    L.el('rect', { x: box.x0, y: box.y0, width: box.x1 - box.x0, height: box.y1 - box.y0 }, L.el('clipPath', { id: 'ixv-clip' }, costSvg));
+    const g = L.el('g', { 'clip-path': 'url(#ixv-clip)' }, costSvg);
+    const o = ls(), min = rss(o.t0, o.t1);
+    const lv = [0.25, 1, 2.5, 5, 10, 20, 40].map(d => min + d);
+    const cs = L.contours((a, b) => rss(a, b), [o.t0 + W.t0[0], o.t0 + W.t0[1]], W.t1, lv, 70);
+    cs.forEach((cl, k) => cl.segs.forEach(s => L.el('line', { x1: sx(s[0]), y1: sy(s[1]), x2: sx(s[2]), y2: sy(s[3]), stroke: k < 2 ? C.cyan : C.axis, 'stroke-width': k < 2 ? 1.6 : 1 }, g)));
+    L.el('line', { x1: box.x0, x2: box.x1, y1: box.y1, y2: box.y1, stroke: C.axis }, costSvg);
+    L.el('line', { x1: box.x0, x2: box.x0, y1: box.y0, y2: box.y1, stroke: C.axis }, costSvg);
+    L.el('text', { x: 213, y: 308, 'text-anchor': 'middle', 'font-size': 18, fill: C.muted }, costSvg).textContent = 'intercept θ₀';
+    L.el('text', { x: 14, y: 150, 'font-size': 18, fill: C.muted, transform: 'rotate(-90 14 150)', 'text-anchor': 'middle' }, costSvg).textContent = 'slope θ₁';
+    L.el('circle', { cx: sx(o.t0), cy: sy(o.t1), r: 5, fill: C.fs }, costSvg);
+    L.el('text', { x: sx(o.t0) + 8, y: sy(o.t1) - 8, 'font-size': 18, fill: C.fs }, costSvg).textContent = 'least squares';
+    if (pt) L.el('circle', { cx: sx(pt.t0), cy: sy(pt.t1), r: 6.5, fill: '#fff', stroke: C.red, 'stroke-width': 2.5 }, costSvg);
+  }
+
+  function update() {
+    const C = L.colors(root), o = ls();
+    drawLine(C); drawCost(C);
+    const k = kappa(), t = pt || o, r = rss(t.t0, t.t1);
+    L.stat($('.s-kappa'), k, false, v => L.fmt(v, 1));
+    L.stat($('.s-rss'), r, Math.abs(r - rss(o.t0, o.t1)) < 1e-3, v => L.fmt(v, 3));
+    L.stat($('.s-icpt'), o.t0, false); L.stat($('.s-slope'), o.t1, false);
+    $('.ix-note').textContent = c < 0.05
+      ? 'Sizes measured from their mean: the valley is a nearly round bowl (κ = 1.5), so the intercept and slope can be adjusted almost independently.'
+      : 'Shifting the origin by ' + L.fmt(c, 1) + ' leaves the least-squares line where it was: same slope, same fitted prices. The intercept now gives the price at the new origin, outside the range of the data, so raising the slope while lowering the intercept barely changes the fit. The valley stretches along that trade-off, to κ = ' + L.fmt(k, 1) + '. Section 3.5 of the book shows why gradient descent is slow in a valley like this.';
+  }
+
+  const sl = L.slider($('.ix-c'), $('.ix-cv'), v => L.fmt(v, 1), v => { c = v; pt = null; update(); });
+  L.presets($('.ix-buttons'), [
+    { label: 'Sizes from the mean (c = 0)', action: () => sl.set(0) },
+    { label: 'Shift by 2 (κ ≈ 46)', action: () => sl.set(2) },
+    { label: 'Back to least squares', action: () => { pt = null; update(); } },
+  ]);
+  // drag on the cost card
+  let dragging = false;
+  const toSvg = e => { const r = costSvg.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * 400, (e.clientY - r.top) / r.height * 320]; };
+  costSvg.addEventListener('pointerdown', e => { dragging = true; costSvg.setPointerCapture(e.pointerId); const [px, py] = toSvg(e); pt = { t0: ix(px), t1: iy(py) }; update(); });
+  costSvg.addEventListener('pointermove', e => { if (!dragging) return; const [px, py] = toSvg(e); pt = { t0: ix(px), t1: iy(py) }; update(); });
+  costSvg.addEventListener('pointerup', () => { dragging = false; });
+  sl.refresh();
+})();
+</script>
+</div>
+```
+
 The closed form is exact, direct, and the right mental model for what regression does. Its
 costs (an invertible cross-product, an $\mathcal{O}(n^3)$ inversion, no easy room for
 regularization) are exactly what motivate gradient descent and ridge penalties in the
@@ -729,7 +816,7 @@ chapters that follow.
 
 ::: {.explore}
 [Try it]{.lbl}
-In the housing example, change one price to a clear outlier (say `330` becomes `530`) and
+In the housing example, change one price to a clear outlier (say `202.26` becomes `702.26`) and
 re-run the fit and residual plot. Watch how the single point tugs the whole line and inflates
 every residual, a first look at why least squares is sensitive to outliers.
 :::

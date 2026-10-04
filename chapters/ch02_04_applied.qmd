@@ -8,10 +8,10 @@ engine: markdown
 
 # Applied — Regression in Practice
 
-[Carry the normal equations to a real data set and the chapter's warnings turn concrete: collinear features split the credit, scale decides what a coefficient means, and a flexible curve quietly starts chasing noise.]{.dek}
+[Carry the normal equation to a real data set and the chapter's warnings turn concrete: collinear features split the credit, scale decides what a coefficient means, and a flexible curve quietly starts chasing noise.]{.dek}
 :::
 
-The chapter develops ordinary least squares and the normal equations on a tidy table of house prices. Here we point those same tools at a real data set and watch what the chapter only described. Three things become visible: two features that measure nearly the same thing make their individual coefficients unstable, [standardization]{.term} changes what a coefficient *means*, and a polynomial begins to chase noise as its degree grows.
+The chapter develops ordinary least squares and the normal equation on a tidy table of house prices. Here we point those same tools at a real data set and watch what the chapter only described. Three things become visible: two features that measure nearly the same thing make their individual coefficients unstable, [standardization]{.term} changes what a coefficient *means*, and a polynomial begins to chase noise as its degree grows.
 
 Because the browser sandbox cannot fetch data over the network, the cells on this page substitute R's built-in `mtcars` (the fuel economy of 32 cars from a 1974 *Motor Trend* road test); the regression workflow is identical. The response is `mpg`; the features are weight, horsepower, and engine displacement.
 
@@ -33,7 +33,7 @@ The chapter's Applied exercises name two larger sets: **California housing** (me
 </figure>
 ```
 
-## Multiple regression by the normal equations
+## Multiple regression by the normal equation
 
 Nothing in that formula cares how many columns $\mathbf{X}$ has. We regress fuel economy on three features at once, solving $\mathbf{X}^\top\mathbf{X}\,\hat{\boldsymbol{\theta}} = \mathbf{X}^\top\mathbf{y}$ directly, then confirm the result against the production fitter (`LinearRegression` in Python, `lm` in R). They solve the same system, so they return the same coefficients.
 
@@ -165,11 +165,11 @@ cat(sprintf("displacement with weight:  %8.4f\n", ts[4]))
 
 :::
 
-The lesson the chapter draws on its housing table holds here: a raw coefficient is not a measure of importance, and two collinear features divide an effect between them in a way no single number reports.
+The lesson of the chapter's Exercises 11(b) and 11(c), on the California housing data, holds here: a raw coefficient is not a measure of importance, and two collinear features divide an effect between them in a way no single number reports.
 
 ## The cost of flexibility
 
-A different question, one feature. Heavier cars use more fuel, so we expect a downward trend. A straight line captures it; a quadratic captures the gentle flattening at the heavy end; a high-degree polynomial captures those *and* the noise. We fit on a standardized weight so the high powers stay numerically well behaved, then plot every fit back on the original scale. (We solve the normal equations on the Vandermonde design matrix; this is `numpy.polyfit` and a base-R `qr.solve` doing the same least squares.)
+A different question, one feature. Heavier cars use more fuel, so we expect a downward trend. A straight line captures it; a quadratic captures the gentle flattening at the heavy end; a high-degree polynomial captures those *and* the noise. We fit on a standardized weight so the high powers stay numerically well behaved, then plot every fit back on the original scale. (As the chapter's Exercise 12(b) advises, we use a least-squares solver rather than the normal equation, since even standardized the high powers leave $\mathbf{X}^\top\mathbf{X}$ nearly singular: `numpy.polyfit` in Python, a base-R `qr.solve` on the Vandermonde design matrix in R.)
 
 ::: {.panel-tabset group="lang"}
 
@@ -192,7 +192,7 @@ grid_std = (grid - wt.mean()) / wt.std()
 fig, ax = plt.subplots(figsize=(7.5, 5))
 ax.scatter(wt, mpg, s=28, color="#076FA1", alpha=0.8, edgecolors="white",
            linewidths=0.5, label="cars", zorder=3)
-for degree, color in [(1, "#31417A"), (2, "#9E4F00"), (10, "#E3120B")]:
+for degree, color in [(1, "#31417A"), (2, "#2FC1D3"), (10, "#9E4F00")]:
     coeffs = np.polyfit(w_std, mpg, degree)        # least squares on the Vandermonde
     ax.plot(grid, np.polyval(coeffs, grid_std), color=color, lw=2, label=f"degree {degree}")
 ax.set_xlabel("weight (1000 lbs)")
@@ -221,7 +221,7 @@ plot(wt, mpg, pch = 19, col = "#076FA1", cex = 1.1, bty = "l",
      xlab = "weight (1000 lbs)", ylab = "miles per gallon", ylim = c(5, 36))
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 
-degs <- c(1, 2, 10); cols <- c("#31417A", "#9E4F00", "#E3120B")
+degs <- c(1, 2, 10); cols <- c("#31417A", "#2FC1D3", "#9E4F00")
 for (i in seq_along(degs)) {
   V  <- outer(w_std, 0:degs[i], `^`)              # Vandermonde design matrix
   b  <- qr.solve(V, mpg)                           # least-squares polynomial fit

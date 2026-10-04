@@ -30,6 +30,45 @@ Strictly, that is *cross-correlation*: true convolution flips the filter, summin
 </figure>
 ```
 
+## The book's worked convolution
+
+First, the chapter's own example: a 3&times;3 input and a 2&times;2 filter, four placements, and the feature map the book prints, $\begin{bmatrix} 0 & -1 \\ -1 & 1 \end{bmatrix}$.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+
+X = np.array([[1, 2, 0],
+              [0, 1, 3],
+              [2, 1, 0]])
+W = np.array([[1,  0],
+              [0, -1]])
+
+out = np.zeros((2, 2), dtype=int)
+for i in range(2):
+    for j in range(2):
+        out[i, j] = np.sum(X[i:i+2, j:j+2] * W)   # one placement of the filter
+print(out)                                         # the book: [[0, -1], [-1, 1]]
+```
+
+## R
+```{webr}
+X <- matrix(c(1, 2, 0,
+              0, 1, 3,
+              2, 1, 0), nrow = 3, byrow = TRUE)
+W <- matrix(c(1,  0,
+              0, -1), nrow = 2, byrow = TRUE)
+
+out <- matrix(0, 2, 2)
+for (i in 1:2) for (j in 1:2)
+  out[i, j] <- sum(X[i:(i + 1), j:(j + 1)] * W)   # one placement of the filter
+print(out)                                        # the book: [[0, -1], [-1, 1]]
+```
+
+:::
+
 ## The convolution, by hand
 
 The operation needs no deep-learning framework, so this part runs here in the browser. We build a square of ones on a field of zeros, design a vertical-edge kernel, slide it by hand, and read the feature map. The cell is pure NumPy on the Python side and base R on the other; both compute the same eight-by-eight array.
@@ -219,13 +258,13 @@ par(op)
 
 :::
 
-Four things in that output are worth pausing on. The map is 8&times;8, two pixels narrower and shorter than the 10&times;10 input, because a 3&times;3 window has only eight valid positions along a side; this is what `padding` exists to undo. Half of it &mdash; 32 of 64 entries &mdash; is exactly zero, and the zeros are precisely the flat places: the response is the window's right column minus its left, so it vanishes wherever those two carry the same total. The nonzero response is confined to the two column bands that straddle the square's vertical edges: positive on the left, where the image goes dark to light, negative on the right, where it goes light to dark. And the largest magnitude is 3, the sum of the kernel's positive weights, reached only where all three rows of the window sit on the edge &mdash; the printed left-edge column, `1 2 3 3 3 3 2 1`, shows the response weakening at the top and bottom, where the window overhangs the square and only one or two of its rows overlap.
+Four things in that output are worth pausing on. The map is 8&times;8, two pixels narrower and shorter than the 10&times;10 input, because a 3&times;3 window has only eight valid positions along a side; this is what `padding` exists to undo. Half of it &mdash; 32 of 64 entries &mdash; is exactly zero, and the zeros are precisely the flat places: the response is the window's right column minus its left, so it vanishes wherever those two carry the same total. The nonzero response is confined to the two column bands that straddle the square's vertical edges: positive on the left, where the image goes dark to light, negative on the right, where it goes light to dark. (The book's Exercise 6 uses the opposite sign: its filter $\begin{bmatrix} 1 & -1 \\ 1 & -1 \end{bmatrix}$ takes left minus right, so on this square it would report the left edge negative and the right edge positive.) And the largest magnitude is 3, the sum of the kernel's positive weights, reached only where all three rows of the window sit on the edge &mdash; the printed left-edge column, `1 2 3 3 3 3 2 1`, shows the response weakening at the top and bottom, where the window overhangs the square and only one or two of its rows overlap.
 
-Swapping the kernel for `[[-1,-1,-1],[0,0,0],[1,1,1]]` rotates the whole story a quarter turn: the response is positive along the square's top edge, peaking at +3, negative along its bottom, and zero on the vertical edges the first kernel found &mdash; those are now invisible. Each filter sees one kind of structure and is blind to the rest, which is why a layer holds a bank of them rather than one. The point of the chapter is that we will not design these by hand for long. A trained network discovers its own filters, and the first-layer filters it learns turn out to resemble exactly these edge detectors, recovered from data rather than supplied.
+Swapping the kernel for `[[-1,-1,-1],[0,0,0],[1,1,1]]` rotates the whole story a quarter turn: the response is positive along the square's top edge, peaking at +3, negative along its bottom, and zero on the vertical edges the first kernel found &mdash; those are now invisible. Each filter sees one kind of structure and is blind to the rest, which is why a layer holds a bank of them rather than one. The point of the chapter is that we will not design these by hand for long. A trained network learns its own filters, and visualizations of trained networks suggest that early layers respond to edges at different orientations and simple contrasts (Zeiler and Fergus 2014, the study the book cites). Whether a particular small network's first layer ends up looking like these detectors is an empirical question; the [applied page](ch10_02_applied.qmd) measures one whose 3&times;3 filters barely leave their random initialization.
 
 ## Stacking it into a network
 
-[Pooling]{.term} follows convolution to shrink the feature maps. Max pooling keeps the strongest activation in each small window, which both reduces computation and buys a measure of [translation invariance]{.term}: the network cares that an edge is present, less about its exact pixel. Convolution gives equivariance (shift the input, shift the feature map); pooling converts some of that into invariance.
+[Pooling]{.term} follows convolution to shrink the feature maps. Max pooling keeps the strongest activation in each small window, which reduces computation and can make the representation less sensitive to small shifts: the maximum is unchanged when a response moves within its window. Convolution gives equivariance (shift the input, shift the feature map). Pooling does not guarantee [translation invariance]{.term}, though, since a shift that moves a response across a window boundary can change the pooled output.
 
 A working architecture stacks these into blocks. Each block is convolution, then a ReLU nonlinearity, then pooling; a few blocks build a hierarchy where early layers detect edges and strokes and later layers assemble them into shapes. The stack ends by flattening the final feature maps and passing them to a fully connected head, which is the same affine-plus-softmax classifier from Chapter 4, now a generalized linear model on *learned* features instead of raw pixels.
 
@@ -286,10 +325,10 @@ for epoch in range(5):
         optimizer.zero_grad()
         loss = criterion(model(data), target)     # forward pass + loss
         loss.backward()                           # gradients by backprop
-        optimizer.step()                          # theta <- theta - lr * grad
+        optimizer.step()                          # optimizer update (Adam, Ch 3)
 ```
 
-Five epochs of this put the notebook's run at 98.4% on the held-out test digits, having peaked at 98.7% after three. Watch the two curves rather than the final number: training accuracy climbs to 99.2% while test accuracy stops improving and drifts down, which is Chapter 6's overfitting picture appearing in a network that most people would call small. The remedy is Chapter 7's, and the notebook's `nn.Dropout` exercise is where to try it. Two other things are worth looking at once it has trained. The first-layer filters, visualized as 3&times;3 images, look like oriented edge detectors, the very things we built by hand at the top of this page, now learned from data. And the feature maps at each layer show the hierarchy at work: the first block responds to edges and strokes, the second, smaller after pooling, responds to higher-level pieces of the digit. The mistakes the model does make tend to fall on ambiguous or poorly written digits, cases where a person might hesitate too.
+Five epochs of this put the notebook's run at 98.4% on the held-out test digits, having peaked at 98.7% after three. Watch the two curves rather than the final number: training accuracy climbs to 99.2% while test accuracy stops improving and drifts down, which is Chapter 6's overfitting picture appearing in a network that most people would call small. The remedy is Chapter 7's, and the notebook's `nn.Dropout` exercise is where to try it. Two other things are worth looking at once it has trained. The first-layer filters, visualized as 3&times;3 images, are worth inspecting rather than assuming: compare them with the edge detectors built by hand at the top of this page, and with their own values at initialization, since at this size and training budget they may move very little. And the feature maps at each layer show the hierarchy at work: the first block responds to edges and strokes, the second, smaller after pooling, responds to higher-level pieces of the digit. The mistakes the model does make tend to fall on ambiguous or poorly written digits, cases where a person might hesitate too.
 
 That is the chapter's claim, made operational. The network is not handed a feature extractor; it learns what to look for, and weight sharing is the prior that makes learning it possible from modest data.
 

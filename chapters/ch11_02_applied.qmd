@@ -24,7 +24,7 @@ the model's configuration.
 
 ## The attention head
 
-A single [head]{.term} of self-attention projects each position to a [query]{.term}, a [key]{.term}, and a [value]{.term}. It scores every query against every key, scales by &radic;d&#8342; to keep the scores well-conditioned, masks the future so a position sees only itself and the past, softmaxes the scores into weights, and returns the weighted sum of the values. The [causal mask]{.term} is what makes the model autoregressive: position $t$ may attend to positions $0$ through $t$, never ahead.
+A single [head]{.term} of self-attention projects each position to a [query]{.term}, a [key]{.term}, and a [value]{.term}. It scores every query against every key, scales by &radic;d&#8342; to keep the scores well-conditioned, masks the future so a position sees only itself and the past, softmaxes the scores into weights, and returns the weighted sum of the values. The [causal mask]{.term} is what makes the model autoregressive: position $t$ may attend to positions $0$ through $t$, never ahead. (The code counts positions from 0; the book counts from 1.)
 
 ::: {.defbox}
 [Scaled Dot-Product Attention]{.lbl}
@@ -108,7 +108,7 @@ class Block(nn.Module):
 
 Look at the order. This block normalizes *before* each sublayer and adds the result to an
 untouched residual path: the *pre-LN* arrangement of Section 11.3. The block displayed in the
-book's Equations 11.4 and 11.5 does the opposite, normalizing after the addition. Exercise
+book's Equations 11.5 and 11.6 does the opposite, normalizing after the addition. Exercise
 11(b) asks you to say how the two orders differ; the answer is in front of you, in the
 placement of `norm1` and `norm2` relative to the `+`.
 

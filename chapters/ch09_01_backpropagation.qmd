@@ -325,7 +325,7 @@ Both runs start and end at the same numbers, because the update is deterministic
 
 ## Why sigmoid makes deep networks hard
 
-The hidden delta carries a factor of $\sigma'(z^{[2]})$, and that factor is the seed of a famous problem. The sigmoid derivative peaks at $0.25$ and decays toward zero on both sides; stack $L$ sigmoid layers and a gradient can shrink by up to $(0.25)^L$ on its way back. [ReLU]{.term}, whose derivative is exactly $1$ for positive inputs, was the fix that let gradients pass through deep stacks unchanged. The plot contrasts the activations with their derivatives, where the gradient-flow story lives.
+The hidden delta carries a factor of $\sigma'(z^{[2]})$, and that factor is the seed of a famous problem. The sigmoid derivative peaks at $0.25$ and decays toward zero on both sides; with unit weights, a gradient passing back through $L$ sigmoid layers is scaled by at most $(0.25)^L$. [ReLU]{.term}, whose derivative is exactly $1$ for positive inputs, was the fix that let gradients pass through deep stacks unchanged. The plot contrasts the activations with their derivatives, where the gradient-flow story lives.
 
 ::: {.panel-tabset group="lang"}
 

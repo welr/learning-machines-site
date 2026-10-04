@@ -6,6 +6,9 @@ project:
     # MathJax loads its fonts at run time, so Quarto cannot discover them by
     # scanning the output; copy the whole directory explicitly.
     - mathjax/**
+    # The interactive-figure kit (assets/lm-ix.js) is loaded by a <script> tag inside
+    # raw-HTML blocks, which Quarto does not scan; copy it explicitly.
+    - assets/**
 
   # Quarto hardcodes a cdnjs ES6 polyfill into every MathJax page with no option to
   # suppress it. This site needs WebAssembly to run Pyodide and WebR, so every

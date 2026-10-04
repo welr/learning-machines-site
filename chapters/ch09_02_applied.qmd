@@ -11,12 +11,12 @@ engine: markdown
 [Build and train a small network on Fashion-MNIST, and meet the training loop you will reuse, unchanged in shape, all the way to the capstone.]{.dek}
 :::
 
-This is the first rung toward the book's capstone. Here you build and train a small feedforward network in PyTorch on a real image dataset, [Fashion-MNIST]{.term}, with a complete training loop. That loop is the whole point. Draw a minibatch, compute the loss, backpropagate, step the optimizer: the same loop, unchanged in shape, trains the convolutional network of Chapter 10 and the GPT of Chapter 12. Learn it once, here.
+This is the first rung toward the book's capstone. Here you build and train a small feedforward network in PyTorch on a real image data set, [Fashion-MNIST]{.term}, with a complete training loop. That loop is the whole point. Draw a minibatch, compute the loss, backpropagate, step the optimizer: the same loop, unchanged in shape, trains the convolutional network of Chapter 10 and the GPT of Chapter 12. Learn it once, here.
 
 ```{=html}
 <figure class="lm-figure">
 <img src="../figures/ch09_02_applied.png" alt="Two line charts side by side: the epoch-mean training cross-entropy falling smoothly from 1.02 to 0.32 over twelve epochs, and held-out test accuracy rising from 0.79 to 0.86 over the same epochs, with a dip at epoch nine.">
-<figcaption><strong>Training the feedforward network on Fashion-MNIST.</strong> Twelve epochs of the loop below, the run that code reproduces. The training loss is the mean cross-entropy over all of the epoch's minibatches, not the last one: 1.02 in the first epoch, 0.60 in the second, then a slow decline to 0.32. Test accuracy rises from 0.788 to 0.860, though not monotonically: it reaches 0.863 in epoch 8 and slips to 0.853 in epoch 9 before recovering.</figcaption>
+<figcaption><strong>Training the feedforward network on Fashion-MNIST.</strong> Twelve epochs of the loop below, the run that code reproduces. The training loss is the mean cross-entropy over all of the epoch's minibatches, not the last one: 1.02 in the first epoch, 0.60 in the second, then a slow decline to 0.32. Test accuracy rises from 0.788 to 0.860, though not monotonically: it reaches 0.863 in epoch 8 and slips to 0.853 in epoch 9 before recovering. The run reports the final epoch; quoting the epoch-8 peak would be selecting on test data.</figcaption>
 </figure>
 ```
 
@@ -26,7 +26,7 @@ Fashion-MNIST is 70,000 grayscale images, 28&times;28 pixels, each a garment in 
 
 ## The model
 
-A plain feedforward network: two hidden layers with [ReLU]{.term} and a little [dropout]{.term}, then a linear layer to ten class scores. The `forward` method returns the raw scores, the [logits]{.term}; cross-entropy applies the softmax internally. It is the loss of logistic regression from Chapter 4, generalized from two classes to ten.
+A plain feedforward network: two hidden layers with [ReLU]{.term} and a little [dropout]{.term}, then a linear layer to ten class scores. The `forward` method returns the raw scores, the [logits]{.term}; cross-entropy applies the softmax internally. It is the loss of multinomial (softmax) logistic regression from Chapter 4, here over ten classes.
 
 ::: {.defbox}
 [The Training Loop]{.lbl}
@@ -62,7 +62,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model = MLP().to(device)
 ```
 
-The training loop is the heart of the notebook. Each epoch reshuffles the training set and walks it in minibatches; each batch zeroes the gradients, computes the cross-entropy loss, backpropagates, and steps the optimizer. Track the held-out accuracy as you go.
+The training loop is the heart of the notebook. Each epoch reshuffles the training set and walks it in minibatches; each batch zeroes the gradients, computes the cross-entropy loss, backpropagates, and steps the optimizer. The notebook also prints test accuracy after each epoch, to show learning progress. Do not use it to pick an epoch: choosing the best epoch by test accuracy is selection on test data, and the accuracy reported for the chosen epoch is then optimistic. To choose an epoch, or any other setting, hold out a validation split from the training data.
 
 ```python
 loss_fn = nn.CrossEntropyLoss()
@@ -78,7 +78,7 @@ for epoch in range(epochs):
         loss = loss_fn(logits, y_tr[batch])      # cross-entropy
         optimizer.zero_grad(set_to_none=True)
         loss.backward()                          # backpropagation
-        optimizer.step()                         # theta <- theta - lr * grad
+        optimizer.step()                         # AdamW update (not a plain gradient step)
         # average over the epoch: one minibatch's loss is far too noisy to read
         running_loss += loss.item()
         n_batches += 1

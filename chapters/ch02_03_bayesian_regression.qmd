@@ -11,7 +11,7 @@ engine: markdown
 [Give the coefficients a prior and the same data returns not one line but a distribution over lines, with a closed-form Gaussian posterior that sampling methods only approximate.]{.dek}
 :::
 
-*This page mirrors the book's starred Bayesian sections: optional enrichment for readers with a Bayesian background. Nothing later depends on it — skip freely.*
+*This page mirrors the book's starred Bayesian sections: optional enrichment for readers with a Bayesian background. The book's advice holds here too: the Bayesian ideas later chapters touch on (priors, posteriors, maximum a posteriori estimation) are introduced in this section, so skim it rather than skip it.*
 
 Ordinary least squares returns a single coefficient vector, the one that minimizes
 squared error. Bayesian regression returns a [posterior]{.term}: a full distribution over
@@ -300,9 +300,15 @@ cat(sprintf("%-18s%6.3f  %6.3f\n", "(truth)", true_theta[1], true_theta[2]))
 :::
 
 A Gaussian prior on the coefficients is the same object as the L2 penalty of ridge
-regression. The posterior mean under that prior is exactly the ridge (MAP) estimate, with
-the prior variance setting the inverse of the penalty strength. The Bayesian and the
-regularized least-squares views meet here, a connection Chapter 7 returns to.
+regression. With a zero-mean prior $\boldsymbol{\Sigma}_0 = \tau^2\mathbf{I}$, the posterior
+mean (which, for a Gaussian posterior, is also the MAP estimate) is
+$(\mathbf{X}^\top\mathbf{X} + \lambda\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}$ with
+$\lambda = \sigma^2/\tau^2$: a vaguer prior means a weaker penalty. Two caveats keep this
+from being conventional ridge. The prior shrinks the intercept toward zero along with the
+slope, where ridge usually leaves the intercept unpenalized. And one prior scale for every
+coefficient makes sense only when the coefficients are comparable, which is why the book
+pairs this prior with standardized features; the cells above use raw $x$. The Bayesian and
+the regularized least-squares views meet here, a connection Chapter 7 returns to.
 
 ## When the posterior has no closed form
 

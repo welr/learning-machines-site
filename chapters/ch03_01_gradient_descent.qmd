@@ -33,9 +33,9 @@ $\alpha$. The gradient points uphill; we go the other way.
 ```
 
 Throughout we fit a simple line $\hat{y} = \theta_0 + \theta_1 x$ under mean squared error,
-$J(\theta_0, \theta_1) = \frac{1}{m}\sum_i (y_i - \theta_0 - \theta_1 x_i)^2$. The book's
+$J(\theta_0, \theta_1) = \frac{1}{m}\sum_{i=1}^{m} (y^{(i)} - \theta_0 - \theta_1 x^{(i)})^2$. The book's
 Equation 3.4 carries a factor of $\tfrac{1}{2}$ that we drop here; that doubles every gradient
-and halves every step size on this page, and changes nothing else. The data is defined
+and halves every step size on this page, and changes nothing else. The data are defined
 inline, identical in both languages, so every deterministic result below agrees digit for
 digit across Python and R.
 
@@ -426,7 +426,12 @@ The zig-zag is not a quirk of bad luck. On a quadratic the Hessian is constant,
 $H = \frac{2}{m}\mathbf{X}^\top\mathbf{X}$, and gradient descent converges only when the step
 size stays below $2 / \lambda_{\max}(H)$, twice the reciprocal of the largest curvature. Below
 that line the loss falls; a hair above it, the error grows by a fixed factor every step and the
-loss explodes. The number is computable, not guessed.
+loss explodes. The number is computable, not guessed. The book's Theorem 3.1 states a
+different bound, $\alpha \le 1/\mathscr{L}$, with $\mathscr{L} = \lambda_{\max}$ of the
+Hessian. That is the safe bound under which every step lowers the loss, and on a quadratic it
+sits at half the sharp threshold $2/\mathscr{L}$ used here (the book's Exercise 7 compares the
+two). Because this page drops the $\tfrac{1}{2}$, its Hessian is twice the book's, so the
+page's $2/\lambda_{\max}(H)$ happens to equal the book's $1/\mathscr{L}$ as a number.
 
 ::: {.panel-tabset group="lang"}
 
@@ -802,8 +807,13 @@ cat(sprintf("optimal loss %.4f\n", opt_loss))
 In an elongated valley, plain gradient descent crawls along the shallow axis because each
 step sees only the local slope. [Momentum]{.term} accumulates a velocity vector,
 $\mathbf{v}^{(t+1)} = \gamma\,\mathbf{v}^{(t)} + \alpha\,\nabla J$, then updates with the
-velocity. Consistent directions add up and reinforce; alternating ones cancel. At the same
-small step size, momentum reaches the floor while plain descent is still inching toward it.
+velocity. Consistent directions add up and reinforce; alternating ones cancel. The
+coefficient $\gamma$ sets how long that memory lasts: a gradient's influence decays by a factor
+of $\gamma$ each step, so the velocity averages roughly the last $1/(1-\gamma)$ gradients. The
+cells below use $\gamma = 0.8$, a memory of about five steps; the common default, $0.9$,
+remembers about ten. The best value depends on how elongated the valley is (the book works it
+out for a quadratic). At the same small step size, momentum reaches the floor while plain
+descent is still inching toward it.
 
 ::: {.panel-tabset group="lang"}
 
@@ -863,7 +873,7 @@ axL.contour(B0, B1, Loss, levels=levels, colors="#666666", linewidths=0.5, alpha
 cfL = axL.contourf(B0, B1, Loss, levels=levels, cmap="Blues", alpha=0.20)
 fig.colorbar(cfL, ax=axL, label="loss (MSE)")
 axL.plot(P0[:, 0], P0[:, 1], "o-", color="#31417A", ms=3, lw=1.4, label="plain GD")
-axL.plot(P1[:, 0], P1[:, 1], "s-", color="#E3120B", ms=3, lw=1.4, label="momentum (gamma=0.8)")
+axL.plot(P1[:, 0], P1[:, 1], "s-", color="#E3120B", ms=3, lw=1.4, label="momentum (gamma=0.8, ~5-step memory)")
 axL.scatter(*start, color="black", s=70, zorder=5)
 axL.scatter(*theta_ols, color="#666666", s=170, marker="*", zorder=6,
             edgecolors="white", linewidths=1.4, label="optimum")
@@ -873,7 +883,7 @@ axL.set_title(f"Same step size alpha = {lr}")
 axL.legend(loc="upper right", fontsize=8)
 
 axR.plot([mse(*p) for p in P0], color="#31417A", lw=2, label="plain GD")
-axR.plot([mse(*p) for p in P1], color="#E3120B", lw=2, label="momentum (gamma=0.8)")
+axR.plot([mse(*p) for p in P1], color="#E3120B", lw=2, label="momentum (gamma=0.8, ~5-step memory)")
 axR.axhline(opt_loss, color="#666666", ls="--", lw=1)
 axR.set_yscale("log")
 axR.set_xlabel("iteration")
@@ -948,7 +958,7 @@ lines(P0[, 1], P0[, 2], type = "o", col = "#31417A", pch = 19, cex = 0.5)
 lines(P1[, 1], P1[, 2], type = "o", col = "#E3120B", pch = 15, cex = 0.5)
 points(start[1], start[2], pch = 19, cex = 1.2)
 points(theta_ols[1], theta_ols[2], pch = 8, col = "#666666", cex = 1.8, lwd = 2)
-legend("topright", c("plain GD", "momentum (gamma=0.8)", "optimum"),
+legend("topright", c("plain GD", "momentum (gamma=0.8, ~5-step memory)", "optimum"),
        col = c("#31417A", "#E3120B", "#666666"), pch = c(19, 15, 8), bty = "n", cex = 0.8)
 
 l0 <- apply(P0, 1, function(b) mse(b[1], b[2]))
@@ -960,7 +970,7 @@ plot(0:n_iter, l0, type = "l", col = "#31417A", lwd = 2, log = "y",
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
 lines(0:n_iter, l1, col = "#E3120B", lwd = 2)
 abline(h = opt_loss, col = "#666666", lty = 2)
-legend("topright", c("plain GD", "momentum (gamma=0.8)"),
+legend("topright", c("plain GD", "momentum (gamma=0.8, ~5-step memory)"),
        col = c("#31417A", "#E3120B"), lwd = 2, bty = "n")
 par(op)
 
@@ -971,6 +981,124 @@ cat(sprintf("optimal loss %.4f\n", opt_loss))
 
 :::
 
+The figure below runs both methods on the valley of the book's Figure 3.3, where the curvature
+across the valley is 50 times the curvature along it. The three houses of the Chapter 2 page,
+with sizes measured from an origin two units away, give a valley almost as stretched
+($\kappa \approx 46$). Set $\gamma$ to zero and the two runs coincide.
+
+```{=html}
+<div class="lm-ix" id="ix-momentum" role="figure" aria-label="Interactive figure: gradient descent with and without momentum on an elongated valley">
+<div class="ix-eyebrow">Interactive</div>
+<div class="ix-title">Momentum in a narrow valley</div>
+<div class="ix-views even">
+  <div class="ix-card">
+    <div class="ix-ttl">The valley</div>
+    <p class="ix-sub">The surface of the book's Figure 3.3: curvature 1 along, 50 across.</p>
+    <svg class="ix-path" viewBox="0 0 400 300"></svg>
+  </div>
+  <div class="ix-card">
+    <div class="ix-ttl">Loss by step</div>
+    <p class="ix-sub">Log scale, 50 steps.</p>
+    <svg class="ix-loss" viewBox="0 0 400 300"></svg>
+  </div>
+</div>
+<div class="lm-slider"><label>Learning rate <span class="sym">α</span></label><input class="ix-a" type="range" min="0.005" max="0.045" step="0.001" value="0.035"><output class="ix-av"></output></div>
+<div class="lm-slider"><label>Momentum <span class="sym">γ</span></label><input class="ix-g" type="range" min="0" max="0.95" step="0.01" value="0.7"><output class="ix-gv"></output></div>
+<div class="ix-buttons"></div>
+<div class="ix-readout">
+  <div class="ix-stat s-plain"><div class="k">Loss after 50 steps, plain</div><div class="v"></div></div>
+  <div class="ix-stat s-mom"><div class="k">Loss after 50 steps, momentum</div><div class="v"></div></div>
+</div>
+<div class="ix-note"></div>
+<script src="../assets/lm-ix.js"></script>
+<script>
+(function () {
+  const root = document.getElementById('ix-momentum'), L = window.LMIX, $ = s => root.querySelector(s);
+  const A = 1, B = 50, START = [5, 0.4], N = 50;          // figures/momentum_comparison.py
+  const J = p => 0.5 * (A * p[0] * p[0] + B * p[1] * p[1]);
+  let alpha = 0.035, gamma = 0.7, shown = N, timer = null;
+  function run(g) {                                       // the book's momentum update: v <- g v + a grad; theta <- theta - v
+    const path = [START.slice()]; let p = START.slice(), v = [0, 0];
+    for (let k = 0; k < N; k++) {
+      v = [g * v[0] + alpha * A * p[0], g * v[1] + alpha * B * p[1]];
+      p = [p[0] - v[0], p[1] - v[1]]; path.push(p);
+    }
+    return path;
+  }
+  const P = { x0: 40, x1: 385, y0: 14, y1: 262, X: [-0.5, 6], Y: [-0.6, 0.6] };
+  const px = x => P.x0 + (x - P.X[0]) / (P.X[1] - P.X[0]) * (P.x1 - P.x0);
+  const py = y => P.y1 - (y - P.Y[0]) / (P.Y[1] - P.Y[0]) * (P.y1 - P.y0);
+  const ok = v => isFinite(v) && Math.abs(v) < 1e6;
+
+  function drawPath(C, plain, mom) {
+    const svg = $('.ix-path'); svg.innerHTML = '';
+    L.el('rect', { x: P.x0, y: P.y0, width: P.x1 - P.x0, height: P.y1 - P.y0 }, L.el('clipPath', { id: 'ixm-clip' }, svg));
+    const g = L.el('g', { 'clip-path': 'url(#ixm-clip)' }, svg);
+    L.contours((x, y) => J([x, y]), P.X, P.Y, [0.02, 0.1, 0.4, 1.2, 3, 6, 10, 16.5], 80)
+      .forEach(cl => cl.segs.forEach(s => L.el('line', { x1: px(s[0]), y1: py(s[1]), x2: px(s[2]), y2: py(s[3]), stroke: C.axis, 'stroke-width': 1 }, g)));
+    [[plain, C.blue], [mom, C.orange]].forEach(([path, col]) => {
+      const pts = path.slice(0, shown + 1).filter(p => ok(p[0]) && ok(p[1])).map(p => px(p[0]) + ',' + py(p[1])).join(' ');
+      L.el('polyline', { points: pts, fill: 'none', stroke: col, 'stroke-width': 1.8, 'stroke-linejoin': 'round' }, g);
+      path.slice(0, shown + 1).forEach(p => { if (ok(p[0]) && ok(p[1])) L.el('circle', { cx: px(p[0]), cy: py(p[1]), r: 2.2, fill: col }, g); });
+    });
+    L.el('circle', { cx: px(0), cy: py(0), r: 4.5, fill: C.fs }, svg);
+    L.el('line', { x1: P.x0, x2: P.x1, y1: P.y1, y2: P.y1, stroke: C.axis }, svg);
+    L.el('line', { x1: P.x0, x2: P.x0, y1: P.y0, y2: P.y1, stroke: C.axis }, svg);
+    [0, 2, 4, 6].forEach(t => L.el('text', { x: px(t), y: P.y1 + 18, 'text-anchor': 'middle', 'font-size': 16, fill: C.muted }, svg).textContent = t);
+    [-0.5, 0, 0.5].forEach(t => L.el('text', { x: P.x0 - 6, y: py(t) + 5, 'text-anchor': 'end', 'font-size': 16, fill: C.muted }, svg).textContent = t);
+    L.el('text', { x: (P.x0 + P.x1) / 2, y: P.y1 + 36, 'text-anchor': 'middle', 'font-size': 16, fill: C.muted }, svg).textContent = 'θ₀ (shallow direction)';
+  }
+
+  const Q = { x0: 52, x1: 385, y0: 14, y1: 262, lo: -6, hi: 2 };
+  const qx = k => Q.x0 + k / N * (Q.x1 - Q.x0);
+  const qy = v => { const l = Math.log10(Math.max(v, 1e-12)); return Q.y1 - (Math.min(Math.max(l, Q.lo), Q.hi) - Q.lo) / (Q.hi - Q.lo) * (Q.y1 - Q.y0); };
+  function drawLoss(C, plain, mom) {
+    const svg = $('.ix-loss'); svg.innerHTML = '';
+    for (let e = Q.lo; e <= Q.hi; e += 2) {
+      L.el('line', { x1: Q.x0, x2: Q.x1, y1: qy(10 ** e), y2: qy(10 ** e), stroke: C.grid }, svg);
+      L.el('text', { x: Q.x0 - 6, y: qy(10 ** e) + 5, 'text-anchor': 'end', 'font-size': 16, fill: C.muted }, svg).textContent = '10' + ['⁻⁶', '', '⁻⁴', '', '⁻²', '', '⁰', '', '²'][e + 6];
+    }
+    L.el('line', { x1: Q.x0, x2: Q.x1, y1: Q.y1, y2: Q.y1, stroke: C.axis }, svg);
+    [0, 10, 20, 30, 40, 50].forEach(k => L.el('text', { x: qx(k), y: Q.y1 + 18, 'text-anchor': 'middle', 'font-size': 16, fill: C.muted }, svg).textContent = k);
+    L.el('text', { x: (Q.x0 + Q.x1) / 2, y: Q.y1 + 36, 'text-anchor': 'middle', 'font-size': 16, fill: C.muted }, svg).textContent = 'step';
+    [[plain, C.blue, 'plain'], [mom, C.orange, 'momentum']].forEach(([path, col, name], i) => {
+      const pts = path.slice(0, shown + 1).map((p, k) => qx(k) + ',' + qy(ok(p[0]) && ok(p[1]) ? J(p) : 1e12)).join(' ');
+      L.el('polyline', { points: pts, fill: 'none', stroke: col, 'stroke-width': 2.2 }, svg);
+      L.el('text', { x: Q.x1, y: Q.y0 + 16 + i * 20, 'text-anchor': 'end', 'font-size': 16, fill: col }, svg).textContent = name;
+    });
+  }
+
+  function update() {
+    const C = L.colors(root), plain = run(0), mom = run(gamma);
+    drawPath(C, plain, mom); drawLoss(C, plain, mom);
+    const jp = J(plain[N]), jm = J(mom[N]), show = v => ok(v) ? (v < 1e-3 ? v.toExponential(1) : L.fmt(v, 3)) : 'diverged';
+    L.stat($('.s-plain'), jp, false, show); L.stat($('.s-mom'), jm, false, show);
+    let note;
+    if (!ok(jm)) note = 'A step this large overshoots the steep direction by more than it corrects, and the iterates grow without bound. Lower α.';
+    else if (!ok(jp)) note = 'Plain gradient descent diverges at this step: each step overshoots the steep direction by more than it corrects. With the same α, momentum stays stable, because its velocity damps the swings across the valley.';
+    else if (gamma === 0) note = 'With γ = 0 the two runs are the same algorithm. Raise γ to see the velocity build up along the floor of the valley.';
+    else if (jm < jp) note = 'After 50 steps, momentum\'s loss is ' + Math.round(jp / jm).toLocaleString('en-US') + ' times smaller. Across the valley its steps alternate in sign and cancel; along the floor they point the same way and add.';
+    else note = 'Here momentum is behind: with γ = ' + L.fmt(gamma, 2) + ' the velocity overshoots, and the path swings back and forth past the minimum before it settles.';
+    $('.ix-note').textContent = note;
+  }
+
+  const sa = L.slider($('.ix-a'), $('.ix-av'), v => L.fmt(v, 3), v => { alpha = v; shown = N; update(); });
+  const sg = L.slider($('.ix-g'), $('.ix-gv'), v => L.fmt(v, 2), v => { gamma = v; shown = N; update(); });
+  L.presets($('.ix-buttons'), [
+    { label: "The book's figure", action: () => { sa.set(0.035); sg.set(0.7); } },
+    { label: 'No momentum (γ = 0)', action: () => sg.set(0) },
+    { label: 'γ = 0.9', action: () => sg.set(0.9) },
+    { label: 'Play the steps', action: () => {
+        clearInterval(timer); shown = 0; update();
+        timer = setInterval(() => { shown++; update(); if (shown >= N) clearInterval(timer); }, 90);
+      } },
+  ]);
+  sa.refresh(); sg.refresh();
+})();
+</script>
+</div>
+```
+
 Linear regression is convex, so any stable step size lands on the same global optimum; the
 choices here only change how fast. For the non-convex surfaces of later chapters the same
 machinery still runs, but the floor it finds is local, and the noise of stochastic steps and
@@ -980,7 +1108,8 @@ the inertia of momentum become tools for escaping bad ones rather than mere acce
 [Try it]{.lbl}
 The slider showed you that the boundary is sharp. What it cannot show you is that the boundary
 *moves*. In the stability cell, multiply `x` by 5 and rerun. Nothing about the problem has
-changed — the same line still fits the same points, and the optimum is the same optimum — but
+changed — the same line still fits the same points, though its slope $\theta_1$ is now a fifth
+of what it was — but
 the critical step size collapses from $0.2592$ to $0.0125$, twenty times smaller.
 
 The reason is that $\lambda_{\max}$ grows with the square of the feature scale — not quite
