@@ -23,7 +23,8 @@ CLASSES = ["T-shirt", "Trouser", "Pullover", "Dress", "Coat",
            "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"]
 
 X_all, y_all = fetch_openml("Fashion-MNIST", version=1, as_frame=False,
-                            return_X_y=True, parser="auto")
+                            return_X_y=True,
+                            parser="liac-arff")   # pure-Python reader: no pandas needed with as_frame=False
 m = 10_000
 X = X_all[:m].astype(np.float64) / 255.0
 y_sealed = y_all[:m].astype(int)            # not used until the cross-tab below
