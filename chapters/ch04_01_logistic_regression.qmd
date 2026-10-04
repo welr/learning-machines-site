@@ -28,8 +28,8 @@ is unbounded by construction.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch04_01_logistic_regression.png" alt="Forty students plotted by hours studied: failures at probability zero in red, passes at probability one in blue, with an S-shaped fitted probability curve in dark blue rising through them and a gray dashed vertical line marking the 0.5 decision threshold near 4.9 hours.">
-<figcaption><strong>The logistic curve.</strong> The fitted sigmoid maps hours studied to P(pass); the dots are students' <em>actual</em> outcomes (blue passed, red failed), and the gray dashed line is where the curve crosses 0.5 &mdash; the model's decision boundary. The points that straddle the line &mdash; one student passed on 4.65 hours, one failed on 4.90 &mdash; are genuine misclassifications: the classes overlap, which is exactly why we fit a probability rather than draw a hard cutoff. This is the result the code below reproduces.</figcaption>
+<img src="../figures/ch04_01_logistic_regression.png" alt="Forty students plotted by hours studied: the twenty who failed at zero as open blue circles, the twenty who passed at one as filled cyan circles, and a straight least-squares line through them that falls below zero on the left and rises above one on the right.">
+<figcaption><strong>Why a straight line won't do.</strong> Least squares fit to pass/fail outcomes predicts about &minus;0.41 at zero hours and 1.51 at ten, numbers that cannot be probabilities. The logistic curve below bends the line back into (0, 1). This is the result the code below reproduces.</figcaption>
 </figure>
 ```
 

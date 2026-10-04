@@ -43,7 +43,7 @@ print(f"minimum total error at degree {best}; irreducible {irr:.3f}; "
 fig, ax = plt.subplots(figsize=(7.0, 4.2))
 ax.plot(degrees, bias2, "o-", color=mt.BLUE,    lw=2, label="bias$^2$")
 ax.plot(degrees, var,   "s-", color=mt.FS_BLUE, lw=2, label="variance")
-ax.plot(degrees, total, "^-", color=mt.RED,     lw=2, label="total error")
+ax.plot(degrees, total, "^-", color=mt.ORANGE,  lw=2, label="total error")
 ax.axhline(irr, color=mt.GRAY, ls="--", lw=1.2,
            label=f"irreducible ($\\sigma^2$ = {irr:.2f})")
 ax.axvline(best, color=mt.GRAY, ls=":", lw=1.2, alpha=0.8)

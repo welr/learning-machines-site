@@ -2,7 +2,7 @@
 
 The baseline (a flat line at the mean) against the least-squares line, with the
 gaps the baseline leaves drawn in. Generated from the page's own computation: the
-same twenty Frankfurt sales the page's live cells use.
+same Frankfurt sales the page's live cells use (read from the page).
 """
 
 import sys, pathlib
@@ -15,10 +15,14 @@ import mlone_theme as mt, matplotlib.pyplot as plt, numpy as np
 mt.set_book_mode()
 SPINE, GRID = "#cfccc2", "#e6e3da"
 
-area = np.array([52, 82, 120, 95, 140, 160, 180, 200, 210, 225,
-                 150, 110, 130, 170, 190, 205, 240, 60, 75, 100.])
-price = np.array([164, 384, 465, 420, 520, 610, 700, 760, 820, 900,
-                  560, 430, 500, 650, 720, 790, 980, 260, 330, 410.])
+# The sales come from the page's own first {pyodide} cell, so hero and page cannot drift apart.
+import contextlib, io, re
+_page = (pathlib.Path(__file__).resolve().parents[1] / "chapters" / "ch01_01_baseline.qmd").read_text()
+_cell = re.search(r"```\{pyodide\}\n(.*?)```", _page, re.S).group(1)
+_env = {}
+with contextlib.redirect_stdout(io.StringIO()):
+    exec(_cell, _env)
+area, price = _env["area"], _env["price"]
 
 baseline = price.mean()
 ac, pc = area - area.mean(), price - price.mean()
@@ -38,12 +42,12 @@ for a, p in zip(area, price):
     ax.plot([a, a], [baseline, p], color=mt.GRAY, lw=0.8, alpha=0.45, zorder=1,
             label="_nolegend_")
 
-ax.axhline(baseline, color=mt.RED, lw=2.0, ls="--", zorder=2,
+ax.axhline(baseline, color=mt.FS_BLUE, lw=1.8, ls="--", zorder=2,
            label=f"baseline: predict {baseline:.0f}")
 grid = np.linspace(area.min() - 6, area.max() + 6, 50)
-ax.plot(grid, intercept + slope * grid, color=mt.BLUE, lw=2.2, zorder=3,
+ax.plot(grid, intercept + slope * grid, color=mt.FS_BLUE, lw=2.2, zorder=3,
         label="least-squares line")
-ax.scatter(area, price, s=46, color=mt.FS_BLUE, edgecolors="white", linewidths=0.8,
+ax.scatter(area, price, s=40, color=mt.BLUE, edgecolors="white", linewidths=0.8,
            zorder=4, label="Frankfurt sales")
 
 for s in ["top", "right"]:

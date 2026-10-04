@@ -36,7 +36,7 @@ is `nnet::multinom`.
 
 ```{=html}
 <figure class="lm-figure">
-<img src="../figures/ch04_02_multiclass.png" alt="Two-dimensional feature space split into three decision regions, shaded blue, orange, and red, with the three classes of training points plotted on top and labeled by region.">
+<img src="../figures/ch04_02_multiclass.png" alt="Two-dimensional feature space split into three decision regions, shaded blue, orange, and cyan, with the three classes of training points plotted on top and labeled by region.">
 <figcaption><strong>Three classes, three regions.</strong> The softmax classifier partitions the plane into one region per class, and almost every point falls in its own color. This is the result the code below reproduces.</figcaption>
 </figure>
 ```
