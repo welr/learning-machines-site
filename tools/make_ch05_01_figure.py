@@ -46,8 +46,9 @@ for d, r in zip(degrees, rows):
     print(f"{d:>4}{r[0]:>9.4f}{r[1]:>9.4f}{r[3]:>9.4f}")
 
 fig, ax = plt.subplots(figsize=(7.0, 4.2))
-# A zero estimate has no place on a log axis; leave a gap there.
-ax.plot(degrees, [b if b > 0 else np.nan for b in bias2], "o-", color=mt.BLUE,    lw=2, label="bias$^2$")
+# Bias below what these data sets can resolve estimates as zero, and later points are noise;
+# the curve stops at the first zero.
+ax.plot(degrees, [b if i < next((j for j, c in enumerate(bias2) if c <= 0), len(bias2)) else np.nan for i, b in enumerate(bias2)], "o-", color=mt.BLUE,    lw=2, label="bias$^2$")
 ax.plot(degrees, var,   "s-", color=mt.FS_BLUE, lw=2, label="variance")
 ax.plot(degrees, total, "^-", color=mt.ORANGE,  lw=2, label="total error")
 ax.axhline(irr, color=mt.GRAY, ls="--", lw=1.2,

@@ -289,8 +289,9 @@ best = int(np.argmin(total)) + 1
 print(f"\nLowest total error at degree {best}")
 
 fig, ax = plt.subplots(figsize=(8, 5))
-# A zero estimate has no place on a log axis; leave a gap there.
-ax.plot(degrees, [b if b > 0 else np.nan for b in bias2], "o-", color="#076FA1", linewidth=2, label="bias$^2$")
+# Bias below what these data sets can resolve estimates as zero, and later points are noise;
+# the curve stops at the first zero.
+ax.plot(degrees, [b if i < next((j for j, c in enumerate(bias2) if c <= 0), len(bias2)) else np.nan for i, b in enumerate(bias2)], "o-", color="#076FA1", linewidth=2, label="bias$^2$")
 ax.plot(degrees, var, "s-", color="#31417A", linewidth=2, label="variance")
 ax.plot(degrees, total, "^-", color="#9E4F00", linewidth=2, label="total error")
 ax.axhline(irr, color="#666666", linestyle="--", label=f"irreducible ($\\sigma^2$={irr:.2f})")
@@ -341,13 +342,14 @@ best <- degrees[which.min(rows[, 4])]
 cat(sprintf("\nLowest total error at degree %d\n", best))
 
 irr <- rows[1, 3]
-pos <- rows[rows[, 1] > 0, 1]
+pos <- rows[seq_len(match(TRUE, c(rows[, 1] <= 0, TRUE)) - 1), 1]   # the plotted part of the bias curve
 plot(degrees, rows[, 4], type = "o", pch = 17, col = "#9E4F00", lwd = 2, log = "y",
      ylim = range(c(pos, rows[, 2], rows[, 4])),
      xlab = "polynomial degree (model complexity)", ylab = "error (log scale)", bty = "l")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-# A zero estimate has no place on a log axis; leave a gap there.
-lines(degrees, ifelse(rows[, 1] > 0, rows[, 1], NA), type = "o", pch = 19,
+# Bias below what these data sets can resolve estimates as zero, and later points are noise;
+# the curve stops at the first zero.
+lines(degrees, ifelse(seq_along(degrees) < match(TRUE, c(rows[, 1] <= 0, TRUE)), rows[, 1], NA), type = "o", pch = 19,
       col = "#076FA1", lwd = 2)
 lines(degrees, rows[, 2], type = "o", pch = 15, col = "#31417A", lwd = 2)
 abline(h = irr, col = "#666666", lty = 2)
@@ -443,8 +445,9 @@ irr = rows[0][2]; total = [r[3] for r in rows]
 best = degs[int(np.argmin(total))]
 
 fig, ax = plt.subplots(figsize=(8, 4.6))
-# A zero estimate has no place on a log axis; leave a gap there.
-ax.plot(degs, [b if b > 0 else np.nan for b in b2], "o-", color="#076FA1", lw=2, label="bias$^2$")
+# Bias below what these data sets can resolve estimates as zero, and later points are noise;
+# the curve stops at the first zero.
+ax.plot(degs, [b if i < next((j for j, c in enumerate(b2) if c <= 0), len(b2)) else np.nan for i, b in enumerate(b2)], "o-", color="#076FA1", lw=2, label="bias$^2$")
 ax.plot(degs, v, "s-", color="#31417A", lw=2, label="variance")
 ax.plot(degs, total, "^-", color="#9E4F00", lw=2, label="total error")
 ax.axhline(irr, color="#666666", ls="--", label=f"irreducible ($\\sigma^2$={irr:.3f})")
