@@ -30,9 +30,9 @@ Strictly, that is *cross-correlation*: true convolution flips the filter, summin
 </figure>
 ```
 
-## The book's worked convolution
+## One filter, four placements
 
-First, the chapter's own example: a 3&times;3 input and a 2&times;2 filter, four placements, and the feature map the book prints, $\begin{bmatrix} 0 & -1 \\ -1 & 1 \end{bmatrix}$.
+First, the chapter's own example (Section 10.2): a 3&times;3 input and a 2&times;2 filter, four placements, and the feature map the book prints, $\begin{bmatrix} 0 & -1 \\ -1 & 1 \end{bmatrix}$.
 
 ::: {.panel-tabset group="lang"}
 

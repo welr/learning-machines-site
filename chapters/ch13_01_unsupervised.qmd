@@ -321,9 +321,9 @@ Even with one color, the plot is not one blob: a tight island sits apart from a 
 ridge. We did not put that there. It is structure in $p(\mathbf{x})$, and the next step
 gives it names — well, numbers.
 
-## The book's worked example
+## Six points, two centers
 
-Before the flowers, the chapter's own example: six points on a line, $\{0, 1, 2, 7, 8, 9\}$,
+Before the flowers, the chapter's own example (Section 13.2): six points on a line, $\{0, 1, 2, 7, 8, 9\}$,
 $K = 2$, and the deliberately poor start $\mu_1 = 0$, $\mu_2 = 1$. The trace should match the
 book's $150 \to 53.2 \to 27.28 \to 4$, ending at centers 1 and 8.
 

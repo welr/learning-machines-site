@@ -34,9 +34,9 @@ Each input is projected three ways. The [query]{.term} asks what this position i
 
 Read this beside the Nadaraya–Watson estimator and the kinship is unmistakable. The softmax term is exactly a vector of kernel weights, and multiplying by V is the weighted average those weights define. The only thing learned is the set of projections that produce Q, K, and V, which is to say the similarity metric itself.
 
-## The book's house example
+## A price from three sales
 
-The book introduces the estimator with a house price. To price a 75 m&sup2; house from three sold houses of 60, 80 and 120 m&sup2;, priced at 420, 510 and 700 thousand euros, a kernel that falls with distance might give the weights 0.4, 0.5 and 0.1. In attention's terms the new house is the query, the sold houses' sizes are the keys, and their prices are the values.
+The book introduces the estimator with a house price (Section 11.2). To price a 75 m&sup2; house from three sold houses of 60, 80 and 120 m&sup2;, priced at 420, 510 and 700 thousand euros, a kernel that falls with distance might give the weights 0.4, 0.5 and 0.1. In attention's terms the new house is the query, the sold houses' sizes are the keys, and their prices are the values.
 
 ::: {.panel-tabset group="lang"}
 
@@ -394,7 +394,83 @@ The division by &radic;d<sub>k</sub> is not cosmetic. Large scores push the soft
 
 Where the dimension enters is a separate argument, and it carries a condition. If the components of a query and a key are independent, mean zero, and unit variance, then q&middot;k is a sum of d<sub>k</sub> independent products, so its variance is d<sub>k</sub> and its typical size grows like &radic;d<sub>k</sub>: the wider the head, the deeper into saturation an unscaled softmax goes. Dividing by &radic;d<sub>k</sub> restores unit variance whatever the width.
 
-Our embeddings do not meet that condition, and it is worth being plain about it. The keys are one-hot and `W_Q` is a table we wrote down, so every score is a single entry of that table and does not vary with d<sub>k</sub> at all. Pad the roles out to d<sub>k</sub> = 512 and the unscaled maximum weight sits at 0.993 for every width, while the scaled one drifts down toward the uniform 1/9 — here the scaling over-corrects, because there was no growth to correct. So read the cell as a demonstration of the remedy rather than of the disease: it shows what saturation costs and that the division relieves it. Seeing the disease itself takes random projections, where the scores really do grow with the width.
+Our hand-built embeddings do not meet that condition: the keys are one-hot and `W_Q` is a table we wrote down, so every score is a single entry of that table and does not grow with d<sub>k</sub>. The cell above shows the remedy. The cell below shows the disease: one random query against nine random keys, every component with mean zero and unit variance, at widths from 2 to 512, and the largest attention weight the softmax hands out, averaged over three hundred draws.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Random queries and keys whose components are independent with mean 0 and variance 1,
+# the condition the argument above needs. Nine keys, as in the sentence above.
+rng = np.random.default_rng(0)
+n_keys, widths, draws = 9, [2, 8, 32, 128, 512], 300
+
+def softmax(z):
+    e = np.exp(z - z.max())
+    return e / e.sum()
+
+largest = {"unscaled": [], "scaled": []}
+for d in widths:
+    mx = {"unscaled": [], "scaled": []}
+    for _ in range(draws):
+        q, K = rng.normal(size=d), rng.normal(size=(n_keys, d))
+        scores = K @ q                                # one query against nine keys
+        mx["unscaled"].append(softmax(scores).max())
+        mx["scaled"].append(softmax(scores / np.sqrt(d)).max())
+    for k in mx: largest[k].append(np.mean(mx[k]))
+    print(f"d_k = {d:3d}   largest weight: unscaled {largest['unscaled'][-1]:.2f}   scaled {largest['scaled'][-1]:.2f}")
+
+fig, ax = plt.subplots(figsize=(7, 4.2))
+ax.plot(widths, largest["unscaled"], "o-", color="#9E4F00", lw=2, label="unscaled scores")
+ax.plot(widths, largest["scaled"], "o-", color="#31417A", lw=2, label="scores / sqrt(d_k)")
+ax.axhline(1 / n_keys, color="#666666", ls="--", lw=1, label="uniform, 1/9")
+ax.set_xscale("log", base=2); ax.set_ylim(0, 1.05)
+ax.set_xlabel("$d_k$ (log scale)"); ax.set_ylabel("largest attention weight, average")
+ax.legend(loc="lower right", fontsize=9)
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
+plt.tight_layout(); plt.show()
+```
+
+## R
+```{webr}
+# Random queries and keys whose components are independent with mean 0 and variance 1,
+# the condition the argument above needs. Nine keys, as in the sentence above.
+set.seed(0)
+n_keys <- 9; widths <- c(2, 8, 32, 128, 512); draws <- 300
+
+softmax <- function(z) { e <- exp(z - max(z)); e / sum(e) }
+
+largest <- list(unscaled = numeric(0), scaled = numeric(0))
+for (d in widths) {
+  mx <- list(unscaled = numeric(0), scaled = numeric(0))
+  for (r in seq_len(draws)) {
+    q <- rnorm(d); K <- matrix(rnorm(n_keys * d), n_keys, d)
+    scores <- as.vector(K %*% q)                    # one query against nine keys
+    mx$unscaled <- c(mx$unscaled, max(softmax(scores)))
+    mx$scaled   <- c(mx$scaled, max(softmax(scores / sqrt(d))))
+  }
+  largest$unscaled <- c(largest$unscaled, mean(mx$unscaled))
+  largest$scaled   <- c(largest$scaled, mean(mx$scaled))
+  cat(sprintf("d_k = %3d   largest weight: unscaled %.2f   scaled %.2f\n",
+              d, tail(largest$unscaled, 1), tail(largest$scaled, 1)))
+}
+
+plot(widths, largest$unscaled, type = "o", pch = 19, col = "#9E4F00", lwd = 2, log = "x",
+     ylim = c(0, 1.05), bty = "l", xlab = "d_k (log scale)", ylab = "largest attention weight, average")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+lines(widths, largest$scaled, type = "o", pch = 19, col = "#31417A", lwd = 2)
+abline(h = 1 / n_keys, col = "#666666", lty = 2)
+legend("bottomright", c("unscaled scores", "scores / sqrt(d_k)", "uniform, 1/9"),
+       col = c("#9E4F00", "#31417A", "#666666"), lty = c(1, 1, 2), lwd = c(2, 2, 1), pch = c(19, 19, NA), bty = "n", cex = 0.9)
+```
+
+:::
+
+Unscaled, the largest weight climbs from about 0.4 at width 2 to about 0.95 at 512: the softmax hardens into an argmax over keys that differ only by chance, and its gradient goes with it. Scaled, it stays near a third at every width, because dividing by &radic;d<sub>k</sub> holds the score variance at one. The draws differ between the languages; the two directions do not.
 
 ## The same layer in PyTorch
 
