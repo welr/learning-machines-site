@@ -501,11 +501,266 @@ This is the cell above with the projections learned rather than written down, ba
 
 A single head captures one kind of relationship. [Multi-head attention]{.term} runs several heads in parallel, each with its own learned projections, then concatenates their outputs and projects once more. Different heads specialize: in a trained model one may track syntactic agreement while another links a pronoun to its referent. The notebook builds the multi-head layer from the function above, splitting the model dimension across heads so the parallel attention costs no more than a single wide one.
 
+The cell splits the hand-built query table into two heads. The first keeps the rows that look for a noun, the determiners, the pronoun, the property and the copula; the second keeps the rows that look for a verb or a property. Each head runs the same arithmetic with its own table, and the outputs are concatenated and projected back to the model width.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# The hand-built sentence again, so this cell stands alone. Each role's row of the
+# query table says what a token of that role looks for; here the table is split
+# into two heads, one that looks for nouns and one that looks for verbs and properties.
+ROLES = ["ANIMATE", "OBJECT", "DET", "VERB", "CONN", "PROP", "PRON", "COP"]
+ROLE = {r: i for i, r in enumerate(ROLES)}
+d_k = len(ROLES)
+sentence = [("the", "DET"), ("cat", "ANIMATE"), ("drank", "VERB"), ("the", "DET"), ("milk", "OBJECT"),
+            ("because", "CONN"), ("it", "PRON"), ("was", "COP"), ("thirsty", "PROP")]
+tokens = [t for t, _ in sentence]
+X = np.eye(d_k)[[ROLE[r] for _, r in sentence]]                  # one-hot role embeddings
+
+HEADS = {"who: looks for a noun":   {"DET": {"ANIMATE": 5, "OBJECT": 5}, "PRON": {"ANIMATE": 8, "OBJECT": 2},
+                                      "PROP": {"ANIMATE": 5}, "COP": {"ANIMATE": 4}},
+         "what: looks for a predicate": {"ANIMATE": {"VERB": 6}, "OBJECT": {"VERB": 6}, "CONN": {"VERB": 3, "PROP": 4},
+                                      "COP": {"PROP": 5}, "PRON": {"PROP": 2}}}
+
+def table(looks_for):
+    W = np.zeros((d_k, d_k))
+    for r, targets in looks_for.items():
+        for c, w in targets.items(): W[ROLE[r], ROLE[c]] = w
+    return W
+
+def attention(X, W_Q):                                           # keys and values stay raw
+    S = (X @ W_Q) @ X.T / np.sqrt(d_k)
+    E = np.exp(S - S.max(axis=1, keepdims=True))
+    A = E / E.sum(axis=1, keepdims=True)
+    return A, A @ X
+
+weights, outputs = [], []
+for name, looks_for in HEADS.items():
+    A, out = attention(X, table(looks_for))
+    weights.append(A); outputs.append(out)
+    print(f"{name:30s} 'it' attends to: " + ", ".join(f"{tokens[j]} {A[6, j]:.2f}" for j in np.argsort(-A[6])[:3]))
+concat = np.hstack(outputs)                                      # the heads side by side
+W_O = np.vstack([np.eye(d_k), np.eye(d_k)]) / 2                  # one more projection, here an average
+print(f"concatenated outputs {concat.shape} -> projected back {(concat @ W_O).shape}")
+
+n = len(tokens)
+fig, axes = plt.subplots(1, 2, figsize=(11, 4.6))
+for ax, (name, A) in zip(axes, zip(HEADS, weights)):
+    ax.imshow(A, cmap="Blues", vmin=0, vmax=1)
+    for i in range(n):
+        for j in range(n):
+            if A[i, j] >= 0.10:
+                ax.text(j, i, f"{A[i, j]:.2f}", ha="center", va="center", fontsize=7,
+                        color="white" if A[i, j] > 0.45 else "#31417A")
+    ax.set_xticks(range(n)); ax.set_xticklabels(tokens, rotation=45, ha="right", fontsize=9)
+    ax.set_yticks(range(n)); ax.set_yticklabels(tokens, fontsize=9)
+    ax.set_title("head " + name, fontsize=11)
+    for s in ax.spines.values(): s.set_color("#cfccc2")
+plt.tight_layout(); plt.show()
+```
+
+## R
+```{webr}
+# The hand-built sentence again, so this cell stands alone. Each role's row of the
+# query table says what a token of that role looks for; here the table is split
+# into two heads, one that looks for nouns and one that looks for verbs and properties.
+ROLES <- c("ANIMATE", "OBJECT", "DET", "VERB", "CONN", "PROP", "PRON", "COP")
+ROLE <- setNames(seq_along(ROLES), ROLES)
+d_k <- length(ROLES)
+tokens <- c("the", "cat", "drank", "the", "milk", "because", "it", "was", "thirsty")
+roles  <- c("DET", "ANIMATE", "VERB", "DET", "OBJECT", "CONN", "PRON", "COP", "PROP")
+X <- diag(d_k)[ROLE[roles], ]                                    # one-hot role embeddings
+
+HEADS <- list(
+  "who: looks for a noun" = list(DET = c(ANIMATE = 5, OBJECT = 5), PRON = c(ANIMATE = 8, OBJECT = 2),
+                                 PROP = c(ANIMATE = 5), COP = c(ANIMATE = 4)),
+  "what: looks for a predicate" = list(ANIMATE = c(VERB = 6), OBJECT = c(VERB = 6), CONN = c(VERB = 3, PROP = 4),
+                                       COP = c(PROP = 5), PRON = c(PROP = 2)))
+
+table_of <- function(looks_for) {
+  W <- matrix(0, d_k, d_k)
+  for (r in names(looks_for)) for (c in names(looks_for[[r]])) W[ROLE[r], ROLE[c]] <- looks_for[[r]][c]
+  W
+}
+
+attention <- function(X, W_Q) {                                  # keys and values stay raw
+  S <- (X %*% W_Q) %*% t(X) / sqrt(d_k)
+  E <- exp(S - apply(S, 1, max))
+  A <- E / rowSums(E)
+  list(A = A, out = A %*% X)
+}
+
+weights <- list(); outputs <- list()
+for (name in names(HEADS)) {
+  h <- attention(X, table_of(HEADS[[name]]))
+  weights[[name]] <- h$A; outputs[[name]] <- h$out
+  top <- order(-h$A[7, ])[1:3]
+  cat(sprintf("%-30s 'it' attends to: %s\n", name, paste(sprintf("%s %.2f", tokens[top], h$A[7, top]), collapse = ", ")))
+}
+concat <- do.call(cbind, outputs)                                # the heads side by side
+W_O <- rbind(diag(d_k), diag(d_k)) / 2                           # one more projection, here an average
+cat(sprintf("concatenated outputs %d x %d -> projected back %d x %d\n",
+            nrow(concat), ncol(concat), nrow(concat %*% W_O), ncol(concat %*% W_O)))
+
+n <- length(tokens)
+blues <- colorRampPalette(c("#f7fbff", "#c6dbef", "#6baed6", "#2171b5", "#08306b"))
+op <- par(mfrow = c(1, 2), mar = c(5.5, 5.5, 2.5, 1))
+for (name in names(HEADS)) {
+  A <- weights[[name]]
+  image(1:n, 1:n, t(A[n:1, ]), col = blues(100), zlim = c(0, 1), axes = FALSE, xlab = "", ylab = "",
+        main = paste("head", name), cex.main = 0.95)
+  axis(1, at = 1:n, labels = tokens, las = 2, col = "#cfccc2", col.axis = "#666666", cex.axis = 0.8)
+  axis(2, at = 1:n, labels = rev(tokens), las = 1, col = "#cfccc2", col.axis = "#666666", cex.axis = 0.8)
+  box(col = "#cfccc2")
+  for (i in seq_len(n)) for (j in seq_len(n)) if (A[i, j] >= 0.10)
+    text(j, n + 1 - i, sprintf("%.2f", A[i, j]), cex = 0.6, col = if (A[i, j] > 0.45) "white" else "#31417A")
+}
+par(op)
+```
+
+:::
+
+In the first head the pronoun's row is the single-head cell's, 0.65 on *cat*; in the second it has nothing to look for and spreads its weight, 0.20 on *thirsty* and about a tenth everywhere else. Two heads give two readings of the same nine tokens, and the concatenation keeps both: nine rows of sixteen numbers, projected back to eight. Here the projection averages the heads; a trained model learns it.
+
 ## Position and causality
 
 Self-attention is permutation-equivariant: it treats its input as a set, not a sequence, so on its own it cannot tell "dog bites man" from "man bites dog." The two identical `the` rows in the heatmap above are that fact in miniature. Position is restored by adding a [positional encoding]{.term} to each embedding. The original transformer uses sinusoids of geometrically spaced frequencies, where low dimensions oscillate quickly to mark local position and high dimensions slowly to mark global position, and relative offsets become linear combinations of the encodings.
 
-Autoregressive models such as GPT carry one more constraint. When predicting the next token, a position must attend only to those before it, never ahead. A [causal mask]{.term}, the lower-triangular pattern passed to `masked_fill` above, sets every future score to negative infinity before the softmax, so position t draws on positions 1 through t alone. This is what lets the model be trained on all positions at once without leaking the answer.
+The cell gives position its own coordinates, the eight sinusoids appended to the eight role coordinates, and lets the query projection act on each block separately: the role table as before, and position passed straight through with a weight. The position term of every score is then a dot product of two sinusoid vectors, largest for neighbors, so the only thing position adds here is a preference for nearby tokens.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# The hand-built sentence and its single query table again, so this cell stands alone.
+ROLES = ["ANIMATE", "OBJECT", "DET", "VERB", "CONN", "PROP", "PRON", "COP"]
+ROLE = {r: i for i, r in enumerate(ROLES)}
+d_k = len(ROLES)
+sentence = [("the", "DET"), ("cat", "ANIMATE"), ("drank", "VERB"), ("the", "DET"), ("milk", "OBJECT"),
+            ("because", "CONN"), ("it", "PRON"), ("was", "COP"), ("thirsty", "PROP")]
+tokens = [t for t, _ in sentence]
+X = np.eye(d_k)[[ROLE[r] for _, r in sentence]]                  # one-hot role embeddings
+LOOKS_FOR = {"ANIMATE": {"VERB": 6, "ANIMATE": 3}, "OBJECT": {"VERB": 6, "OBJECT": 3},
+             "DET": {"ANIMATE": 5, "OBJECT": 5}, "VERB": {"ANIMATE": 4.5, "OBJECT": 4.5},
+             "CONN": {"VERB": 3, "PROP": 4}, "PROP": {"ANIMATE": 5},
+             "PRON": {"ANIMATE": 8, "OBJECT": 2, "PROP": 2}, "COP": {"PROP": 5, "ANIMATE": 4}}
+W_Q = np.zeros((d_k, d_k))
+for r, targets in LOOKS_FOR.items():
+    for c, w in targets.items(): W_Q[ROLE[r], ROLE[c]] = w
+
+# Position gets its own coordinates: the original transformer's sinusoids, d_k / 2 of
+# them, appended to the role embedding. The query projection then acts on the two blocks
+# separately: the role table as before, and position passed through with a weight beta,
+# so the scores split into a role term and a term that favors nearby positions.
+n = len(tokens)
+pos, k = np.arange(n)[:, None], np.arange(0, d_k, 2)[None, :]
+PE = np.zeros((n, d_k))
+PE[:, 0::2] = np.sin(pos / 10000 ** (k / d_k))
+PE[:, 1::2] = np.cos(pos / 10000 ** (k / d_k))
+beta = 3.0
+W = np.zeros((2 * d_k, 2 * d_k))
+W[:d_k, :d_k] = W_Q
+W[d_k:, d_k:] = beta * np.eye(d_k)
+
+def attention(E):                                                # keys and values stay raw
+    S = (E @ W) @ E.T / np.sqrt(E.shape[1])
+    Ex = np.exp(S - S.max(axis=1, keepdims=True))
+    return Ex / Ex.sum(axis=1, keepdims=True)
+
+A_set = attention(np.hstack([X, 0 * PE]))                        # roles only: a set of tokens
+A_seq = attention(np.hstack([X, PE]))                            # roles and positions: a sequence
+print(f"the two 'the' rows differ by at most {np.abs(A_set[0] - A_set[3]).max():.1e} without position, "
+      f"{np.abs(A_seq[0] - A_seq[3]).max():.2f} with it")
+for r, which in [(0, "first"), (3, "second")]:
+    print(f"{which:6s} 'the' with position: cat {A_seq[r, 1]:.2f}, milk {A_seq[r, 4]:.2f}")
+print(f"'it' -> 'cat': {A_set[6, 1]:.2f} without position, {A_seq[6, 1]:.2f} with it")
+
+fig, axes = plt.subplots(1, 2, figsize=(11, 4.6))
+for ax, A, title in zip(axes, [A_set, A_seq], ["roles only: a set of tokens", "roles and positions: a sequence"]):
+    ax.imshow(A, cmap="Blues", vmin=0, vmax=0.6)
+    for r in range(n):
+        for c in range(n):
+            if A[r, c] >= 0.10:
+                ax.text(c, r, f"{A[r, c]:.2f}", ha="center", va="center", fontsize=7,
+                        color="white" if A[r, c] > 0.3 else "#31417A")
+    ax.set_xticks(range(n)); ax.set_xticklabels(tokens, rotation=45, ha="right", fontsize=9)
+    ax.set_yticks(range(n)); ax.set_yticklabels(tokens, fontsize=9)
+    ax.set_title(title, fontsize=11)
+    for s in ax.spines.values(): s.set_color("#cfccc2")
+plt.tight_layout(); plt.show()
+```
+
+## R
+```{webr}
+# The hand-built sentence and its single query table again, so this cell stands alone.
+ROLES <- c("ANIMATE", "OBJECT", "DET", "VERB", "CONN", "PROP", "PRON", "COP")
+ROLE <- setNames(seq_along(ROLES), ROLES)
+d_k <- length(ROLES)
+tokens <- c("the", "cat", "drank", "the", "milk", "because", "it", "was", "thirsty")
+roles  <- c("DET", "ANIMATE", "VERB", "DET", "OBJECT", "CONN", "PRON", "COP", "PROP")
+X <- diag(d_k)[ROLE[roles], ]                                    # one-hot role embeddings
+LOOKS_FOR <- list(ANIMATE = c(VERB = 6, ANIMATE = 3), OBJECT = c(VERB = 6, OBJECT = 3),
+                  DET = c(ANIMATE = 5, OBJECT = 5), VERB = c(ANIMATE = 4.5, OBJECT = 4.5),
+                  CONN = c(VERB = 3, PROP = 4), PROP = c(ANIMATE = 5),
+                  PRON = c(ANIMATE = 8, OBJECT = 2, PROP = 2), COP = c(PROP = 5, ANIMATE = 4))
+W_Q <- matrix(0, d_k, d_k)
+for (r in names(LOOKS_FOR)) for (c in names(LOOKS_FOR[[r]])) W_Q[ROLE[r], ROLE[c]] <- LOOKS_FOR[[r]][c]
+
+# Position gets its own coordinates: the original transformer's sinusoids, d_k / 2 of
+# them, appended to the role embedding. The query projection then acts on the two blocks
+# separately: the role table as before, and position passed through with a weight beta,
+# so the scores split into a role term and a term that favors nearby positions.
+n <- length(tokens)
+pos <- 0:(n - 1); freq <- 1 / 10000^(seq(0, d_k - 2, by = 2) / d_k)
+PE <- matrix(0, n, d_k)
+PE[, seq(1, d_k, by = 2)] <- sin(outer(pos, freq))
+PE[, seq(2, d_k, by = 2)] <- cos(outer(pos, freq))
+beta <- 3
+W <- matrix(0, 2 * d_k, 2 * d_k)
+W[1:d_k, 1:d_k] <- W_Q
+W[(d_k + 1):(2 * d_k), (d_k + 1):(2 * d_k)] <- beta * diag(d_k)
+
+attention <- function(E) {                                       # keys and values stay raw
+  S <- (E %*% W) %*% t(E) / sqrt(ncol(E))
+  Ex <- exp(S - apply(S, 1, max))
+  Ex / rowSums(Ex)
+}
+
+A_set <- attention(cbind(X, 0 * PE))                             # roles only: a set of tokens
+A_seq <- attention(cbind(X, PE))                                 # roles and positions: a sequence
+cat(sprintf("the two 'the' rows differ by at most %.1e without position, %.2f with it\n",
+            max(abs(A_set[1, ] - A_set[4, ])), max(abs(A_seq[1, ] - A_seq[4, ]))))
+cat(sprintf("first  'the' with position: cat %.2f, milk %.2f\n", A_seq[1, 2], A_seq[1, 5]))
+cat(sprintf("second 'the' with position: cat %.2f, milk %.2f\n", A_seq[4, 2], A_seq[4, 5]))
+cat(sprintf("'it' -> 'cat': %.2f without position, %.2f with it\n", A_set[7, 2], A_seq[7, 2]))
+
+blues <- colorRampPalette(c("#f7fbff", "#c6dbef", "#6baed6", "#2171b5", "#08306b"))
+op <- par(mfrow = c(1, 2), mar = c(5.5, 5.5, 2.5, 1))
+for (k in 1:2) {
+  A <- list(A_set, A_seq)[[k]]
+  image(1:n, 1:n, t(A[n:1, ]), col = blues(100), zlim = c(0, 0.6), axes = FALSE, xlab = "", ylab = "",
+        main = c("roles only: a set of tokens", "roles and positions: a sequence")[k], cex.main = 0.95)
+  axis(1, at = 1:n, labels = tokens, las = 2, col = "#cfccc2", col.axis = "#666666", cex.axis = 0.8)
+  axis(2, at = 1:n, labels = rev(tokens), las = 1, col = "#cfccc2", col.axis = "#666666", cex.axis = 0.8)
+  box(col = "#cfccc2")
+  for (i in seq_len(n)) for (j in seq_len(n)) if (A[i, j] >= 0.10)
+    text(j, n + 1 - i, sprintf("%.2f", A[i, j]), cex = 0.6, col = if (A[i, j] > 0.3) "white" else "#31417A")
+}
+par(op)
+```
+
+:::
+
+That is enough to split the two `the` rows. Without position they are identical; with it the first `the` puts 0.33 on *cat* and 0.13 on *milk*, the second 0.17 on *cat* and 0.36 on *milk*. Each determiner has found its own noun, by proximity, and the pronoun's row barely moves. A trained model learns what to do with the positional coordinates; this is the simplest use, written down.
+
+Autoregressive models such as GPT carry one more constraint. When predicting the next token, a position must attend only to those before it, never ahead. A [causal mask]{.term}, the lower-triangular pattern passed to `masked_fill` above, sets every future score to negative infinity before the softmax, so position t draws on positions 1 through t alone. This is what lets the model be trained on all positions at once without leaking the answer. The interactive above, with "Mask the future" switched on, shows the mask on the book's three tokens: a lower-triangular weight matrix, position 1 attending only to itself.
 
 ## A transformer block
 
