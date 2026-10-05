@@ -328,6 +328,6 @@ against the exact posterior computed above.
 [Try it]{.lbl}
 In the prior cell, shrink the wrong prior's covariance from `diag(0.5, 0.5)` to
 `diag(0.01, 0.01)` and re-run: a confident wrong prior drags the posterior mean far from the
-data. Then raise `m` from 30 to 300 and watch even that stubborn prior surrender as the
+data. Then raise `m` from 30 to 300 and watch even that stubborn prior give ground as the
 likelihood takes over.
 :::

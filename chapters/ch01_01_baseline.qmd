@@ -101,7 +101,7 @@ is also the number every later chapter is trying to shrink.
 ## Why the mean, and not something else
 
 The mean is not a convention. Among all constant predictions $c$, it is the unique
-minimizer of mean squared error, $\frac{1}{m}\sum_i (y_i - c)^2$. You can see this
+minimizer of mean squared error, $\frac{1}{m}\sum_i (y^{(i)} - c)^2$. You can see this
 without calculus by scanning $c$ across a range and watching the error.
 
 ::: {.panel-tabset group="lang"}
@@ -447,7 +447,7 @@ cat(sprintf("positives it finds = 0 of %d\n", sum(labels)))
 
 A model reported at 95% accuracy on this problem has done exactly as well as saying
 "no" a thousand times in a row. Chapter 6 builds the vocabulary for saying what is
-wrong with that report — precision, recall, the confusion matrix. Chapter 1's
+wrong with that report — precision, recall, the confusion matrix. This page's
 contribution is the habit that comes first: ask what the baseline scores before you
 are impressed by anything.
 

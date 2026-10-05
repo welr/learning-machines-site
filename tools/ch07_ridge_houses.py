@@ -1,4 +1,4 @@
-"""Data for the Chapter 7 interactive figure "Ridge, one matrix at a time".
+"""Data for the Chapter 7 interactive figure "Ridge, one direction at a time".
 
 The book's shrinkage example (Section 7.2) trades floor area against number of
 rooms at about 25 square meters per room, but gives no data set. These twelve

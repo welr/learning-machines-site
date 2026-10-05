@@ -786,7 +786,7 @@ across the ensemble gives a natural [feature importance]{.term}: the mean impuri
 The forest of stumps below, each fit to a bootstrap resample on a random pair of features,
 concentrates almost all of its importance on the two features that actually drive the label
 and leaves the noise features near zero. The two languages draw different resamples, so the
-exact weights differ, but both rank feature 0 first and feature 2 second.
+exact weights differ.
 
 ::: {.panel-tabset group="lang"}
 
@@ -924,9 +924,12 @@ three, which is why one chapter holds them together.
 ::: {.explore}
 [Try it]{.lbl}
 In the boosting cell, change the learning rate `lr` from `0.3` to `0.05` and to `1.0`, and
-re-run. A small rate needs far more rounds to reach the same MSE but resists overfitting; a
-rate of `1.0` lurches toward the target and can overshoot. Then raise the tree count `B` in
-the bagging cell and watch the test error flatten out, the diminishing return that makes "more
-trees" safe but not free. You can also push `MAX_DEPTH` up: deeper single trees overfit harder,
+re-run, comparing the printed MSE round by round. The small rate is slowest: after 40 rounds
+it sits at 0.0646, where `0.3` reaches 0.0065 and `1.0` reaches 0.0056. The full step wins at
+every round because each stump is the exact least-squares correction to the residual and the
+target carries no noise, so there is nothing to overfit. Then set the tree count `B` in the
+bagging cell to `10`, `50` and `200`, running once at each, and compare the three printed test
+errors: the gain from more trees flattens out, the diminishing return that makes "more trees"
+safe but not free. You can also push `MAX_DEPTH` up: deeper single trees overfit harder,
 and bagging still cuts their test error by more than a quarter.
 :::

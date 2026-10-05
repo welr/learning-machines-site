@@ -15,6 +15,7 @@ _quarto_internal_scss_error.scss
 # so the GitHub Actions render is reproducible.
 
 **/*.quarto_ipynb
+__pycache__/
 
 # R plotting artifact
 Rplots.pdf

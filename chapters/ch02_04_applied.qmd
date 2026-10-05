@@ -237,5 +237,5 @@ The line and the quadratic tell the same honest story: more weight, less mileage
 
 ::: {.explore}
 [Try it]{.lbl}
-Refit `mpg` on horsepower instead of weight, or on weight *and* quarter-mile time (`mtcars$wt` and `mtcars$qsec`), and ask whether the extra feature earns its place. Then push the polynomial degree past 10 and watch the heavy-end wriggle turn violent.
+Refit `mpg` on horsepower (`hp`) instead of weight, or on weight *and* horsepower, and ask whether the extra feature earns its place; in R, `mtcars$qsec` adds quarter-mile time as a third candidate. Then push the polynomial degree past 10 and watch the heavy-end wriggle turn violent.
 :::

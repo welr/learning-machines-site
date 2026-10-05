@@ -157,6 +157,12 @@ runtime and no third-party requests, so they work in either language tab.
 | Least squares as a projection | `ch02_02` | `.lsproj` |
 | Why center the sizes? | `ch03_01` | `#ix-center` |
 | Momentum in a narrow valley | `ch03_01` | `#ix-momentum` |
+| A cloud of predictions at 95 m² | `ch05_01` | `#ix-cloud` |
+| Ridge, one direction at a time | `ch07_01` | `#ix-ridge` |
+| Corners and circles, as the budget grows | `ch07_01` | `#ix-corners` |
+| PCA, one direction at a time | `ch13_01` | `#ix-pca` |
+| Sliding the window | `ch10_01` | `#ix-conv` |
+| Attention on three tokens | `ch11_01` | `#ix-attn` |
 
 - **Shared kit.** Styles are the `.lm-ix` classes in `theme.scss`; helpers (contours,
   camera, slider binding, presets, stat tiles) are `window.LMIX` in `assets/lm-ix.js`,

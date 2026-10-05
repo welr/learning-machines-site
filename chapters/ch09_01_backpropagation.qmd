@@ -211,7 +211,7 @@ The differences land near $10^{-12}$, the floor set by floating-point arithmetic
 
 ## One step, then fifty
 
-Gradients point uphill, so we step against them: $\theta \leftarrow \theta - \alpha\,\partial \ell/\partial\theta$. With a fresh set of weights and a learning rate $\alpha = 0.5$, we repeat forward pass, backward pass, and update for fifty iterations and watch the loss fall as the prediction closes on its target. The original notebook animates a single forward-and-backward sweep through the computation graph; that animation does not survive in a static page, so we show the loss curve instead, which carries the same point: backprop plus a step rule is training.
+Gradients point uphill, so we step against them: $\theta \leftarrow \theta - \alpha\,\partial \ell/\partial\theta$. With a fresh set of weights and a learning rate $\alpha = 0.5$, we repeat forward pass, backward pass, and update for fifty iterations and watch the loss fall as the prediction closes on its target. We show the loss curve, which carries the point: backprop plus a step rule is training.
 
 ::: {.panel-tabset group="lang"}
 
@@ -513,5 +513,5 @@ We kept sigmoid in the worked example because its derivative has a clean closed 
 
 ::: {.explore}
 [Try it]{.lbl}
-Raise the learning rate in the training loop from $0.5$ to $5$ and re-run. The loss may overshoot and oscillate instead of settling. Then extend the network to a hidden layer of several units: replace the scalar weights with vectors and matrices, swap the scalar products for `@` (Python) or `%*%` (R), and the same forward-then-backward recurrence trains it unchanged.
+Raise the learning rate in the training loop from $0.5$ to $5$ and re-run. The loss may overshoot and oscillate instead of settling.
 :::

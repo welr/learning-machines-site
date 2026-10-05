@@ -21,9 +21,7 @@ its four counts, and the [ROC curve]{.term} with its [AUC]{.term}.
 Both panels evaluate the same data: a representative 120-case subset of the Wisconsin
 breast-cancer measurements (mean radius, mean texture, and mean concave points for each tumor,
 labeled malignant or benign), inlined directly into the page so it runs offline in either
-language with nothing to download. Of the 120 cases, 45 are malignant and 75 benign. Python and R fit the same logistic model to the same cases,
-so the two columns report the same confusion matrix, the same precision, recall, and $F_1$, and
-the same AUC. Toggling the language switches the syntax, not the problem.
+language with nothing to download. Of the 120 cases, 45 are malignant and 75 benign.
 
 ::: {.defbox}
 [Precision, Recall, F&#8321;]{.lbl}
@@ -46,6 +44,10 @@ screening convention of Section 6.5: the disease is what we are looking for.
 [recall]{.term} asks what fraction of the truly malignant cases were caught. $F_1$ is their
 harmonic mean, a single number that punishes a model for sacrificing one to inflate the other.
 The heatmap below is just the matrix, shaded by count.
+
+This page scores the classifier on the cases it was fit to; Chapter 6 opens with why that
+flatters, and the point here is the arithmetic of the metrics. The ROC section reports a
+held-out figure beside the in-sample one.
 
 ::: {.panel-tabset group="lang"}
 
@@ -384,29 +386,43 @@ benign      = np.array([
     1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0])
 
 y = 1 - benign                               # malignant is the positive class
-
 X = np.column_stack([np.ones(len(y)), radius, texture, concave_pts])
-theta = np.zeros(X.shape[1])
-for _ in range(50):                         # IRLS: the fit glm() also computes
-    p = 1 / (1 + np.exp(-X @ theta))
-    W = np.clip(p * (1 - p), 1e-9, None)
-    z = X @ theta + (y - p) / W
-    theta = np.linalg.solve((X * W[:, None]).T @ X, (X * W[:, None]).T @ z)
-proba = 1 / (1 + np.exp(-X @ theta))         # P(malignant)
 
-# Sweep the threshold from high to low; the TPR and FPR rise together, monotone.
-thr = np.unique(np.concatenate([[0.0], proba, [1.0]]))[::-1]
-P = int((y == 1).sum()); N = int((y == 0).sum())
-tpr = np.array([np.sum((proba >= t) & (y == 1)) / P for t in thr])
-fpr = np.array([np.sum((proba >= t) & (y == 0)) / N for t in thr])
-auc = np.sum(np.diff(fpr) * (tpr[:-1] + tpr[1:]) / 2)   # trapezoidal area
-print(f"AUC = {auc:.3f}")
+def fit_logistic(X, y):
+    theta = np.zeros(X.shape[1])
+    for _ in range(50):                         # IRLS: the fit glm() also computes
+        p = 1 / (1 + np.exp(-X @ theta))
+        W = np.clip(p * (1 - p), 1e-9, None)
+        z = X @ theta + (y - p) / W
+        theta = np.linalg.solve((X * W[:, None]).T @ X, (X * W[:, None]).T @ z)
+    return theta
+
+def roc(proba, y):
+    # Sweep the threshold from high to low; the TPR and FPR rise together, monotone.
+    thr = np.unique(np.concatenate([[0.0], proba, [1.0]]))[::-1]
+    P = int((y == 1).sum()); N = int((y == 0).sum())
+    tpr = np.array([np.sum((proba >= t) & (y == 1)) / P for t in thr])
+    fpr = np.array([np.sum((proba >= t) & (y == 0)) / N for t in thr])
+    auc = np.sum(np.diff(fpr) * (tpr[:-1] + tpr[1:]) / 2)   # trapezoidal area
+    return fpr, tpr, auc
+
+# Scored on the cases the model was fitted to, as above
+theta = fit_logistic(X, y)
+fpr_fit, tpr_fit, auc_fit = roc(1 / (1 + np.exp(-X @ theta)), y)   # P(malignant)
+
+# Hold out every third case (indices 2, 5, 8, ...): fit on the other 80, score the 40.
+test = np.arange(len(y)) % 3 == 2
+theta_train = fit_logistic(X[~test], y[~test])
+fpr_out, tpr_out, auc_out = roc(1 / (1 + np.exp(-X[test] @ theta_train)), y[test])
+print(f"AUC on the fitting cases = {auc_fit:.3f}")
+print(f"AUC on 40 held-out cases = {auc_out:.3f}")
 
 fig, ax = plt.subplots(figsize=(5, 4.5))
-ax.plot(fpr, tpr, color="#31417A", lw=2, label=f"AUC = {auc:.3f}")
+ax.plot(fpr_fit, tpr_fit, color="#31417A", lw=2, label=f"fitting cases, AUC = {auc_fit:.3f}")
+ax.plot(fpr_out, tpr_out, color="#9E4F00", lw=1.6, label=f"40 held-out cases, AUC = {auc_out:.3f}")
 ax.plot([0, 1], [0, 1], color="#666666", ls="--", lw=1, label="chance")
 ax.set_xlabel("false-positive rate"); ax.set_ylabel("true-positive rate")
-ax.legend()
+ax.legend(fontsize=8)
 for s in ["top", "right"]: ax.spines[s].set_visible(False)
 ax.grid(color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout()
@@ -454,42 +470,55 @@ benign      <- c(
     1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0)
 
 y <- 1 - benign                                        # malignant is the positive class
-fit   <- glm(y ~ radius + texture + concave_pts, family = binomial)
-proba <- as.numeric(predict(fit, type = "response"))   # P(malignant), the MLE fit
-yt <- y
+cases <- data.frame(y, radius, texture, concave_pts)
 
-# Sweep the threshold from high to low; the TPR and FPR rise together, monotone.
-thr <- sort(unique(c(0, proba, 1)), decreasing = TRUE)
-P <- sum(yt == 1); N <- sum(yt == 0)
-tpr <- sapply(thr, function(t) sum(proba >= t & yt == 1) / P)
-fpr <- sapply(thr, function(t) sum(proba >= t & yt == 0) / N)
+roc <- function(proba, yt) {
+  # Sweep the threshold from high to low; the TPR and FPR rise together, monotone.
+  thr <- sort(unique(c(0, proba, 1)), decreasing = TRUE)
+  P <- sum(yt == 1); N <- sum(yt == 0)
+  tpr <- sapply(thr, function(t) sum(proba >= t & yt == 1) / P)
+  fpr <- sapply(thr, function(t) sum(proba >= t & yt == 0) / N)
+  auc <- sum(diff(fpr) * (head(tpr, -1) + tail(tpr, -1)) / 2)   # trapezoidal area
+  list(fpr = fpr, tpr = tpr, auc = auc)
+}
 
-# AUC by the trapezoidal rule under the ROC curve.
-auc <- sum(diff(fpr) * (head(tpr, -1) + tail(tpr, -1)) / 2)
-cat(sprintf("AUC = %.3f\n", auc))
+# Scored on the cases the model was fitted to, as above
+fit <- glm(y ~ radius + texture + concave_pts, family = binomial, data = cases)
+r_fit <- roc(as.numeric(predict(fit, type = "response")), y)    # P(malignant), the MLE fit
 
-plot(fpr, tpr, type = "l", col = "#31417A", lwd = 2, bty = "l",
+# Hold out every third case (cases 3, 6, 9, ...): fit on the other 80, score the 40.
+test <- seq_along(y) %% 3 == 0
+fit_train <- glm(y ~ radius + texture + concave_pts, family = binomial, data = cases[!test, ])
+r_out <- roc(as.numeric(predict(fit_train, newdata = cases[test, ], type = "response")), y[test])
+cat(sprintf("AUC on the fitting cases = %.3f\n", r_fit$auc))
+cat(sprintf("AUC on 40 held-out cases = %.3f\n", r_out$auc))
+
+plot(r_fit$fpr, r_fit$tpr, type = "l", col = "#31417A", lwd = 2, bty = "l",
      xlim = c(0, 1), ylim = c(0, 1),
      xlab = "false-positive rate", ylab = "true-positive rate")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
-lines(fpr, tpr, col = "#31417A", lwd = 2)
+lines(r_fit$fpr, r_fit$tpr, col = "#31417A", lwd = 2)
+lines(r_out$fpr, r_out$tpr, col = "#9E4F00", lwd = 1.6)
 abline(0, 1, col = "#666666", lty = 2)
-legend("bottomright", legend = c(sprintf("AUC = %.3f", auc), "chance"),
-       col = c("#31417A", "#666666"), lty = c(1, 2), lwd = c(2, 1), bty = "n")
+legend("bottomright", legend = c(sprintf("fitting cases, AUC = %.3f", r_fit$auc),
+                                 sprintf("40 held-out cases, AUC = %.3f", r_out$auc), "chance"),
+       col = c("#31417A", "#9E4F00", "#666666"), lty = c(1, 1, 2), lwd = c(2, 1.6, 1), bty = "n")
 ```
 
 :::
 
 The classifier rides close to the top-left corner, an AUC near $0.99$: on these three features
-the malignant and benign cases separate cleanly. Both panels report the same AUC because they
-rank the same cases with the same fitted model. That is the honest reading of AUC: it rates the
+the malignant and benign cases separate cleanly. That is the honest reading of AUC: it rates the
 ranking, not the data set, and an easy problem flatters any reasonable model.
+
+On these cases the held-out ranking is as good as the in-sample one: three strong features and a
+four-parameter model fit to 80 cases leave little room to overfit. The habit matters more than
+the gap here; the gap will not be zero elsewhere.
 
 ::: {.explore}
 [Try it]{.lbl}
 Move the threshold off $0.5$ and watch precision trade against recall. For a cancer screen,
 which error is worse, a missed malignancy or a false alarm, and which way should the threshold
-move? Then recall that a model can post a high AUC yet be poorly *calibrated*: bin the
-predicted probabilities and plot predicted against observed frequency to ask whether "0.7"
-really means 70%.
+move? A model can post a high AUC yet be poorly *calibrated*; the
+[model-evaluation page](ch06_01_model_evaluation.qmd) has the calibration cell.
 :::

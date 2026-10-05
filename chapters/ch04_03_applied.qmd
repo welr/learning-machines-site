@@ -238,8 +238,8 @@ error.
 
 ::: {.explore}
 [Try it]{.lbl}
-Shrink the training set to a few dozen patients (lower `cut`, or slice `tr`) and rerun the
-comparison. Which classifier degrades less? Then break the shared-covariance assumption by
-scaling the positive class's features before the split, and watch the linear discriminant fall
-behind as its modeling assumption stops holding.
+Break the shared-covariance assumption in the comparison cell: multiply the positive class's
+features by 3 (`pos = pos * 3` in Python, `pos <- pos * 3` in R) before the two classes are
+stacked, and rerun. The linear discriminant falls a few points behind logistic regression as
+its modeling assumption stops holding.
 :::

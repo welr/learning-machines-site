@@ -11,7 +11,7 @@ engine: markdown
 [*One filter, slid across every position: weight sharing is a structured prior, and it is what lets a network learn to see.*]{.dek}
 :::
 
-A dense network treats every pixel as unrelated to its neighbors. For an image that is both a poor assumption and an extravagant number of parameters: a fully connected layer over a 28&times;28 digit needs a separate weight for every pixel-to-unit pair. A [convolutional network]{.term} assumes something instead. The same small [filter]{.term} (a kernel of a few weights) is applied at every location, so a pattern learned in one corner is recognized everywhere. The book reads this weight sharing as a [structured prior]{.term}, the spatial cousin of the regularization in Chapter 7: rather than learn that nearby pixels are related, the architecture bakes it in.
+A dense network treats every pixel as unrelated to its neighbors. For an image that is both a poor assumption and an extravagant number of parameters: a fully connected layer over a 28&times;28 digit needs a separate weight for every pixel-to-unit pair. A [convolutional network]{.term} assumes something instead. The same small [filter]{.term} (a kernel of a few weights) is applied at every location, so a pattern learned in one corner is recognized everywhere. The book reads this weight sharing as an [infinitely strong prior]{.term}, the spatial cousin of the regularization in Chapter 7: rather than learn that nearby pixels are related, the architecture bakes it in.
 
 The operation itself is concrete. A 2D convolution slides the filter across the image and computes a dot product at each position. The result is a [feature map]{.term} that lights up wherever the filter's pattern appears.
 
@@ -69,9 +69,129 @@ print(out)                                        # the book: [[0, -1], [-1, 1]]
 
 :::
 
+The figure below runs those four placements one at a time, and then the square and edge filter of the cell that follows: the window, the products under it, and the map filling in.
+
+```{=html}
+<div class="lm-ix" id="ix-conv" role="figure" aria-label="Interactive figure: a filter sliding across an input, one placement at a time">
+<div class="ix-eyebrow">Interactive</div>
+<div class="ix-title">Sliding the window</div>
+<div class="ix-views">
+  <div class="ix-card">
+    <div class="ix-ttl">The input and the filter</div>
+    <p class="ix-sub">The window outlined in red sits over the values the filter multiplies. The filter itself is drawn beneath.</p>
+    <svg class="ix-in" viewBox="0 0 400 480"></svg>
+  </div>
+  <div class="ix-card">
+    <div class="ix-ttl">The feature map</div>
+    <p class="ix-sub">One entry per placement: the products under the window, summed. Filled so far in blue.</p>
+    <svg class="ix-out" viewBox="0 0 400 400"></svg>
+  </div>
+</div>
+<div class="ix-matrix m-eq" style="margin-top:12px"></div>
+<div class="ix-buttons"></div>
+<div class="ix-readout">
+  <div class="ix-stat t-k"><div class="k">Placement</div><div class="v"></div></div>
+  <div class="ix-stat t-n"><div class="k">Output size, (w − k)/s + 1</div><div class="v"></div></div>
+</div>
+<div class="ix-note"></div>
+<script src="../assets/lm-ix.js"></script>
+<script>
+(function () {
+  const root = document.getElementById('ix-conv'), L = window.LMIX, $ = s => root.querySelector(s);
+  // Two inputs: the book's 3x3 example with its 2x2 filter, and the by-hand cell's square with its vertical-edge filter.
+  const BOOK = { name: 'book', X: [[1, 2, 0], [0, 1, 3], [2, 1, 0]], W: [[1, 0], [0, -1]], ms: 650 };
+  const SQ = (function () {
+    const X = []; for (let i = 0; i < 10; i++) { X.push([]); for (let j = 0; j < 10; j++) X[i].push(i >= 2 && i < 8 && j >= 2 && j < 8 ? 1 : 0); }
+    return { name: 'square', X: X, W: [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]], ms: 160 };
+  })();
+  let ex = BOOK, k = 0, timer = null;                    // k = placements done so far
+  const n = () => ex.X.length, kk = () => ex.W.length, o = () => n() - kk() + 1, N = () => o() * o();
+  const pos = t => [Math.floor(t / o()), t % o()];        // placement t -> (row, col) of the output
+  const sumAt = (i, j) => { let s = 0; for (let p = 0; p < kk(); p++) for (let q = 0; q < kk(); q++) s += ex.X[i + p][j + q] * ex.W[p][q]; return s; };
+  const neg = v => v < 0 ? '(' + v + ')' : String(v);
+
+  function grid(svg, M, x0, y0, cell, C, text) {
+    for (let i = 0; i < M.length; i++) for (let j = 0; j < M[0].length; j++) {
+      L.el('rect', { x: x0 + j * cell, y: y0 + i * cell, width: cell, height: cell, fill: text(i, j).fill, stroke: C.axis }, svg);
+      const t = text(i, j).label;
+      if (t !== null) L.el('text', { x: x0 + (j + 0.5) * cell, y: y0 + (i + 0.5) * cell + cell * 0.14, 'text-anchor': 'middle', 'font-size': text(i, j).size, fill: text(i, j).ink }, svg).textContent = t;
+    }
+  }
+  function drawIn(C) {
+    const svg = $('.ix-in'); svg.innerHTML = '';
+    const cell = Math.min(360 / n(), 90), x0 = (400 - cell * n()) / 2, y0 = 6;
+    const cur = k < N() ? pos(k) : pos(N() - 1);
+    grid(svg, ex.X, x0, y0, cell, C, (i, j) => ({ fill: ex.X[i][j] ? (ex.name === 'square' ? '#d9d6cc' : '#fff') : '#fff', label: String(ex.X[i][j]), size: n() > 5 ? 13 : 26, ink: C.ink }));
+    L.el('rect', { x: x0 + cur[1] * cell, y: y0 + cur[0] * cell, width: cell * kk(), height: cell * kk(), fill: 'none', stroke: C.red, 'stroke-width': 3 }, svg);
+    const kc = Math.min(44, cell), kx = (400 - kc * kk()) / 2, ky = y0 + cell * n() + 34;
+    L.el('text', { x: 200, y: ky - 10, 'text-anchor': 'middle', 'font-size': 14, fill: C.muted }, svg).textContent = 'the filter';
+    grid(svg, ex.W, kx, ky, kc, C, (i, j) => ({ fill: ex.W[i][j] > 0 ? 'rgba(7,111,161,0.16)' : ex.W[i][j] < 0 ? 'rgba(227,18,11,0.12)' : '#fff', label: String(ex.W[i][j]), size: 18, ink: C.ink }));
+  }
+  function drawOut(C) {
+    const svg = $('.ix-out'); svg.innerHTML = '';
+    const cell = Math.min(360 / o(), 90), x0 = (400 - cell * o()) / 2, y0 = (400 - cell * o()) / 2;
+    const cur = k > 0 ? pos(k - 1) : null;
+    grid(svg, Array.from({ length: o() }, (_, i) => Array.from({ length: o() }, (_, j) => i * o() + j)), x0, y0, cell, C, (i, j) => {
+      const t = i * o() + j, done = t < k, v = done ? sumAt(i, j) : 0;
+      return { fill: !done ? '#fff' : cur && cur[0] === i && cur[1] === j ? 'rgba(7,111,161,0.28)' : v > 0 ? 'rgba(7,111,161,0.12)' : v < 0 ? 'rgba(227,18,11,0.10)' : '#f6f5f0',
+               label: done ? String(v) : null, size: o() > 4 ? 15 : 26, ink: C.ink };
+    });
+  }
+  function equation(C) {
+    const box = $('.m-eq'); box.innerHTML = '';
+    if (k === 0) { box.innerHTML = '<span class="lhs">Press Step to place the filter.</span>'; return; }
+    const p = pos(k - 1); let terms = [];
+    for (let a = 0; a < kk(); a++) for (let b = 0; b < kk(); b++) terms.push(neg(ex.X[p[0] + a][p[1] + b]) + '·' + neg(ex.W[a][b]));
+    const s = sumAt(p[0], p[1]);
+    const txt = (ex.name === 'square' && terms.length === 9) ? terms.slice(0, 3).join(' + ') + ' + … + ' + terms.slice(6).join(' + ') : terms.join(' + ');
+    box.innerHTML = '<span class="lhs">row ' + (p[0] + 1) + ', column ' + (p[1] + 1) + ':</span><span>' + txt + ' = <b>' + s + '</b></span>';
+  }
+  function note() {
+    if (ex.name === 'book') {
+      const book = ['Placing the filter at the top left and summing the elementwise products gives (1)(1) + (2)(0) + (0)(0) + (1)(−1) = 0.',
+                    'One step to the right: (2)(1) + (0)(0) + (1)(0) + (3)(−1) = −1.',
+                    'Down one row, back to the left: (0)(1) + (1)(0) + (2)(0) + (1)(−1) = −1.',
+                    'The last placement gives (1)(1) + (3)(0) + (1)(0) + (0)(−1) = 1, and the map is complete: a 3×3 input and a 2×2 filter leave (3 − 2)/1 + 1 = 2 positions along each side, so the map is 2×2. The same four sums, in the same order, are what the cell above computes.'];
+      return k === 0 ? 'The book\'s example: a 3×3 input, a 2×2 filter, four placements. Step through them.' : book[k - 1];
+    }
+    if (k === 0) return 'The square of ones from the cell below, with the vertical-edge filter: right column minus left. Play it and watch where the response is positive, where it is negative, and where it is zero.';
+    const p = pos(k - 1), s = sumAt(p[0], p[1]);
+    if (s > 0) return 'The window straddles the square\'s left edge: its right column sits on ones and its left on zeros, so the response is +' + s + '. The filter fires where the image goes from dark to light, left to right.';
+    if (s < 0) return 'The window straddles the right edge: ones on the left, zeros on the right, so the response is ' + s + '. Same edge, opposite sign.';
+    return 'Both columns of the window carry the same total, so the response is exactly zero. That is every flat place in the image, inside the square as well as outside it: the filter sees change, and nothing else.';
+  }
+  function update() {
+    const C = L.colors(root);
+    drawIn(C); drawOut(C); equation(C);
+    L.stat($('.t-k'), 0, k === N(), () => k + ' of ' + N());
+    L.stat($('.t-n'), 0, false, () => '(' + n() + ' − ' + kk() + ')/1 + 1 = ' + o() + ', so ' + o() + '×' + o());
+    $('.ix-note').textContent = note();
+  }
+  function stop() { clearInterval(timer); timer = null; }
+  function step() { if (k < N()) { k++; update(); } if (k >= N()) stop(); }
+  function play() { stop(); if (k >= N()) k = 0; timer = setInterval(step, ex.ms); step(); }
+  function setEx(e) { stop(); ex = e; k = 0; $('.p-book').classList.toggle('on', e === BOOK); $('.p-sq').classList.toggle('on', e === SQ); update(); }
+  const bar = $('.ix-buttons');
+  L.presets(bar, [
+    { label: 'Step', action: () => { stop(); step(); } },
+    { label: 'Play', action: play },
+    { label: 'Reset', action: () => setEx(ex) },
+  ]);
+  const gap = document.createElement('div'); gap.className = 'gap'; bar.appendChild(gap);
+  L.presets(bar, [
+    { label: 'The book\'s 3×3 example', action: () => setEx(BOOK) },
+    { label: 'The square and the edge filter', action: () => setEx(SQ) },
+  ]);
+  bar.children[4].classList.add('p-book'); bar.children[5].classList.add('p-sq');
+  setEx(BOOK);
+})();
+</script>
+</div>
+```
+
 ## The convolution, by hand
 
-The operation needs no deep-learning framework, so this part runs here in the browser. We build a square of ones on a field of zeros, design a vertical-edge kernel, slide it by hand, and read the feature map. The cell is pure NumPy on the Python side and base R on the other; both compute the same eight-by-eight array.
+The operation needs no deep-learning framework, so this part runs here in the browser. We build a square of ones on a field of zeros, design a vertical-edge kernel, slide it by hand, and read the feature map. The cell is pure NumPy on the Python side and base R on the other.
 
 ::: {.panel-tabset group="lang"}
 
@@ -258,9 +378,9 @@ par(op)
 
 :::
 
-Four things in that output are worth pausing on. The map is 8&times;8, two pixels narrower and shorter than the 10&times;10 input, because a 3&times;3 window has only eight valid positions along a side; this is what `padding` exists to undo. Half of it &mdash; 32 of 64 entries &mdash; is exactly zero, and the zeros are precisely the flat places: the response is the window's right column minus its left, so it vanishes wherever those two carry the same total. The nonzero response is confined to the two column bands that straddle the square's vertical edges: positive on the left, where the image goes dark to light, negative on the right, where it goes light to dark. (The book's Exercise 6 uses the opposite sign: its filter $\begin{bmatrix} 1 & -1 \\ 1 & -1 \end{bmatrix}$ takes left minus right, so on this square it would report the left edge negative and the right edge positive.) And the largest magnitude is 3, the sum of the kernel's positive weights, reached only where all three rows of the window sit on the edge &mdash; the printed left-edge column, `1 2 3 3 3 3 2 1`, shows the response weakening at the top and bottom, where the window overhangs the square and only one or two of its rows overlap.
+Four things in that output are worth pausing on. The map is 8&times;8, two pixels narrower and shorter than the 10&times;10 input, because a 3&times;3 window has only eight valid positions along a side; this is what `padding` exists to undo. Half of it &mdash; 32 of 64 entries &mdash; is exactly zero, and the zeros are precisely the flat places: the response is the window's right column minus its left, so it vanishes wherever those two carry the same total. The nonzero response is confined to the two column bands that straddle the square's vertical edges: positive on the left, where the image goes dark to light, negative on the right, where it goes light to dark. And the largest magnitude is 3, the sum of the kernel's positive weights, reached only where all three rows of the window sit on the edge &mdash; the printed left-edge column, `1 2 3 3 3 3 2 1`, shows the response weakening at the top and bottom, where the window overhangs the square and only one or two of its rows overlap.
 
-Swapping the kernel for `[[-1,-1,-1],[0,0,0],[1,1,1]]` rotates the whole story a quarter turn: the response is positive along the square's top edge, peaking at +3, negative along its bottom, and zero on the vertical edges the first kernel found &mdash; those are now invisible. Each filter sees one kind of structure and is blind to the rest, which is why a layer holds a bank of them rather than one. The point of the chapter is that we will not design these by hand for long. A trained network learns its own filters, and visualizations of trained networks suggest that early layers respond to edges at different orientations and simple contrasts (Zeiler and Fergus 2014, the study the book cites). Whether a particular small network's first layer ends up looking like these detectors is an empirical question; the [applied page](ch10_02_applied.qmd) measures one whose 3&times;3 filters barely leave their random initialization.
+Swapping the kernel for `[[-1,-1,-1],[0,0,0],[1,1,1]]` rotates the whole story a quarter turn: the response is positive along the square's top edge, peaking at +3, and negative along its bottom. Each filter sees one kind of structure and is blind to the rest, which is why a layer holds a bank of them rather than one. The point of the chapter is that we will not design these by hand for long. A trained network learns its own filters, and visualizations of trained networks suggest that early layers respond to edges at different orientations and simple contrasts (Zeiler and Fergus 2014, the study the book cites). Whether a particular small network's first layer ends up looking like these detectors is an empirical question; the [applied page](ch10_02_applied.qmd) measures one whose 3&times;3 filters barely leave their random initialization.
 
 ## Stacking it into a network
 
@@ -328,7 +448,7 @@ for epoch in range(5):
         optimizer.step()                          # optimizer update (Adam, Ch 3)
 ```
 
-Five epochs of this put the notebook's run at 98.4% on the held-out test digits, having peaked at 98.7% after three. Watch the two curves rather than the final number: training accuracy climbs to 99.2% while test accuracy stops improving and drifts down, which is Chapter 6's overfitting picture appearing in a network that most people would call small. The remedy is Chapter 7's, and the notebook's `nn.Dropout` exercise is where to try it. Two other things are worth looking at once it has trained. The first-layer filters, visualized as 3&times;3 images, are worth inspecting rather than assuming: compare them with the edge detectors built by hand at the top of this page, and with their own values at initialization, since at this size and training budget they may move very little. And the feature maps at each layer show the hierarchy at work: the first block responds to edges and strokes, the second, smaller after pooling, responds to higher-level pieces of the digit. The mistakes the model does make tend to fall on ambiguous or poorly written digits, cases where a person might hesitate too.
+Five epochs of this put the notebook's run at 98.4% on the held-out test digits, having peaked at 98.7% after three. Watch the two curves rather than the final number: training accuracy climbs to 99.2% while test accuracy stops improving and drifts down, which is Chapter 6's overfitting picture appearing in a network that most people would call small. The remedy is Chapter 7's, and the notebook's `nn.Dropout` exercise is where to try it. Two other things are worth looking at once it has trained. The first-layer filters, visualized as 3&times;3 images, are worth inspecting rather than assuming: compare them with the edge detectors built by hand at the top of this page. At this size and training budget most of them move little from their random start, so a pattern you can name is the exception. And the feature maps at each layer show the hierarchy at work: the first block responds to edges and strokes, the second, smaller after pooling, responds to higher-level pieces of the digit. The mistakes the model does make tend to fall on ambiguous or poorly written digits, cases where a person might hesitate too.
 
 That is the chapter's claim, made operational. The network is not handed a feature extractor; it learns what to look for, and weight sharing is the prior that makes learning it possible from modest data.
 

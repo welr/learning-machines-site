@@ -537,6 +537,163 @@ legend("bottomright", c("alpha = 0.30 (diverges)", "alpha = 0.25 (converges)"),
 
 :::
 
+## Letting the method choose the step
+
+Every run so far used a step size chosen by hand, and the threshold above says how badly that
+can go. The book's remedy is Algorithm 3.3, [backtracking line search]{.term}: propose a unit
+step, and while the loss falls by less than a fraction $a$ of what the tangent line predicts,
+shrink the step by a factor $b$. Nothing about the surface has to be known in advance. The cell
+runs it on the data of the stability cell, from the same start as a fixed step of $\alpha = 0.15$,
+and stops each run when the gradient's norm falls below $10^{-3}$.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+
+x = np.array([-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
+              1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18])
+y = np.array([0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
+              3.60, 4.09, 5.10, 6.25, 6.37, 6.47, 7.07])
+m = len(x)
+X = np.column_stack([np.ones(m), x])
+theta_ols = np.linalg.solve(X.T @ X, X.T @ y)
+alpha_crit = 2 / np.linalg.eigvalsh((2 / m) * (X.T @ X)).max()   # the fixed-step limit
+
+def mse(b0, b1):
+    return np.mean((y - (b0 + b1 * x))**2)
+
+def grad(b0, b1):
+    r = (b0 + b1 * x) - y
+    return np.array([2 * np.mean(r), 2 * np.mean(r * x)])
+
+def backtrack(theta, direction, a=0.3, b=0.5):
+    # Algorithm 3.3: propose alpha = 1, and shrink by b until the loss actually
+    # falls by at least the fraction a of what the tangent line predicts.
+    predicted = grad(*theta) @ direction          # negative: direction points downhill
+    alpha = 1.0
+    while mse(*(theta + alpha * direction)) > mse(*theta) + a * alpha * predicted:
+        alpha *= b
+    return alpha
+
+def descend(step_rule, start, tol=1e-3):
+    theta, path, steps = np.array(start, float), [np.array(start, float)], []
+    while np.linalg.norm(grad(*theta)) > tol and len(steps) < 500:   # stopping criterion
+        direction = -grad(*theta)
+        alpha = step_rule(theta, direction)
+        theta = theta + alpha * direction
+        path.append(theta.copy()); steps.append(alpha)
+    return np.array(path), np.array(steps)
+
+path_fix, steps_fix = descend(lambda theta, d: 0.15, [2.0, -1.0])   # the slider's default
+path_bt, steps_bt = descend(backtrack, [2.0, -1.0])
+print(f"fixed alpha = 0.15: {len(steps_fix)} iterations until the gradient norm is below 1e-3")
+print(f"backtracking:       {len(steps_bt)} iterations; steps used {sorted(set(steps_bt.tolist()))}")
+
+g0, g1 = np.linspace(-1.0, 3.0, 120), np.linspace(-1.5, 3.0, 120)
+Loss = np.array([[mse(a, b) for a in g0] for b in g1])
+levels = np.logspace(np.log10(Loss.min() + 0.05), np.log10(Loss.max()), 18)
+
+fig = plt.figure(figsize=(11, 4.6))
+axL, axS, axC = fig.add_subplot(1, 2, 1), fig.add_subplot(2, 2, 2), fig.add_subplot(2, 2, 4)
+axL.contour(*np.meshgrid(g0, g1), Loss, levels=levels, colors="#666666", linewidths=0.5, alpha=0.5)
+axL.plot(*path_fix.T, "o-", color="#31417A", ms=3, lw=1.4, label="fixed alpha = 0.15")
+axL.plot(*path_bt.T, "o-", color="#9E4F00", ms=3, lw=1.4, label="backtracking")
+axL.scatter(*theta_ols, color="#666666", s=170, marker="*", zorder=6, edgecolors="white", linewidths=1.4)
+axL.set_xlabel(r"$\theta_0$"); axL.set_ylabel(r"$\theta_1$"); axL.legend(loc="upper right", fontsize=8)
+axS.step(np.arange(1, len(steps_bt) + 1), steps_bt, where="mid", color="#9E4F00", lw=1.4)
+axS.axhline(0.15, color="#31417A", lw=1.4)
+axS.axhline(alpha_crit, color="#E3120B", ls="--", lw=1, label=f"fixed-step limit {alpha_crit:.2f}")
+axS.set_yscale("log"); axS.set_ylabel("step size"); axS.legend(loc="upper right", fontsize=8)
+axC.plot([mse(*p) for p in path_fix], color="#31417A", lw=1.8)
+axC.plot([mse(*p) for p in path_bt], color="#9E4F00", lw=1.8)
+axC.axhline(mse(*theta_ols), color="#666666", ls="--", lw=1)
+axC.set_yscale("log"); axC.set_xlabel("iteration"); axC.set_ylabel("MSE loss")
+for ax in (axS, axC):
+    for s in ["top", "right"]: ax.spines[s].set_visible(False)
+    ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
+plt.tight_layout(); plt.show()
+```
+
+## R
+```{webr}
+x <- c(-0.40, -0.11, 0.14, 0.43, 0.74, 1.02, 1.23,
+       1.52, 1.78, 2.09, 2.33, 2.64, 2.94, 3.18)
+y <- c(0.55, 1.46, 1.30, 1.70, 2.26, 2.42, 3.85,
+       3.60, 4.09, 5.10, 6.25, 6.37, 6.47, 7.07)
+m <- length(x)
+X <- cbind(1, x)
+theta_ols <- solve(t(X) %*% X, t(X) %*% y)
+alpha_crit <- 2 / max(eigen((2 / m) * (t(X) %*% X), symmetric = TRUE)$values)  # the fixed-step limit
+
+mse <- function(b0, b1) mean((y - (b0 + b1 * x))^2)
+grad <- function(b0, b1) { r <- (b0 + b1 * x) - y; c(2 * mean(r), 2 * mean(r * x)) }
+
+backtrack <- function(theta, direction, a = 0.3, b = 0.5) {
+  # Algorithm 3.3: propose alpha = 1, and shrink by b until the loss actually
+  # falls by at least the fraction a of what the tangent line predicts.
+  predicted <- sum(grad(theta[1], theta[2]) * direction)   # negative: direction points downhill
+  alpha <- 1
+  while (mse(theta[1] + alpha * direction[1], theta[2] + alpha * direction[2]) >
+         mse(theta[1], theta[2]) + a * alpha * predicted) alpha <- b * alpha
+  alpha
+}
+
+descend <- function(step_rule, start, tol = 1e-3) {
+  theta <- start; path <- matrix(theta, nrow = 1); steps <- numeric(0)
+  while (sqrt(sum(grad(theta[1], theta[2])^2)) > tol && length(steps) < 500) {   # stopping criterion
+    direction <- -grad(theta[1], theta[2])
+    alpha <- step_rule(theta, direction)
+    theta <- theta + alpha * direction
+    path <- rbind(path, theta); steps <- c(steps, alpha)
+  }
+  list(path = path, steps = steps)
+}
+
+fix <- descend(function(theta, d) 0.15, c(2.0, -1.0))   # the slider's default
+bt  <- descend(backtrack, c(2.0, -1.0))
+cat(sprintf("fixed alpha = 0.15: %d iterations until the gradient norm is below 1e-3\n", length(fix$steps)))
+cat(sprintf("backtracking:       %d iterations; steps used %s\n", length(bt$steps),
+            paste(sort(unique(bt$steps)), collapse = " ")))
+
+g0 <- seq(-1.0, 3.0, length.out = 120); g1 <- seq(-1.5, 3.0, length.out = 120)
+Loss <- outer(g0, g1, Vectorize(mse))
+levels <- exp(seq(log(min(Loss) + 0.05), log(max(Loss)), length.out = 18))
+
+layout(matrix(c(1, 1, 2, 3), 2, 2))            # left panel spans both rows
+contour(g0, g1, Loss, levels = levels, drawlabels = FALSE, col = "#666666", lwd = 0.5,
+        xlab = expression(theta[0]), ylab = expression(theta[1]), bty = "l")
+lines(fix$path, type = "o", col = "#31417A", pch = 19, cex = 0.5)
+lines(bt$path, type = "o", col = "#9E4F00", pch = 19, cex = 0.5)
+points(theta_ols[1], theta_ols[2], pch = 8, col = "#666666", cex = 1.8, lwd = 2)
+legend("topright", c("fixed alpha = 0.15", "backtracking"), col = c("#31417A", "#9E4F00"),
+       lwd = 1.4, pch = 19, bty = "n", cex = 0.8)
+plot(seq_along(bt$steps), bt$steps, type = "s", col = "#9E4F00", lwd = 1.4, log = "y", bty = "l",
+     xlab = "", ylab = "step size", ylim = range(bt$steps, 0.15))
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+abline(h = 0.15, col = "#31417A", lwd = 1.4)
+abline(h = alpha_crit, col = "#E3120B", lty = 2)
+legend("topright", sprintf("fixed-step limit %.2f", alpha_crit), col = "#E3120B", lty = 2, bty = "n", cex = 0.8)
+loss_fix <- apply(fix$path, 1, function(b) mse(b[1], b[2]))
+loss_bt  <- apply(bt$path, 1, function(b) mse(b[1], b[2]))
+plot(seq_along(loss_fix) - 1, loss_fix, type = "l", col = "#31417A", lwd = 1.8, log = "y", bty = "l",
+     xlab = "iteration", ylab = "MSE loss")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+lines(seq_along(loss_bt) - 1, loss_bt, col = "#9E4F00", lwd = 1.8)
+abline(h = mse(theta_ols[1], theta_ols[2]), col = "#666666", lty = 2)
+```
+
+:::
+
+Backtracking never sees the threshold and never needs it. Its step is $1$ when a unit step passes
+the test and a quarter or an eighth when a unit step would overshoot the steep direction, which
+is why the top-right panel alternates; the loss reaches the floor within ten iterations against
+about thirty for the fixed step, and the stopping rule fires after 23 iterations against 72. The
+price is a few extra evaluations of the loss per iteration. For least squares the fixed step was
+cheap to pick because the Hessian is known; the line search is what you use when it is not.
+
 ## Where a bad $\lambda_{\max}$ comes from
 
 That threshold has a practical consequence the toy data hides. $\lambda_{\max}$ is set by the
@@ -835,7 +992,7 @@ frequent steps. The estimate is noisy, so the path wanders, but it still drifts 
 optimum and each step costs a fraction of the full pass. With a batch of one the loss curve is
 jagged; a batch of five smooths it out; the full batch is the clean reference. Because the two
 languages draw their random batches from different generators, the noisy curves differ run to
-run, while the full-batch curve is identical.
+run.
 
 ::: {.panel-tabset group="lang"}
 
@@ -1149,7 +1306,7 @@ give a trench more than three times as stretched ($\kappa \approx 169$). Set $\g
     <svg class="ix-loss" viewBox="0 0 400 300"></svg>
   </div>
 </div>
-<div class="lm-slider"><label>Learning rate <span class="sym">α</span></label><input class="ix-a" type="range" min="0.005" max="0.045" step="0.001" value="0.035"><output class="ix-av"></output></div>
+<div class="lm-slider"><label>Learning rate <span class="sym">α</span></label><input class="ix-a" type="range" min="0.005" max="0.065" step="0.001" value="0.035"><output class="ix-av"></output></div>
 <div class="lm-slider"><label>Momentum <span class="sym">γ</span></label><input class="ix-g" type="range" min="0" max="0.95" step="0.01" value="0.7"><output class="ix-gv"></output></div>
 <div class="ix-buttons"></div>
 <div class="ix-readout">
@@ -1224,7 +1381,7 @@ give a trench more than three times as stretched ($\kappa \approx 169$). Set $\g
     if (!ok(jm)) note = 'A step this large overshoots the steep direction by more than it corrects, and the iterates grow without bound. Lower α.';
     else if (!ok(jp)) note = 'Plain gradient descent diverges at this step: each step overshoots the steep direction by more than it corrects. With the same α, momentum stays stable, because its velocity damps the swings across the valley.';
     else if (gamma === 0) note = 'With γ = 0 the two runs are the same algorithm. Raise γ to see the velocity build up along the floor of the valley.';
-    else if (jm < jp) note = 'After 50 steps, momentum\'s loss is ' + Math.round(jp / jm).toLocaleString('en-US') + ' times smaller. Across the valley its steps alternate in sign and cancel; along the floor they point the same way and add.';
+    else if (jm < jp) note = 'After 50 steps the plain run sits at ' + show(jp) + ' and the momentum run at ' + show(jm) + '. Across the valley its steps alternate in sign and cancel; along the floor they point the same way and add.' + (Math.abs(gamma - 0.7) < 0.03 ? ' The book\'s best γ for this valley, about 0.57, assumes the step size that goes with it, larger than the figure\'s: at α = 0.035 it trails 0.7, and only with a larger α does it pull ahead.' : '');
     else note = 'Here momentum is behind: with γ = ' + L.fmt(gamma, 2) + ' the velocity overshoots, and the path swings back and forth past the minimum before it settles.';
     $('.ix-note').textContent = note;
   }

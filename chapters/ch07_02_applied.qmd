@@ -101,7 +101,8 @@ strong. Read it from left to right, weak penalty to strong: ridge shrinks the wh
 vector smoothly without setting any coefficient to zero, though individual coefficients may
 swell or change sign on the way. LASSO pulls them in too, but each one
 arrives at exactly zero at some finite penalty and stays there. The kinks in the LASSO panel are
-features leaving the model.
+features leaving the model. The book's Figure 7.7 and glmnet's default plot run the axis the
+other way, heavy penalty on the left.
 
 The kink is the [soft-thresholding operator]{.term}, the engine of the R coordinate descent
 below. Coordinate descent cycles through the coefficients, and for each one it computes the
@@ -115,7 +116,7 @@ hard cutoff is what ridge's smooth squared penalty can never produce.
 [ S(z, &gamma;) = sign(z) &middot; max(&#8201;|z| &minus; &gamma;,&ensp;0&#8201;) ]{.math}
 :::
 
-Under the box's $(1/m)$ objective the threshold is $\gamma = m\lambda/2$, applied to
+The threshold $\gamma$ is set by $\lambda$ and applied to
 $z = \mathbf{x}_j^\top\mathbf{r}$, the feature's dot product with the partial residual. Every
 coefficient is zero once $\lambda \ge \tfrac{2}{m}\max_j\lvert\mathbf{x}_j^\top\mathbf{y}\rvert$,
 which is where the R grid starts.
@@ -350,7 +351,7 @@ cv_mse <- function(fit, grid) sapply(grid, function(l) {
   err <- 0
   for (f in 1:K) {
     tr <- folds != f; te <- folds == f
-    # centre and scale on the training fold only, then apply that scale to the held-out
+    # center and scale on the training fold only, then apply that scale to the held-out
     # fold: fitting the scaler on all the data would leak the held-out fold into it.
     Xtr <- scale(X[tr, , drop = FALSE])
     Xte <- scale(X[te, , drop = FALSE],
@@ -390,6 +391,128 @@ signals and 200 rows for 30 features, almost no shrinkage predicts best.
 Prediction-optimal is not selection-optimal: the penalty that predicts best is looser than the
 penalty that would isolate exactly the true support. The production tool for the LASSO is
 `glmnet` in R and `LassoCV` in Python; the coordinate descent above is what they run underneath.
+
+The cell above reports the winner and nothing else. The curve it chose on is worth seeing:
+cross-validated error at every penalty on the grid, with a bar of one standard error across the
+folds. Section 7.4 of the book adds a second rule to the minimum. The [one-standard-error
+rule]{.term} takes the largest $\lambda$ whose error is within one standard error of the best,
+on the grounds that a difference the folds cannot resolve should not buy a more complex model.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import make_regression
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LassoCV, Lasso
+from sklearn.pipeline import make_pipeline
+
+X, y, coef_true = make_regression(n_samples=200, n_features=30, n_informative=8,
+                                  noise=10.0, coef=True, random_state=0)
+pipe = make_pipeline(StandardScaler(), LassoCV(cv=5, random_state=0)).fit(X, y)
+lasso = pipe.named_steps["lassocv"]
+
+# mse_path_ holds one column per fold. Its mean over folds is the CV curve and its
+# standard error the bar; lambda = 2 alpha puts the penalties on the book's scale.
+lams = 2 * lasso.alphas_                        # largest penalty first
+cv_mean = lasso.mse_path_.mean(axis=1)
+cv_se = lasso.mse_path_.std(axis=1, ddof=1) / np.sqrt(lasso.mse_path_.shape[1])
+
+i_min = int(np.argmin(cv_mean))
+within = cv_mean <= cv_mean[i_min] + cv_se[i_min]   # curve points the minimum cannot beat
+i_1se = int(np.argmax(within))                      # the largest such lambda
+
+# Survivors at each choice: refit the LASSO on the standardized data at that penalty
+Xs = pipe.named_steps["standardscaler"].transform(X)
+kept = lambda lam: int(np.sum(Lasso(alpha=lam / 2).fit(Xs, y).coef_ != 0))
+print(f"minimum CV error:  lambda = {lams[i_min]:.3f}, {kept(lams[i_min])} features kept")
+print(f"one-SE rule:       lambda = {lams[i_1se]:.3f}, {kept(lams[i_1se])} features kept")
+
+fig, ax = plt.subplots(figsize=(7, 4.4))
+ax.errorbar(np.log10(lams), cv_mean, yerr=cv_se, fmt="o-", color="#076FA1", ms=3, lw=1.2,
+            capsize=2, label="5-fold CV error, +/- 1 SE")
+ax.axhline(cv_mean[i_min] + cv_se[i_min], color="#666666", lw=0.8, ls=":", label="one SE above the minimum")
+ax.axvline(np.log10(lams[i_min]), color="#31417A", lw=1.6, label=f"minimum, lambda = {lams[i_min]:.3f}")
+ax.axvline(np.log10(lams[i_1se]), color="#9E4F00", lw=1.6, ls="--", label=f"one-SE rule, lambda = {lams[i_1se]:.3f}")
+ax.set_yscale("log"); ax.set_xlabel(r"$\log_{10}\lambda$"); ax.set_ylabel("cross-validated MSE (log scale)")
+ax.legend(loc="lower right", fontsize=8)
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
+ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
+plt.tight_layout(); plt.show()
+```
+
+## R
+```{webr}
+set.seed(0)
+m <- 200; n <- 30; k <- 8
+X <- matrix(rnorm(m * n), m, n)           # raw: each fold does its own standardization
+true_idx <- sort(sample(n, k))
+theta_true <- numeric(n); theta_true[true_idx] <- runif(k, 10, 100)
+y <- as.vector(X %*% theta_true) + rnorm(m, 0, 10)
+y <- y - mean(y)
+
+lasso_cd <- function(X, y, lambda, n_iter = 200, tol = 1e-7) {
+  m <- nrow(X); n <- ncol(X)
+  theta <- numeric(n); cj <- colSums(X^2); r <- y - X %*% theta
+  for (it in seq_len(n_iter)) {
+    theta_old <- theta
+    for (j in seq_len(n)) {
+      r <- r + X[, j] * theta[j]
+      rho <- sum(X[, j] * r)
+      theta[j] <- sign(rho) * max(abs(rho) - m * lambda / 2, 0) / cj[j]
+      r <- r - X[, j] * theta[j]
+    }
+    if (max(abs(theta - theta_old)) < tol) break
+  }
+  theta
+}
+
+lam_max  <- 2 * max(abs(crossprod(X, y))) / m
+lam_grid <- 10^seq(log10(lam_max), log10(lam_max * 1e-3), length.out = 40)   # largest first
+
+# The same 5 folds as above, but keep each fold's error: the spread across folds
+# is what the standard error measures.
+K <- 5
+folds <- sample(rep(1:K, length.out = m))
+fold_mse <- sapply(lam_grid, function(l) sapply(1:K, function(f) {
+  tr <- folds != f; te <- folds == f
+  Xtr <- scale(X[tr, , drop = FALSE])
+  Xte <- scale(X[te, , drop = FALSE], center = attr(Xtr, "scaled:center"), scale = attr(Xtr, "scaled:scale"))
+  mean((y[te] - Xte %*% lasso_cd(Xtr, y[tr], l))^2)
+}))                                        # K x 40: one row per fold, one column per penalty
+cv_mean <- colMeans(fold_mse)
+cv_se   <- apply(fold_mse, 2, sd) / sqrt(K)
+
+i_min <- which.min(cv_mean)
+i_1se <- which(cv_mean <= cv_mean[i_min] + cv_se[i_min])[1]   # the largest lambda the minimum cannot beat
+kept  <- function(l) sum(lasso_cd(scale(X), y, l) != 0)
+cat(sprintf("minimum CV error:  lambda = %.3f, %d features kept\n", lam_grid[i_min], kept(lam_grid[i_min])))
+cat(sprintf("one-SE rule:       lambda = %.3f, %d features kept\n", lam_grid[i_1se], kept(lam_grid[i_1se])))
+
+plot(log10(lam_grid), cv_mean, type = "o", pch = 19, cex = 0.6, col = "#076FA1", bty = "l",
+     ylim = range(cv_mean - cv_se, cv_mean + cv_se), log = "y", xlab = "log10 lambda", ylab = "cross-validated MSE (log scale)")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+suppressWarnings(arrows(log10(lam_grid), cv_mean - cv_se, log10(lam_grid), cv_mean + cv_se,
+                        angle = 90, code = 3, length = 0.02, col = "#076FA1"))   # bars shorter than a pixel are skipped
+abline(h = cv_mean[i_min] + cv_se[i_min], col = "#666666", lty = 3, lwd = 0.8)
+abline(v = log10(lam_grid[i_min]), col = "#31417A", lwd = 1.6)
+abline(v = log10(lam_grid[i_1se]), col = "#9E4F00", lwd = 1.6, lty = 2)
+legend("bottomright", c("5-fold CV error, +/- 1 SE", "one SE above the minimum",
+       sprintf("minimum, lambda = %.3f", lam_grid[i_min]), sprintf("one-SE rule, lambda = %.3f", lam_grid[i_1se])),
+       col = c("#076FA1", "#666666", "#31417A", "#9E4F00"), lty = c(1, 3, 1, 2), pch = c(19, NA, NA, NA),
+       lwd = c(1.2, 0.8, 1.6, 1.6), bty = "n", cex = 0.8)
+```
+
+:::
+
+Read it from the right. At heavy penalties every coefficient is zero and the error is the
+variance of $y$; it falls as features enter and flattens into a long floor, where many
+$\lambda$'s sit within a standard error of one another. The minimum lies somewhere on that
+floor and moves with the folds; the one-standard-error choice sits at the floor's right edge
+and keeps fewer features. Which features it keeps is still not the true eight, for the reason
+given above.
 
 ::: {.explore}
 [Try it]{.lbl}

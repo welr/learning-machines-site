@@ -68,6 +68,123 @@ cat("estimate:", sum(w * values), "thousand euros\n")   # the book: 493
 
 :::
 
+The book's worked example (Section 11.2) makes the computation exact with three tokens and $d_k = 2$: Q, K and V are given, and four steps, scores, scaling, softmax, weighted sum, produce every number by hand. The figure below carries them out for one query at a time, with the scaling as a knob and the output drawn as what it is, a weighted average of the three value rows.
+
+```{=html}
+<div class="lm-ix" id="ix-attn" role="figure" aria-label="Interactive figure: attention on the book's three-token example, from scores to weights to a weighted average of the values">
+<div class="ix-eyebrow">Interactive</div>
+<div class="ix-title">Attention on three tokens</div>
+<div class="ix-views">
+  <div class="ix-card">
+    <div class="ix-ttl">Scores to weights</div>
+    <p class="ix-sub">Every entry of <span class="sym">QK</span><sup>⊤</sup> is one query dotted with one key. The chosen query's row, times <span class="sym">s</span>, goes through the softmax and becomes its weights.</p>
+    <div class="ix-matrix m-scores"></div>
+    <div class="ix-matrix m-weights"></div>
+  </div>
+  <div class="ix-card">
+    <div class="ix-ttl">The output, as a weighted average</div>
+    <p class="ix-sub">The three value rows are points. The output is their average under the weights, so it stays inside their triangle; the lines are as heavy as the weights.</p>
+    <svg class="ix-plane" viewBox="0 0 400 360"></svg>
+  </div>
+</div>
+<div class="lm-slider"><label>Score multiplier <span class="sym">s</span></label><input class="ix-s" type="range" min="0" max="4" step="0.01" value="0.7071"><output class="ix-sv"></output></div>
+<div class="ix-buttons"></div>
+<div class="ix-readout three">
+  <div class="ix-stat t-w"><div class="k">Weights for this query</div><div class="v"></div></div>
+  <div class="ix-stat t-o"><div class="k">Output row</div><div class="v"></div></div>
+  <div class="ix-stat t-m"><div class="k">Largest weight</div><div class="v"></div></div>
+</div>
+<div class="ix-note"></div>
+<script src="../assets/lm-ix.js"></script>
+<script>
+(function () {
+  const root = document.getElementById('ix-attn'), L = window.LMIX, $ = s => root.querySelector(s);
+  // The book's worked example (Section 11.2): three tokens, d_k = 2.
+  const Q = [[1, 0], [0, 1], [1, 1]], K = [[1, 1], [0, 1], [1, 0]], V = [[1, 0], [0, 1], [1, 1]];
+  const S = Q.map(q => K.map(k => q[0] * k[0] + q[1] * k[1]));          // QK^T: scores
+  const BOOK = 1 / Math.sqrt(2);                                         // the book's 1/sqrt(d_k)
+  let s = BOOK, qi = 2, mask = false;
+  function weights(i) {
+    const z = S[i].map((v, j) => (mask && j > i) ? -Infinity : s * v);
+    const mx = Math.max(...z), e = z.map(v => v === -Infinity ? 0 : Math.exp(v - mx)), t = e.reduce((a, b) => a + b, 0);
+    return e.map(v => v / t);
+  }
+  const output = w => [0, 1].map(c => w.reduce((acc, wj, j) => acc + wj * V[j][c], 0));
+
+  const td = (v, style) => '<td' + (style ? ' style="' + style + '"' : '') + '>' + v + '</td>';
+  function matrices(C, w, o) {
+    const hi = 'color:' + C.fs + ';font-weight:700';
+    let h = '<span class="lhs">QK<sup>⊤</sup> =</span><table>';
+    for (let i = 0; i < 3; i++) { h += '<tr>'; for (let j = 0; j < 3; j++) h += td((mask && j > i) ? '<span style="color:' + C.muted + '">−∞</span>' : String(S[i][j]), i === qi ? hi : ''); h += '</tr>'; }
+    $('.m-scores').innerHTML = h + '</table>';
+    let g = '<span class="lhs">softmax(' + L.fmt(s, 2) + ' × row ' + (qi + 1) + ') =</span><table><tr>' + w.map(v => td(L.fmt(v, 2), 'color:' + C.fs)).join('') + '</tr></table>';
+    g += '<span class="lhs">× V =</span><table><tr>' + o.map(v => td(L.fmt(v, 2), 'color:' + C.orange)).join('') + '</tr></table>';
+    $('.m-weights').innerHTML = g;
+  }
+  const P = { x0: 46, x1: 386, y0: 16, y1: 326, X: [-0.15, 1.25], Y: [-0.15, 1.25] };
+  const px = v => P.x0 + (v - P.X[0]) / (P.X[1] - P.X[0]) * (P.x1 - P.x0);
+  const py = v => P.y1 - (v - P.Y[0]) / (P.Y[1] - P.Y[0]) * (P.y1 - P.y0);
+  function plane(C, w, o) {
+    const svg = $('.ix-plane'); svg.innerHTML = '';
+    [0, 0.5, 1].forEach(v => {
+      L.el('line', { x1: px(v), x2: px(v), y1: P.y0, y2: P.y1, stroke: v === 0 ? C.axis : C.grid }, svg);
+      L.el('line', { x1: P.x0, x2: P.x1, y1: py(v), y2: py(v), stroke: v === 0 ? C.axis : C.grid }, svg);
+      L.el('text', { x: px(v), y: P.y1 + 18, 'text-anchor': 'middle', 'font-size': 14, fill: C.muted }, svg).textContent = v;
+      L.el('text', { x: P.x0 - 7, y: py(v) + 5, 'text-anchor': 'end', 'font-size': 14, fill: C.muted }, svg).textContent = v;
+    });
+    L.el('polygon', { points: V.map(v => px(v[0]) + ',' + py(v[1])).join(' '), fill: C.plane, stroke: C.cyan, 'stroke-width': 1.2 }, svg);
+    V.forEach((v, j) => L.el('line', { x1: px(v[0]), y1: py(v[1]), x2: px(o[0]), y2: py(o[1]), stroke: C.fs, 'stroke-width': 0.5 + 9 * w[j], 'stroke-opacity': 0.55 }, svg));
+    V.forEach((v, j) => {
+      L.el('circle', { cx: px(v[0]), cy: py(v[1]), r: 7, fill: C.blue, stroke: '#fff', 'stroke-width': 2 }, svg);
+      L.el('text', { x: px(v[0]) + (v[0] > 0.5 ? -12 : 12), y: py(v[1]) + (v[1] > 0.5 ? -10 : 22), 'text-anchor': v[0] > 0.5 ? 'end' : 'start', 'font-size': 16, 'font-style': 'italic', fill: C.blue }, svg).textContent = 'v' + (j + 1) + ' = (' + v[0] + ', ' + v[1] + ')';
+    });
+    L.el('circle', { cx: px(o[0]), cy: py(o[1]), r: 8, fill: C.orange, stroke: '#fff', 'stroke-width': 2 }, svg);
+    L.el('text', { x: px(o[0]) + 12, y: py(o[1]) + 5, 'font-size': 15, fill: C.orange }, svg).textContent = 'output ' + (qi + 1);
+  }
+  const trio = w => '(' + w.map(v => L.fmt(v, 2)).join(', ') + ')';
+  function note(w, o) {
+    const big = Math.max(...w), who = w.indexOf(big) + 1;
+    if (mask && qi === 0) return 'With the future masked, position 1 may attend only to itself: its weight on itself is 1 and its output is v₁ exactly. Nothing a later token carries can leak back.';
+    if (mask && qi === 1) return 'With the future masked, position 2 sees positions 1 and 2 and splits its weight between them, ' + trio(w) + '. The output moves onto the edge between v₁ and v₂.';
+    if (mask) return 'Position 3 sees everything, so the mask changes nothing for it: the weight matrix is lower triangular, and this is its full last row.';
+    if (s < 0.02) return 'With s = 0 every score is the same, so the weights are 1/3 each for every query and every output is the centroid of the triangle, (0.67, 0.67). Attention has stopped attending.';
+    if (Math.abs(s - BOOK) < 0.02 && qi === 2) return 'The book\'s scaling, 1/√2. Position 3\'s query (1, 1) scores 2 against position 1\'s key and 1 against the others, so after scaling and the softmax its weights are (0.50, 0.25, 0.25): half its output comes from v₁ = (1, 0), and the output lands at (0.75, 0.50), nearest v₁.';
+    if (Math.abs(s - BOOK) < 0.02) return 'The book\'s scaling, 1/√2. Query ' + (qi + 1) + ' scores 1 against two keys and 0 against the third, so its weights are ' + trio(w) + ' and its output sits between the two values it favors.';
+    if (s >= 3) return 'A large multiplier pushes the softmax toward a hard choice: the weight on the best-scoring key heads to 1 and the output heads to that value point' + (w.filter(v => Math.abs(v - big) < 1e-6).length > 1 ? ', except that this query scores two keys equally, so they share the weight and the output stops midway between them' : '') + '. The gradient of the softmax is all but gone up there.';
+    return 'Multiplier ' + L.fmt(s, 2) + ': the weights are ' + trio(w) + ', the largest on position ' + who + '. Slide s up and the weights sharpen toward that position; slide it down and they flatten toward 1/3 each. The output never leaves the triangle.';
+  }
+  function update() {
+    const C = L.colors(root), w = weights(qi), o = output(w);
+    matrices(C, w, o); plane(C, w, o);
+    L.stat($('.t-w'), 0, false, () => trio(w));
+    L.stat($('.t-o'), 0, false, () => '(' + L.fmt(o[0], 2) + ', ' + L.fmt(o[1], 2) + ')');
+    L.stat($('.t-m'), Math.max(...w), Math.max(...w) > 0.99, v => L.fmt(v, 2));
+    [0, 1, 2].forEach(i => $('.q-' + i).classList.toggle('on', i === qi));
+    $('.b-mask').classList.toggle('on', mask);
+    $('.ix-note').textContent = note(w, o);
+  }
+  const sl = L.slider($('.ix-s'), $('.ix-sv'), v => L.fmt(v, 2), v => { s = v; update(); });
+  const bar = $('.ix-buttons');
+  L.presets(bar, [
+    { label: 'Query 1', action: () => { qi = 0; update(); } },
+    { label: 'Query 2', action: () => { qi = 1; update(); } },
+    { label: 'Query 3', action: () => { qi = 2; update(); } },
+    { label: 'Mask the future', action: () => { mask = !mask; update(); } },
+  ]);
+  [0, 1, 2].forEach(i => bar.children[i].classList.add('q-' + i)); bar.children[3].classList.add('b-mask');
+  const gap = document.createElement('div'); gap.className = 'gap'; bar.appendChild(gap);
+  L.presets(bar, [
+    { label: 'The book\'s 1/√d_k (s = 0.71)', action: () => sl.set(BOOK) },
+    { label: 'Raw scores (s = 1)', action: () => sl.set(1) },
+    { label: 'Sharper (s = 4)', action: () => sl.set(4) },
+    { label: 'Flat (s = 0)', action: () => sl.set(0) },
+  ]);
+  sl.refresh();
+})();
+</script>
+</div>
+```
+
 ## Attention by hand
 
 Once Q, K, and V are in hand the mechanism is four lines of arithmetic, so it runs here rather than in Colab. The difficulty in a toy example is not the code but the embeddings. Random ones do not give a flat heatmap — the softmax finds peaks in noise readily enough — but the peaks correspond to nothing you can name, which teaches nothing. So we build the embeddings by hand. Each token is a one-hot vector over eight semantic roles — determiner, animate noun, object noun, verb, connective, property, pronoun, copula — and the query projection `W_Q` is a table saying what each role goes looking for. This extends the book's two-feature example, where `W_Q` maps the pronoun feature onto the noun feature so that *it* looks for nouns: a pronoun hunts an animate noun, a verb its arguments, a determiner a noun. Keys and values are left raw, so a score is read straight off that table. A trained model learns all of this; we are only writing down the answer in order to see the shape of it.
@@ -356,5 +473,5 @@ One cost is worth naming. Because every token attends to every other, attention 
 ::: {.explore}
 [Try it]{.lbl}
 
-In Colab, set `Q = K = V` and run attention with the projections frozen to the identity. With a fixed, un-learned similarity the layer reduces exactly to a Nadaraya–Watson kernel smoother. Then let the network learn `W_q`, `W_k`, and `W_v`, and watch the heads discover which tokens should attend to which: that learned similarity is the whole of what attention adds.
+In Colab, set `Q = K = V` and run attention with the projections frozen to the identity. With a fixed, un-learned similarity the layer reduces exactly to a Nadaraya–Watson kernel smoother; a learned similarity is the whole of what attention adds.
 :::

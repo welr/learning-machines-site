@@ -127,17 +127,18 @@ legend("topright", c("training data", "true function", "degree-9 OLS", "ridge (0
 :::
 
 Ridge cuts the largest coefficient from roughly $3 \times 10^5$ down to about $1.4$. The two
-languages agree to that figure, but their OLS maxima differ in the fifth significant digit
+languages' OLS maxima differ in the fifth significant digit
 (about 318026 versus 318018). That gap is not a bug; it is the symptom. The unpenalized
 cross-product is so close to singular that two linear solvers round it differently. Adding
-$m\lambda I$ removes the pathology, and both report the same $1.4$.
+$m\lambda I$ removes the pathology.
 
 ## What adding $m\lambda I$ does
 
 The ridge estimate changes one thing about least squares: before inverting
 $\mathbf{X}^\top\mathbf{X}$, it adds $m\lambda$ to each diagonal entry. The figure below follows
-that change through the book's example of floor area against number of rooms (Section 7.2),
-with twelve houses at about 25 square meters per room. On standardized features,
+that change through the book's example of floor area against number of rooms (Section 7.2).
+The book gives no data, so this page supplies twelve houses at about 25 square meters per
+room. On standardized features,
 $\mathbf{X}^\top\mathbf{X}$ stretches the direction in which both coefficients rise together far
 more than the direction that trades one against the other. Equation 7.2 of the book writes the
 ridge solution in exactly these two directions, with the stretches as $d_j^2$.
@@ -216,7 +217,7 @@ ridge solution in exactly these two directions, with the stretches as $d_j^2$.
          [0, 1].map(j => `<div><div class="num wrap">${div(j)}</div></div>`).join('');
     h += `<div class="rule"></div><div class="lab">= the coefficient's component</div>` +
          [0, 1].map(j => `<div><div class="num">${f3(k[j])}</div>${bar(j, k[j] / KMAX)}</div>`).join('');
-    h += `<div class="lab">kept, against least squares</div>` +
+    h += `<div class="lab">kept, against least squares: the book's <i>d</i>² / (<i>d</i>² + <i>m</i>λ)</div>` +
          [0, 1].map(j => `<div><div class="num">${pct(S[j] / (S[j] + ml))}</div>${bar(j, S[j] / (S[j] + ml))}</div>`).join('');
     $('.ix-steps').innerHTML = h;
   }
@@ -259,7 +260,7 @@ ridge solution in exactly these two directions, with the stretches as $d_j^2$.
   function note(t, k) {
     const ml = m * lam, per = [t[0] / SA, t[1] / SR];
     if (lam === 0) return 'Least squares. The data offer little evidence along area against rooms, ' + big(E2) + ' against ' + big(E1) + ', but the matrix stretches that direction only ' + sf(S2) + ', so the division makes it the larger component, ' + f3(k[1]) + '. That component is what turns houses generated at 4 per m² and nothing per room into ' + L.fmt(per[0]) + ' per m² and ' + L.fmt(per[1], 1) + ' per room.';
-    if (ml < 0.5 * S2) return 'mλ = ' + f3(ml) + ' is still small next to the stretch of ' + sf(S2) + ', so the division barely changes: the area-against-rooms component is ' + f3(k[1]) + '.';
+    if (ml < 0.5 * S2) return 'mλ = ' + f3(ml) + ' is still small next to the stretch of ' + sf(S2) + ', so the division changes little at first: the area-against-rooms component is ' + f3(k[1]) + '.';
     if (ml <= 2 * S2) return 'mλ = ' + f3(ml) + ' is about the size of the small stretch, ' + sf(S2) + ', so it roughly doubles the divisor and halves the area-against-rooms component, to ' + f3(k[1]) + '. Next to ' + sf(S1) + ', the same mλ leaves “both up” at ' + f3(k[0]) + '.';
     const room = per[1] > 0 ? ' The price per room is now positive: shrinking one component moved a single coefficient away from zero.' : '';
     if (ml <= S1 / 19) return 'mλ = ' + f3(ml) + ' dominates the small stretch and barely touches the large one. The component the data barely support falls to ' + f3(k[1]) + '; the one they pin down stays at ' + f3(k[0]) + '.' + room;
@@ -301,11 +302,11 @@ exactly zero once the penalty outweighs its correlation with the residual.
 
 ::: {.defbox}
 [Soft-Thresholding (one LASSO coordinate)]{.lbl}
-[ &theta;<sub>j</sub> = sign(&rho;<sub>j</sub>) &middot; max(|&rho;<sub>j</sub>| &minus; m&lambda;/2, 0) / &Sigma;<sub>i</sub> x<sub>ij</sub>&sup2; ]{.math}
+[ &theta;<sub>j</sub> = sign(&rho;<sub>j</sub>) &middot; max(|&rho;<sub>j</sub>| &minus; &gamma;, 0) / &Sigma;<sub>i</sub> x<sub>ij</sub>&sup2; ]{.math}
 :::
 
 Here $\rho_j$ is the dot product of feature $j$ with the residual formed by leaving feature
-$j$ out. We standardize the polynomial features first, so a single $\lambda$ penalizes every
+$j$ out, with the threshold $\gamma$ set by $\lambda$. We standardize the polynomial features first, so a single $\lambda$ penalizes every
 coefficient on equal footing. The two panels tell the whole story: ridge coefficients glide
 toward zero but never arrive, while LASSO coefficients hit zero one after another. At
 $\lambda = 0.05$ ridge keeps all eight features and LASSO keeps two.
@@ -672,7 +673,7 @@ method gives $\theta_1$.
       L.el('line', { x1: px(v), x2: px(v), y1: P.y0, y2: P.y1, stroke: v === 0 ? C.axis : C.grid }, g);
       L.el('line', { x1: P.x0, x2: P.x1, y1: py(v), y2: py(v), stroke: v === 0 ? C.axis : C.grid }, g);
     });
-    L.contours(loss, P.X, P.Y, [0.25, 1, 2.5, 5, 9], 90)
+    L.contours(loss, P.X, P.Y, [0.25, 2, 4, 7, 11], 90)
       .forEach(cl => cl.segs.forEach(s => L.el('line', { x1: px(s[0]), y1: py(s[1]), x2: px(s[2]), y2: py(s[3]), stroke: C.axis, 'stroke-width': 1 }, g)));
     [[r, C.blue], [l, C.cyan]].forEach(([sol, col]) => {
       if (loss(...sol) > 1e-9) L.contours(loss, P.X, P.Y, [loss(...sol)], 140)
@@ -817,8 +818,9 @@ fits it with `ElasticNet`.
 
 ::: {.explore}
 [Try it]{.lbl}
-In the path demo, lower the polynomial `degree` to 4 or raise the comparison `lam0`, and
-watch the LASSO nonzero count fall while ridge stubbornly keeps every coefficient. Then drop
-the standardization step and see the LASSO path turn to noise: without equal scales, a single
-$\lambda$ no longer means the same thing across features.
+In the path demo, raise the comparison `lam0` and watch the printed LASSO count fall while
+ridge stubbornly keeps every coefficient. Then drop the standardization step (set `Xs = X`,
+or `Xs <- X`): the raw columns $x, x^2, \dots, x^8$ have wildly different scales, so a single
+$\lambda$ zeroes the high powers first regardless of their usefulness, and the order in which
+coefficients leave the path changes.
 :::

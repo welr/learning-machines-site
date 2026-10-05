@@ -164,7 +164,9 @@ the usual check) also explain why it *subsamples* features at each split:
 left alone, every tree would seize the same one or two strong predictors and the trees would
 be near-copies. Forcing each split to choose from a random subset [decorrelates]{.term} them,
 which is what makes the average worth taking. The base-R column shows the same lesson in
-miniature: a lone axis cut underperforms the smooth kernel that follows the data's shape.
+miniature: a lone axis cut underperforms the smooth kernel that follows the data's shape. Its
+kernel ridge penalty is $\lambda I$ with $\lambda = 0.1$, where the kernel page used the book's
+$m\lambda I$, so the two $\lambda$'s are on different scales.
 
 ## Decision boundaries across model classes
 

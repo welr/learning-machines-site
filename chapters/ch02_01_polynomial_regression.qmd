@@ -30,10 +30,12 @@ noise with standard deviation 25. The true signal is exactly quadratic, so every
 degree two is the model chasing noise. We measure fit with [mean squared error]{.term},
 $\text{MSE} = \frac{1}{m}\sum_{i=1}^{m} (y^{(i)} - \hat{y}^{(i)})^2$.
 
-One numerical note carried by both languages: before building the design matrix we
-standardize the area (subtract its mean, divide by its standard deviation). A raw Vandermonde
-matrix in $\text{area}^{14}$ is hopelessly ill-conditioned; standardizing keeps the
-high-degree fits stable without changing the model.
+One numerical note carried by both languages: before building the [design matrix]{.term}, the
+matrix with one row per observation and one column per feature, we standardize the area
+(subtract its mean, divide by its standard deviation). A raw Vandermonde matrix, whose columns
+are the successive powers up to $\text{area}^{14}$, is hopelessly [ill-conditioned]{.term}: a
+tiny change in the data swings its solution wildly. Standardizing keeps the high-degree fits
+stable without changing the model.
 
 ```{=html}
 <figure class="lm-figure">

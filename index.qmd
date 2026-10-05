@@ -17,14 +17,14 @@ Welcome to the interactive companion to *Learning Machines: A Statistical Introd
 [How to read this site]{.lbl}
 
 - **Run it yourself.** Code cells run live in your browser — click **Run Code**. The Python (Pyodide) and R (WebR) runtimes start downloading as soon as a page opens, which takes a few seconds; the Run button stays gray until they are ready, then turns red. Some cells run themselves at that point and draw without a click.
-- **Python or R, your choice.** The worked code carries both. Pick a tab and the rest of the page follows; the two are genuine twins, not a translation of one into the other. The four slider cells, the Chapter 1 exercises, the PyTorch listings, and one NumPy snippet in Chapter 8's exploration box are Python only. The interactive figures in Chapters 2 and 3 need neither runtime and work in both tabs.
-- **Same method, sometimes different digits.** When a cell uses fixed data the two languages give the same answers, up to rounding; when a cell draws a random sample they differ a little, and that difference is the lesson — what holds is the method, not the digits.
+- **Python or R, your choice.** The worked code carries both. Pick a tab and the rest of the page follows; the two are genuine twins, not a translation of one into the other. The four slider cells, the Chapter 1 exercises, the PyTorch listings, and one NumPy snippet in Chapter 8's exploration box are Python only. The interactive figures in Chapters 2, 3, 5, 7, 10, 11 and 13 need neither runtime and work in both tabs.
+- **Same method, sometimes different digits.** When a cell draws a random sample the two languages differ a little, and that difference is the lesson: what holds is the method, not the digits.
 - **The heaviest work runs in Colab.** Chapters 9–12 and the Chapter 13 applied exercise train in PyTorch, too heavy for a browser sandbox, so those notebooks open in Google Colab. What each of those chapters rests on still runs here: convolution by hand, scaled dot-product attention, a bigram language model fitted by counting, and PCA and K-means from scratch.
 :::
 
 ## Try it now
 
-Here is the whole idea of Chapter 1 in six lines, and a demonstration that this page really does run code. Machine learning turns data into predictions that hold up on cases you have not seen, and before reaching for anything elaborate it pays to fix a [baseline]{.term}: the simplest model, the one that ignores every input and predicts the same number every time. For a numeric target that number is the mean. Every later chapter is a campaign to shrink the error it leaves.
+Here is the habit this site starts with, in six lines, and a demonstration that this page really does run code. Machine learning turns data into predictions that hold up on cases you have not seen, and before reaching for anything elaborate it pays to fix a [baseline]{.term}: the simplest model, the one that ignores every input and predicts the same number every time. For a numeric target that number is the mean. Every later chapter is a campaign to shrink the error it leaves.
 
 Pick a tab and click **Run Code**.
 
@@ -92,7 +92,7 @@ cat(sprintf("baseline MSE        = %8.1f\n", mse))
 
 :::
 
-The mean is the maximum-likelihood prediction under a model with no inputs and Gaussian errors (with Laplace errors it would be the median). It is also, in a sense the book makes precise, where every regression starts: ordinary least squares (Chapter 2) is what you get when you let the prediction tilt with the features instead of staying flat.
+The mean is the maximum-likelihood prediction, the value that makes the observed prices most probable, under a model with no inputs and Gaussian errors (with Laplace errors it would be the median). It is also, in a sense the book makes precise, where every regression starts: ordinary least squares (Chapter 2) is what you get when you let the prediction tilt with the features instead of staying flat.
 
 ## What the tilt buys
 

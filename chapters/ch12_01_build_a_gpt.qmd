@@ -43,7 +43,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # A passage of Coriolanus (Tiny Shakespeare, the capstone's corpus), inline so
-# the cell stands alone and Python and R count exactly the same text.
+# the cell stands alone.
 TEXT = """MENENIUS:
 Do not stand upon't.
 We recommend to you, tribunes of the people,
@@ -151,7 +151,7 @@ plt.show()
 ## R
 ```{webr}
 # A passage of Coriolanus (Tiny Shakespeare, the capstone's corpus), inline so
-# the cell stands alone and Python and R count exactly the same text.
+# the cell stands alone.
 TEXT <- "MENENIUS:
 Do not stand upon't.
 We recommend to you, tribunes of the people,
@@ -264,7 +264,7 @@ Sampling from the table gives text with the texture of English and none of its s
 
 > `s a trengus t t the acose yotothathecoweingher r to ud d te l bl s we rs we ruthings tow`
 
-Short common words survive — `the`, `to`, `we`, and later in the same sample `she` and `then` — because their letters follow one another often enough to be reassembled by luck. Nothing longer does, because the model discards each character the moment it has written the next. The R cell computes the same counts and the same probabilities, but draws from a different random generator, so its sampled text reads differently; only the numbers are expected to match.
+Short common words survive — `the`, `to`, `we`, and later in the same sample `she` and `then` — because their letters follow one another often enough to be reassembled by luck. Nothing longer does, because the model discards each character the moment it has written the next. The R cell draws from a different random generator, so its sampled text reads differently.
 
 The cross-entropy the cell reports, 2.013 nats, is not a number to set beside the figure at the top of this page. It is measured on the very text that produced the counts, over an alphabet of 27 rather than 65, and it rewards the model for memorizing a thousand characters rather than for predicting anything it has not seen. Held-out evaluation (Chapter 6) is what makes such a number mean something, and it is the held-out curve that the capstone reports.
 

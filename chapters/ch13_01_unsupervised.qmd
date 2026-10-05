@@ -30,62 +30,6 @@ them, from scratch, in a few lines each.
 </figure>
 ```
 
-## The data, with the labels sealed
-
-We use Fisher's irises: 150 flowers, four measurements each, three species. It is the
-classic *labeled* data set — which makes it perfect for this experiment, because we can
-withhold the species column now and audit ourselves against it later. The four features
-are standardized first; PCA is not scale-invariant, and we want each measurement to speak
-with equal weight.
-
-::: {.panel-tabset group="lang"}
-
-## Python
-```{pyodide}
-import numpy as np
-import matplotlib.pyplot as plt
-
-# Fisher's irises, 150 flowers: four measurements in millimeters (two digits
-# each) and the species (one digit, 0-2), nine digits per flower.
-IRIS = ("513514020493014020473213020463115020503614020543917040463414030503415020"
-        "442914020493115010543715020483416020483014010433011010584012020574415040"
-        "543913040513514030573817030513815030543417020513715040463610020513317050"
-        "483419020503016020503416040523515020523414020473216020483116020543415040"
-        "524115010554214020493115020503212020553513020493614010443013020513415020"
-        "503513030452313030443213020503516060513819040483014030513816020463214020"
-        "533715020503314020703247141643245151693149151552340131652846151572845131"
-        "633347161492433101662946131522739141502035101593042151602240101612947141"
-        "562936131673144141563045151582741101622245151562539111593248181612840131"
-        "632549151612847121642943131663044141682848141673050171602945151572635101"
-        "552438111552437101582739121602751161543045151603445161673147151632344131"
-        "563041131552540131552644121613046141582640121502333101562742131573042121"
-        "572942131622943131512530111572841131633360252582751192713059212632956182"
-        "653058222763066212492545172732963182672558182723661252653251202642753192"
-        "683055212572550202582851242643253232653055182773867222772669232602250152"
-        "693257232562849202772867202632749182673357212723260182622848182613049182"
-        "642856212723058162742861192793864202642856222632851152612656142773061232"
-        "633456242643155182603048182693154212673156242693151232582751192683259232"
-        "673357252673052232632550192653052202623454232593051182")
-rows = np.array([[int(IRIS[i + j:i + j + 2]) for j in (0, 2, 4, 6)] + [int(IRIS[i + 8])]
-                 for i in range(0, len(IRIS), 9)])
-X_raw = rows[:, :4] / 10               # 150 flowers x 4 measurements (cm)
-species_sealed = rows[:, 4]            # sealed until the last section
-
-X = (X_raw - X_raw.mean(axis=0)) / X_raw.std(axis=0)
-print("X:", X.shape, " -- labels sealed away")
-```
-
-## R
-```{webr}
-X_raw <- as.matrix(iris[, 1:4])        # 150 flowers x 4 measurements (cm)
-species_sealed <- iris$Species         # sealed until the last section
-
-X <- scale(X_raw)
-cat("X:", dim(X)[1], "x", dim(X)[2], " -- labels sealed away\n")
-```
-
-:::
-
 ## One direction at a time
 
 Before the flowers, the book's own example (Section 13.1): four centered points, $(2, 1)$,
@@ -213,11 +157,68 @@ and what $\mathbf{S}$ does to $\mathbf{u}$ itself.
 </div>
 ```
 
+## The data, with the labels sealed
+
+We use Fisher's irises: 150 flowers, four measurements each, three species. It is the
+classic *labeled* data set — which makes it perfect for this experiment, because we can
+withhold the species column now and audit ourselves against it later. The four features
+are standardized first; PCA is not scale-invariant, and we want each measurement to speak
+with equal weight.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Fisher's irises, 150 flowers: four measurements in millimeters (two digits
+# each) and the species (one digit, 0-2), nine digits per flower.
+IRIS = ("513514020493014020473213020463115020503614020543917040463414030503415020"
+        "442914020493115010543715020483416020483014010433011010584012020574415040"
+        "543913040513514030573817030513815030543417020513715040463610020513317050"
+        "483419020503016020503416040523515020523414020473216020483116020543415040"
+        "524115010554214020493115020503212020553513020493614010443013020513415020"
+        "503513030452313030443213020503516060513819040483014030513816020463214020"
+        "533715020503314020703247141643245151693149151552340131652846151572845131"
+        "633347161492433101662946131522739141502035101593042151602240101612947141"
+        "562936131673144141563045151582741101622245151562539111593248181612840131"
+        "632549151612847121642943131663044141682848141673050171602945151572635101"
+        "552438111552437101582739121602751161543045151603445161673147151632344131"
+        "563041131552540131552644121613046141582640121502333101562742131573042121"
+        "572942131622943131512530111572841131633360252582751192713059212632956182"
+        "653058222763066212492545172732963182672558182723661252653251202642753192"
+        "683055212572550202582851242643253232653055182773867222772669232602250152"
+        "693257232562849202772867202632749182673357212723260182622848182613049182"
+        "642856212723058162742861192793864202642856222632851152612656142773061232"
+        "633456242643155182603048182693154212673156242693151232582751192683259232"
+        "673357252673052232632550192653052202623454232593051182")
+rows = np.array([[int(IRIS[i + j:i + j + 2]) for j in (0, 2, 4, 6)] + [int(IRIS[i + 8])]
+                 for i in range(0, len(IRIS), 9)])
+X_raw = rows[:, :4] / 10               # 150 flowers x 4 measurements (cm)
+species_sealed = rows[:, 4]            # sealed until the last section
+
+X = (X_raw - X_raw.mean(axis=0)) / X_raw.std(axis=0)
+print("X:", X.shape, " -- labels sealed away")
+```
+
+## R
+```{webr}
+X_raw <- as.matrix(iris[, 1:4])        # 150 flowers x 4 measurements (cm)
+species_sealed <- iris$Species         # sealed until the last section
+
+X <- scale(X_raw)
+cat("X:", dim(X)[1], "x", dim(X)[2], " -- labels sealed away\n")
+```
+
+:::
+
 ## Principal components, by hand
 
 Three lines: form the sample covariance, take its eigenvectors, project. The first two
 components carry 95.8% of the variance — four correlated measurements were, all along,
-close to a two-dimensional story.
+close to a two-dimensional story. The right panel is the scree plot the figure at the top
+promised: each component's share, and the running total.
 
 ::: {.panel-tabset group="lang"}
 
@@ -256,7 +257,7 @@ X = (X_raw - X_raw.mean(axis=0)) / X_raw.std(axis=0)
 S = X.T @ X / len(X)                   # 4 x 4 sample covariance
 evals, evecs = np.linalg.eigh(S)
 evals, evecs = evals[::-1], evecs[:, ::-1]      # largest first
-evecs = evecs * np.sign(evecs[0, :])   # fix signs (cosmetic, for parity with R)
+evecs = evecs * np.sign(evecs[0, :])   # fix signs (cosmetic)
 
 frac = evals / evals.sum()
 for k in range(4):
@@ -264,13 +265,21 @@ for k in range(4):
 
 Z = X @ evecs[:, :2]                   # every flower gets two coordinates
 
-fig, ax = plt.subplots(figsize=(7, 5))
-ax.scatter(Z[:, 0], Z[:, 1], s=45, color="#076FA1", alpha=0.7,
-           edgecolor="white", linewidth=0.6)
-ax.set_xlabel("first principal score"); ax.set_ylabel("second principal score")
-ax.set_title("150 flowers, no labels")
-for s in ["top", "right"]: ax.spines[s].set_visible(False)
-ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
+fig, (axZ, axS) = plt.subplots(1, 2, figsize=(11, 4.4))
+axZ.scatter(Z[:, 0], Z[:, 1], s=45, color="#076FA1", alpha=0.7,
+            edgecolor="white", linewidth=0.6)
+axZ.set_xlabel("first principal score"); axZ.set_ylabel("second principal score")
+axZ.set_title("150 flowers, no labels")
+
+# Scree plot: each component's share of the variance, and the running total
+axS.bar(np.arange(1, 5), frac, width=0.6, color="#076FA1", label="share of variance")
+axS.plot(np.arange(1, 5), np.cumsum(frac), "o-", color="#31417A", lw=1.6, label="cumulative")
+axS.set_xticks([1, 2, 3, 4]); axS.set_xticklabels(["PC1", "PC2", "PC3", "PC4"])
+axS.set_ylim(0, 1.05); axS.set_ylabel("share of total variance")
+axS.set_title("Scree plot"); axS.legend(loc="center right", fontsize=8)
+for ax in (axZ, axS):
+    for s in ["top", "right"]: ax.spines[s].set_visible(False)
+    ax.grid(axis="y", color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
 plt.tight_layout(); plt.show()
 ```
 
@@ -288,13 +297,22 @@ for (k in 1:4) cat(sprintf("PC%d: %5.1f%%   cumulative %5.1f%%\n",
                            k, 100 * frac[k], 100 * sum(frac[1:k])))
 
 V <- e$vectors
-V <- sweep(V, 2, sign(V[1, ]), "*")    # fix signs (cosmetic, for parity with Python)
+V <- sweep(V, 2, sign(V[1, ]), "*")    # fix signs (cosmetic)
 Z <- X %*% V[, 1:2]                    # every flower gets two coordinates
 
+par(mfrow = c(1, 2))
 plot(Z, pch = 19, col = adjustcolor("#076FA1", 0.7), cex = 1.1, bty = "l",
      xlab = "first principal score", ylab = "second principal score",
      main = "150 flowers, no labels")
 grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+
+# Scree plot: each component's share of the variance, and the running total
+mids <- barplot(frac, names.arg = paste0("PC", 1:4), col = "#076FA1", border = NA,
+                ylim = c(0, 1.05), ylab = "share of total variance", main = "Scree plot")
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+lines(mids, cumsum(frac), type = "o", pch = 19, col = "#31417A", lwd = 1.6)
+legend("right", c("share of variance", "cumulative"), col = c("#076FA1", "#31417A"),
+       pch = c(15, 19), lty = c(NA, 1), lwd = c(NA, 1.6), pt.cex = c(1.6, 1), bty = "n", cex = 0.8)
 ```
 
 :::

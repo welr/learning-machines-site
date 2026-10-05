@@ -11,7 +11,7 @@ engine: markdown
 [No line can split two interleaved rings, so change coordinates until one can; the kernel trick performs that change of coordinates without ever building them.]{.dek}
 :::
 
-Some patterns no straight line can split. Concentric rings, an exclusive-or checkerboard: the classes interleave so thoroughly that every linear boundary lands near chance. The fix is not a cleverer line but a change of coordinates. Lift the data into a space where the same classes pull apart, fit a linear boundary there, and read it back as a curve in the original space. The [kernel trick]{.term} does this lift implicitly, and the payoff of running it in code is seeing a linear method bend around the data without ever writing down the new coordinates.
+Some patterns no straight line can split. Concentric rings, an exclusive-or checkerboard: the classes interleave so thoroughly that every linear boundary lands near chance. The fix is a change of coordinates. Lift the data into a space where the same classes pull apart, fit a linear boundary there, and read it back as a curve in the original space. The [kernel trick]{.term} does this lift implicitly, and the payoff of running it in code is seeing a linear method bend around the data without ever writing down the new coordinates.
 
 ## The feature-space lift
 
@@ -113,7 +113,7 @@ Three kernels recur. Each corresponds to a different (implicit) feature space.
 | Polynomial | $(x^\top x' + c)^r$ | monomials up to degree $r$ |
 | RBF (Gaussian) | $\exp(-\gamma\lVert x - x'\rVert^2)$ | infinite-dimensional |
 
-Read the RBF kernel as a [similarity]{.term}: it equals one when two points coincide and decays toward zero as they separate, with $\gamma$ setting how fast. The book writes the RBF kernel with a width $\sigma$, and $\gamma = 1/(2\sigma^2)$ is an [inverse width]{.term}: a larger $\gamma$ means a narrower kernel. The kernel values below carry no randomness, so the two languages print identical numbers.
+Read the RBF kernel as a [similarity]{.term}: it equals one when two points coincide and decays toward zero as they separate, with $\gamma$ setting how fast. The book writes the RBF kernel with a width $\sigma$, and $\gamma = 1/(2\sigma^2)$ is an [inverse width]{.term}: a larger $\gamma$ means a narrower kernel.
 
 ::: {.panel-tabset group="lang"}
 
@@ -166,6 +166,104 @@ A [support vector machine]{.term} fits the widest possible margin in feature spa
 
 What makes it an SVM is the sparsity: only the [support vectors]{.term}, the points on or inside the margin, carry nonzero $\alpha_i$; the rest could be deleted without moving the boundary. Sklearn's `SVC` solves exactly this, and the Python tab below reports how few support vectors the RBF fit actually keeps.
 
+Before the kernel does anything, the margin itself is worth a picture: two separable classes
+in the plane, and the book's Figure 8.2 in numbers. The widest street that fits between the
+classes, the boundary down its middle, and the points on its edges ringed. The R tab has no SVM
+to call, so it solves the chapter's hard-margin dual by coordinate ascent, with the bias folded
+into the features as a third coordinate.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+```{pyodide}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.svm import SVC
+
+# Two linearly separable classes, labels in {-1, +1}; three points sit close to the gap
+X = np.array([[1.1, 0.4], [1.8, 1.4], [2.2, 0.4], [1.3, 2.1], [2.6, 1.7], [0.2, 1.3], [2.9, 0.9], [1.9, 2.6],
+              [-0.5, -0.8], [-1.8, -1.2], [-0.5, -1.9], [-2.3, -0.3], [-1.4, -2.4], [-2.7, -1.5], [-0.9, -2.8], [-2.2, -2.1]])
+y = np.r_[np.ones(8), -np.ones(8)]
+
+# A very large C leaves no room for margin violations, so SVC solves the
+# hard-margin problem of Equation 8.2 and support_vectors_ are the points on the margin.
+svm = SVC(kernel="linear", C=1e6).fit(X, y)
+w, b = svm.coef_[0], svm.intercept_[0]
+margin = 1 / np.linalg.norm(w)
+print(f"w = ({w[0]:.3f}, {w[1]:.3f}),  b = {b:.3f},  margin 1/||w|| = {margin:.3f}")
+print("support vectors:", ", ".join(f"({p[0]:.1f}, {p[1]:.1f})" for p in svm.support_vectors_))
+
+# The boundary w.x + b = 0 and the margin lines w.x + b = +/-1, solved for x2
+xs = np.array([-3.2, 3.4])
+line = lambda level: (level - b - w[0] * xs) / w[1]
+
+fig, ax = plt.subplots(figsize=(7, 5.2))
+ax.scatter(*X[y == 1].T, s=45, color="#076FA1", edgecolor="white", zorder=3, label="y = +1")
+ax.scatter(*X[y == -1].T, s=45, color="#9E4F00", edgecolor="white", zorder=3, label="y = -1")
+ax.scatter(*svm.support_vectors_.T, s=180, facecolor="none", edgecolor="#31417A",
+           linewidth=1.6, zorder=4, label="support vectors")
+ax.plot(xs, line(0), color="#31417A", lw=2, label="boundary")
+ax.plot(xs, line(1), color="#31417A", lw=1.2, ls="--", label="margin")
+ax.plot(xs, line(-1), color="#31417A", lw=1.2, ls="--")
+ax.set_aspect("equal"); ax.set_xlim(-3.2, 3.4); ax.set_ylim(-3.2, 3.0)
+ax.set_xlabel("$x_1$"); ax.set_ylabel("$x_2$")
+ax.set_title(f"Maximum-margin classifier, margin = {margin:.3f}")
+ax.legend(loc="upper left", fontsize=8)
+for s in ["top", "right"]: ax.spines[s].set_visible(False)
+ax.grid(color="#e6e3da", lw=0.8); ax.set_axisbelow(True)
+plt.tight_layout(); plt.show()
+```
+
+## R
+```{webr}
+# Two linearly separable classes, labels in {-1, +1}; three points sit close to the gap
+X <- rbind(c(1.1, 0.4), c(1.8, 1.4), c(2.2, 0.4), c(1.3, 2.1), c(2.6, 1.7), c(0.2, 1.3), c(2.9, 0.9), c(1.9, 2.6),
+           c(-0.5, -0.8), c(-1.8, -1.2), c(-0.5, -1.9), c(-2.3, -0.3), c(-1.4, -2.4), c(-2.7, -1.5), c(-0.9, -2.8), c(-2.2, -2.1))
+y <- c(rep(1, 8), rep(-1, 8))
+
+# Fold the bias into the features, a = (x, 1). The hard-margin dual (Equation 8.4)
+# then keeps only alpha >= 0, and coordinate ascent on it is one line per multiplier.
+A <- cbind(X, 1)
+Q <- (y %o% y) * (A %*% t(A))               # Q_ij = y_i y_j (x_i . x_j + 1)
+alpha <- numeric(nrow(X))
+for (sweep in 1:5000) {
+  alpha_old <- alpha
+  for (i in seq_along(alpha))
+    alpha[i] <- max(0, alpha[i] + (1 - sum(Q[i, ] * alpha)) / Q[i, i])
+  if (max(abs(alpha - alpha_old)) < 1e-10) break
+}
+w_aug <- colSums(alpha * y * A)             # w = sum_i alpha_i y_i a_i, as in Equation 8.3
+w <- w_aug[1:2]; b <- w_aug[3]
+sv <- which(alpha > 1e-6)                   # the multipliers that stayed positive
+margin <- 1 / sqrt(sum(w^2))
+cat(sprintf("w = (%.3f, %.3f),  b = %.3f,  margin 1/||w|| = %.3f\n", w[1], w[2], b, margin))
+cat("support vectors:", paste(sprintf("(%.1f, %.1f)", X[sv, 1], X[sv, 2]), collapse = ", "), "\n")
+
+# The boundary w.x + b = 0 and the margin lines w.x + b = +/-1, solved for x2
+xs <- c(-3.2, 3.4)
+line <- function(level) (level - b - w[1] * xs) / w[2]
+
+plot(X[, 1], X[, 2], col = ifelse(y == 1, "#076FA1", "#9E4F00"), pch = 19, asp = 1,
+     xlim = xs, ylim = c(-3.2, 3.0), xlab = "x1", ylab = "x2", bty = "l",
+     main = sprintf("Maximum-margin classifier, margin = %.3f", margin))
+grid(col = "#e6e3da", lty = 1, lwd = 0.6)
+points(X[sv, 1], X[sv, 2], pch = 1, cex = 2.4, col = "#31417A", lwd = 1.6)   # ring the support vectors
+lines(xs, line(0), col = "#31417A", lwd = 2)
+lines(xs, line(1), col = "#31417A", lwd = 1.2, lty = 2)
+lines(xs, line(-1), col = "#31417A", lwd = 1.2, lty = 2)
+legend("topleft", c("y = +1", "y = -1", "support vectors", "boundary", "margin"),
+       col = c("#076FA1", "#9E4F00", "#31417A", "#31417A", "#31417A"), pch = c(19, 19, 1, NA, NA),
+       lty = c(NA, NA, NA, 1, 2), lwd = c(NA, NA, 1.6, 2, 1.2), pt.cex = c(1, 1, 2), bty = "n", cex = 0.8)
+```
+
+:::
+
+Three points pin the whole classifier: one of the orange class and two of the blue, sitting on
+the dashed margin lines at distance $0.990$ from the boundary. The other thirteen have
+$\alpha_i = 0$; move any of them, short of crossing its margin line, and nothing changes. That
+sparsity is what the kernel version inherits, and the support-vector counts in the rest of this
+page count exactly these points.
+
 Base R ships no SVM (the production tools are `e1071` and `kernlab`), so the R tab solves a close cousin instead: [kernel ridge regression]{.term}, $\alpha = (\mathbf{K} + m\lambda I)^{-1}\,y$, on the same [Gram matrix]{.term} $\mathbf{K}_{ij} = K(x^{(i)}, x^{(j)})$. It shares the kernel trick, since a prediction is again a kernel-weighted sum over training points, but it drops the sparsity: the linear solve hands every training point a nonzero weight. So the two tabs are honest cousins rather than one estimator. The SVM keeps only its handful of support vectors; kernel ridge keeps all of them. Both turn a linear method nonlinear by swapping one dot product for a kernel, but only the SVM throws most of the points away.
 
 The numbers make the point of the whole chapter: a linear kernel cannot beat chance on the rings, while an RBF kernel classifies them almost perfectly.
@@ -194,7 +292,7 @@ for name, kw in [("linear",     dict(kernel="linear")),
     print(f"{name:11s} train accuracy = {clf.score(X, y):6.1%}   "
           f"({len(clf.support_vectors_)} of {len(X)} points are support vectors)")
 
-print("the SVM keeps only its support vectors; kernel ridge (the R tab) keeps all 240")
+print("the SVM keeps only its support vectors; kernel ridge keeps all 240")
 ```
 
 ## R
@@ -231,7 +329,7 @@ nz <- sum(abs(alpha) > 1e-8)
 cat(sprintf("linear     train accuracy = %5.1f%%\n", 100 * acc_lin))
 cat(sprintf("rbf (g=2)  train accuracy = %5.1f%%   (%d of %d weights nonzero)\n",
             100 * acc_rbf, nz, length(alpha)))
-cat("kernel ridge keeps every training point; an SVM would keep only its support vectors\n")
+cat("kernel ridge keeps every training point\n")
 ```
 
 :::
@@ -342,7 +440,7 @@ middle. At small $\gamma$ each point's influence is so broad that the margin is 
 nearly every point ends up supporting it (all 240 at $\gamma = 0.1$). At large $\gamma$
 influence is so local that the boundary has to trace the inner ring point by point, along both
 edges of the band, and most points end up propping it up (188 at $\gamma = 100$). In between,
-the count is 30 at $\gamma = 2$, 25 at $\gamma = 3.16$, and bottoms out at 22 at
+the count is 29 at $\gamma = 2$, 25 at $\gamma = 3.16$, and bottoms out at 22 at
 $\gamma = 3.98$. Do not read that trough as the best model: a compact
 boundary and a boundary that generalizes are related, but they are not the same thing.
 
@@ -441,7 +539,7 @@ This is not kernel ridge regression. There is no matrix to invert and no $\lambd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# A 1-D regression example: a wiggly but deterministic signal (no RNG, so R matches).
+# A 1-D regression example: a wiggly but deterministic signal.
 xs = np.linspace(0, 6, 40)
 ys = np.sin(xs) + 0.3*np.cos(7*xs)
 
@@ -473,7 +571,7 @@ print(f"weights at x=2.5 sum to {w.sum():.3f}; smoothed value = {w @ ys:.3f}")
 
 ## R
 ```{webr}
-# A 1-D regression example: a wiggly but deterministic signal (no RNG, so Python matches).
+# A 1-D regression example: a wiggly but deterministic signal.
 xs <- seq(0, 6, length.out = 40)
 ys <- sin(xs) + 0.3 * cos(7 * xs)
 
@@ -507,11 +605,12 @@ That normalize-then-average is exactly what one head of [attention]{.term} compu
 
 ::: {.explore}
 [Try it]{.lbl}
-In the $\gamma$ sweep, push $\gamma$ to 50 and drop the kernel ridge $\lambda$ a hundredfold (in Python, raise `SVC`'s `C` toward 1000). Watch the inner class's region shrink to a thin band traced along the inner curve, with a hole at the center that both models give to the outer class, while training error stays at zero. The second knob barely matters here: these noiseless rings are fit perfectly at either setting, so the band looks much the same. Then lower $\gamma$ and see it relax back into one clean loop.
+In the four-panel $\gamma$ sweep cell, look at the $\gamma = 50$ panel, then drop the kernel ridge `lambda` a hundredfold (in Python, add `C=1000` to the `SVC(...)` call) and re-run. Watch the inner class's region shrink to a thin band traced along the inner curve, with a hole at the center that both models give to the outer class, while training error stays at zero. The second knob barely matters here: these noiseless rings are fit perfectly at either setting, so the band looks much the same. Then lower $\gamma$ and see it relax back into one clean loop.
 
 Then give the problem some noise, which is what it takes to make $\gamma$ selectable at all. In
-the slider cell, build a held-out set from the same curves with the radii perturbed, and
-score each $\gamma$ on it:
+the same four-panel sweep cell, build a held-out set from the same curves with the radii
+perturbed, and score each panel's fit on it. Put the first seven lines before the `for` loop
+and the `print` inside it, after `clf` is fit:
 
 ```python
 rng = np.random.default_rng()   # unseeded: rerun to see the winner move
@@ -524,9 +623,10 @@ yte = np.r_[np.zeros(240), np.ones(240)].astype(int)
 print(f"gamma {g:6.2f}  held-out {clf.score(Xte, yte):.4f}")
 ```
 
-Sweep the slider. The extremes now separate — $\gamma = 100$ falls to about 0.92 — while
-everything between sits within a point or two of perfect, and which setting wins moves with
-the noise draw. That is the lesson, and it is a modest one: noise is what makes the question
+Re-run the cell. The settings now separate: $\gamma = 50$ loses three to six points, while the
+three smaller settings stay within a point or two of perfect, and which of them wins moves with
+the noise draw. Add `100.0` to the list of settings (and a fifth panel) and it falls to about
+0.92. That is the lesson, and it is a modest one: noise is what makes the question
 answerable at all, not what makes it answerable precisely. Note only that the winner is not
 reliably the support-vector minimum near $\gamma = 4$.
 :::

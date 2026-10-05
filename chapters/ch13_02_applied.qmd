@@ -88,7 +88,7 @@ for c, lab in zip(km.labels_, y_sealed):
 purity = table.max(axis=1).sum() / table.sum()   # 0.554
 ```
 
-Read the answer carefully, because it cuts both ways. A little over half the images landed in a cluster whose dominant class is their own — far better than the 10% chance would give, from an analysis that never saw a label. But the successes and failures are not distributed evenly. Bags, sneakers, sandals, ankle boots and trousers come out sharply; T-shirts, pullovers, coats and shirts are a single smear. The pixels know that footwear is not clothing. They do not know that a pullover is not a coat.
+Read the answer carefully, because it cuts both ways. A little over half the images landed in a cluster whose dominant class is their own — far better than the 10% chance would give, from an analysis that never saw a label. But the successes and failures are not distributed evenly. Bags, ankle boots and sneakers come out sharply; sandals and trousers only partly, trousers sharing a cluster with dresses; T-shirts, pullovers, coats and shirts are a single smear. The pixels know that footwear is not clothing. They do not know that a pullover is not a coat.
 
 That is the honest form of the chapter's claim. Unsupervised structure is real and it is free, but it is the structure the data's own geometry supports, which need not be the structure your labels encode. Where the two coincide you get most of the way to a classifier without a single label; where they do not, no amount of clustering will invent the distinction for you.
 
@@ -116,6 +116,4 @@ The loss is reconstruction error against the input itself, which is what makes t
 [Try it]{.lbl}
 
 Compare the autoencoder's two-dimensional codes with the PCA projection, colored the same way. Does the extra flexibility separate the upper-body garments that PCA smears together, or does it just rearrange the same smear? Answer that before reading on, then check whether cluster purity on the autoencoder codes actually beats the 0.554 above — a curved code is not automatically a better one.
-
-Then push on $K$. The chapter's mixture-model reading turns "which $K$?" into model selection with held-out likelihood. Fit a Gaussian mixture for $K = 5, 10, 15, 20$, compare held-out log-likelihood, and see whether the data prefers the ten classes the labels happen to use.
 :::

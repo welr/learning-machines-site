@@ -68,7 +68,7 @@ for c in range(3):
                linewidths=1.2, label=f"Class {c}", zorder=3)
 ax.set_xlabel("Feature x1"); ax.set_ylabel("Feature x2")
 ax.legend(loc="upper right")
-for s in ax.spines.values(): s.set_color("#cfccc2")   # treatment-B light frame
+for s in ax.spines.values(): s.set_color("#cfccc2")
 ax.tick_params(colors="#666666")
 plt.tight_layout(); plt.show()
 ```
@@ -159,7 +159,7 @@ for c in range(K):
     ax.scatter(X[mask, 0], X[mask, 1], c=colors[c], s=60, edgecolors="white",
                linewidths=1.2, zorder=3, label=f"Class {c}")
 ax.set_xlabel("Feature x1"); ax.set_ylabel("Feature x2"); ax.legend(loc="upper right")
-for s in ax.spines.values(): s.set_color("#cfccc2")   # treatment-B light frame
+for s in ax.spines.values(): s.set_color("#cfccc2")
 ax.tick_params(colors="#666666")
 plt.tight_layout(); plt.show()
 ```
@@ -283,7 +283,7 @@ for c in range(K):
     ax.scatter(X[mask, 0], X[mask, 1], c=colors[c], s=60, edgecolors="white",
                linewidths=1.2, zorder=3, label=f"Class {c}")
 ax.set_xlabel("Feature x1"); ax.set_ylabel("Feature x2"); ax.legend(loc="upper right")
-for s in ax.spines.values(): s.set_color("#cfccc2")   # treatment-B light frame
+for s in ax.spines.values(): s.set_color("#cfccc2")
 ax.tick_params(colors="#666666")
 plt.tight_layout(); plt.show()
 ```
@@ -443,9 +443,11 @@ Chapter 6.
 
 ::: {.explore}
 [Try it]{.lbl}
-In the softmax cells, divide the scores by a [temperature]{.term} $T$ before the softmax
-(replace `Xd @ Theta` with `(Xd @ Theta) / T`) and watch the predicted probabilities. Small
-$T$ sharpens them toward a one-hot vote; large $T$ flattens them toward uniform. This is the
+In the cell that prints the probability table, divide the test scores by a
+[temperature]{.term} $T$ before the softmax (replace `Td @ Theta` with `(Td @ Theta) / T`, or
+`Td %*% Theta` with `(Td %*% Theta) / T`) and watch the softmax columns. The fourth row, the
+in-between point $(2.5, 2.0)$, is the one to read: as $T$ grows its three probabilities
+flatten toward $1/3$ each; small $T$ sharpens every row toward a one-hot vote. This is the
 same temperature knob that controls how adventurous a language model's next-token sampling is
 in Chapter 12.
 :::

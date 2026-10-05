@@ -652,10 +652,8 @@ Binning the predictions and plotting the observed fraction of positives against 
 predicted probability gives the [reliability diagram]{.term}: points on the diagonal are
 calibrated. An overconfident model, whose predictions are more extreme than warranted, puts
 its points below the diagonal at high probabilities and above it at low ones; an
-underconfident model does the reverse. Logistic regression fit by
-maximum likelihood with an intercept gets one thing right by construction: on its training
-data, the mean predicted probability equals the fraction of positives. Agreement within each
-bin is not guaranteed, and has to be checked.
+underconfident model does the reverse. A good ranking does not guarantee agreement within
+each bin; it has to be checked.
 
 ::: {.panel-tabset group="lang"}
 
@@ -757,5 +755,6 @@ asking, and the cost you actually face.
 [Try it]{.lbl}
 In the ROC cell, raise the label-noise rate from `0.05` to `0.25` and rerun. Watch the AUC
 fall toward 0.5 as the corrupted labels make the classes harder to separate, and notice that
-the curve sags toward the diagonal even though nothing about the model changed.
+the curve sags toward the diagonal even though the model was refit on the same inputs; only
+the labels changed.
 :::
